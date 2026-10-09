@@ -635,6 +635,32 @@ exports.Prisma.ComentarioSeguimientoClimaScalarFieldEnum = {
   editadoEn: 'editadoEn'
 };
 
+exports.Prisma.ResenaScalarFieldEnum = {
+  id: 'id',
+  origen: 'origen',
+  estado: 'estado',
+  empresaId: 'empresaId',
+  usuarioId: 'usuarioId',
+  estrellas: 'estrellas',
+  texto: 'texto',
+  comoAparece: 'comoAparece',
+  nombrePublico: 'nombrePublico',
+  cargoPublico: 'cargoPublico',
+  textoAutorizacion: 'textoAutorizacion',
+  versionPolitica: 'versionPolitica',
+  canal: 'canal',
+  referencia: 'referencia',
+  autorizacion: 'autorizacion',
+  fechaOpinion: 'fechaOpinion',
+  registradaPor: 'registradaPor',
+  planAlEnviar: 'planAlEnviar',
+  mesesPagadosAlEnviar: 'mesesPagadosAlEnviar',
+  nombreRetiradoEn: 'nombreRetiradoEn',
+  publicadaEn: 'publicadaEn',
+  creadoEn: 'creadoEn',
+  actualizadoEn: 'actualizadoEn'
+};
+
 exports.Prisma.SortOrder = {
   asc: 'asc',
   desc: 'desc'
@@ -796,6 +822,24 @@ exports.EstadoSeguimientoClima = exports.$Enums.EstadoSeguimientoClima = {
   CERRADO: 'CERRADO'
 };
 
+exports.OrigenResena = exports.$Enums.OrigenResena = {
+  CLIENTE: 'CLIENTE',
+  MANUAL: 'MANUAL'
+};
+
+exports.EstadoResena = exports.$Enums.EstadoResena = {
+  OMITIDA: 'OMITIDA',
+  POR_REVISAR: 'POR_REVISAR',
+  PUBLICADA: 'PUBLICADA',
+  OCULTA: 'OCULTA',
+  ARCHIVADA: 'ARCHIVADA'
+};
+
+exports.ComoAparece = exports.$Enums.ComoAparece = {
+  CON_NOMBRE: 'CON_NOMBRE',
+  ANONIMA: 'ANONIMA'
+};
+
 exports.Prisma.ModelName = {
   Empresa: 'Empresa',
   Suscripcion: 'Suscripcion',
@@ -833,7 +877,8 @@ exports.Prisma.ModelName = {
   CalificacionClima: 'CalificacionClima',
   ObservacionConfidencial: 'ObservacionConfidencial',
   SeguimientoClima: 'SeguimientoClima',
-  ComentarioSeguimientoClima: 'ComentarioSeguimientoClima'
+  ComentarioSeguimientoClima: 'ComentarioSeguimientoClima',
+  Resena: 'Resena'
 };
 
 /**

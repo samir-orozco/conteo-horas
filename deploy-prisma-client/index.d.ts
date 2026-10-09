@@ -198,6 +198,11 @@ export type SeguimientoClima = $Result.DefaultSelection<Prisma.$SeguimientoClima
  * 
  */
 export type ComentarioSeguimientoClima = $Result.DefaultSelection<Prisma.$ComentarioSeguimientoClimaPayload>
+/**
+ * Model Resena
+ * 
+ */
+export type Resena = $Result.DefaultSelection<Prisma.$ResenaPayload>
 
 /**
  * Enums
@@ -402,6 +407,33 @@ export const EstadoSeguimientoClima: {
 
 export type EstadoSeguimientoClima = (typeof EstadoSeguimientoClima)[keyof typeof EstadoSeguimientoClima]
 
+
+export const OrigenResena: {
+  CLIENTE: 'CLIENTE',
+  MANUAL: 'MANUAL'
+};
+
+export type OrigenResena = (typeof OrigenResena)[keyof typeof OrigenResena]
+
+
+export const EstadoResena: {
+  OMITIDA: 'OMITIDA',
+  POR_REVISAR: 'POR_REVISAR',
+  PUBLICADA: 'PUBLICADA',
+  OCULTA: 'OCULTA',
+  ARCHIVADA: 'ARCHIVADA'
+};
+
+export type EstadoResena = (typeof EstadoResena)[keyof typeof EstadoResena]
+
+
+export const ComoAparece: {
+  CON_NOMBRE: 'CON_NOMBRE',
+  ANONIMA: 'ANONIMA'
+};
+
+export type ComoAparece = (typeof ComoAparece)[keyof typeof ComoAparece]
+
 }
 
 export type EstadoSuscripcion = $Enums.EstadoSuscripcion
@@ -487,6 +519,18 @@ export const OrigenEvento: typeof $Enums.OrigenEvento
 export type EstadoSeguimientoClima = $Enums.EstadoSeguimientoClima
 
 export const EstadoSeguimientoClima: typeof $Enums.EstadoSeguimientoClima
+
+export type OrigenResena = $Enums.OrigenResena
+
+export const OrigenResena: typeof $Enums.OrigenResena
+
+export type EstadoResena = $Enums.EstadoResena
+
+export const EstadoResena: typeof $Enums.EstadoResena
+
+export type ComoAparece = $Enums.ComoAparece
+
+export const ComoAparece: typeof $Enums.ComoAparece
 
 /**
  * ##  Prisma Client ʲˢ
@@ -980,6 +1024,16 @@ export class PrismaClient<
     * ```
     */
   get comentarioSeguimientoClima(): Prisma.ComentarioSeguimientoClimaDelegate<ExtArgs>;
+
+  /**
+   * `prisma.resena`: Exposes CRUD operations for the **Resena** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more Resenas
+    * const resenas = await prisma.resena.findMany()
+    * ```
+    */
+  get resena(): Prisma.ResenaDelegate<ExtArgs>;
 }
 
 export namespace Prisma {
@@ -1457,7 +1511,8 @@ export namespace Prisma {
     CalificacionClima: 'CalificacionClima',
     ObservacionConfidencial: 'ObservacionConfidencial',
     SeguimientoClima: 'SeguimientoClima',
-    ComentarioSeguimientoClima: 'ComentarioSeguimientoClima'
+    ComentarioSeguimientoClima: 'ComentarioSeguimientoClima',
+    Resena: 'Resena'
   };
 
   export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -1473,7 +1528,7 @@ export namespace Prisma {
 
   export type TypeMap<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, ClientOptions = {}> = {
     meta: {
-      modelProps: "empresa" | "suscripcion" | "pago" | "configuracionPlataforma" | "jornadaVigencia" | "auxilioVigencia" | "tipoHora" | "horario" | "franjaHorario" | "plantillaTurno" | "dispositivoKiosco" | "colaborador" | "sede" | "colaboradorSede" | "diaEsperado" | "registro" | "permiso" | "diaFestivo" | "configuracion" | "notificacion" | "usuario" | "afiliado" | "comision" | "solicitudRetiro" | "registroCambio" | "descansoTrabajado" | "descansoTrabajadoCambio" | "vinculacionEvento" | "enlaceRegistroFacial" | "constanciaBiometrica" | "contrato" | "prorrogaContrato" | "eventoSistema" | "calificacionClima" | "observacionConfidencial" | "seguimientoClima" | "comentarioSeguimientoClima"
+      modelProps: "empresa" | "suscripcion" | "pago" | "configuracionPlataforma" | "jornadaVigencia" | "auxilioVigencia" | "tipoHora" | "horario" | "franjaHorario" | "plantillaTurno" | "dispositivoKiosco" | "colaborador" | "sede" | "colaboradorSede" | "diaEsperado" | "registro" | "permiso" | "diaFestivo" | "configuracion" | "notificacion" | "usuario" | "afiliado" | "comision" | "solicitudRetiro" | "registroCambio" | "descansoTrabajado" | "descansoTrabajadoCambio" | "vinculacionEvento" | "enlaceRegistroFacial" | "constanciaBiometrica" | "contrato" | "prorrogaContrato" | "eventoSistema" | "calificacionClima" | "observacionConfidencial" | "seguimientoClima" | "comentarioSeguimientoClima" | "resena"
       txIsolationLevel: Prisma.TransactionIsolationLevel
     }
     model: {
@@ -3919,6 +3974,72 @@ export namespace Prisma {
           }
         }
       }
+      Resena: {
+        payload: Prisma.$ResenaPayload<ExtArgs>
+        fields: Prisma.ResenaFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.ResenaFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ResenaPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.ResenaFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ResenaPayload>
+          }
+          findFirst: {
+            args: Prisma.ResenaFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ResenaPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.ResenaFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ResenaPayload>
+          }
+          findMany: {
+            args: Prisma.ResenaFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ResenaPayload>[]
+          }
+          create: {
+            args: Prisma.ResenaCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ResenaPayload>
+          }
+          createMany: {
+            args: Prisma.ResenaCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          delete: {
+            args: Prisma.ResenaDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ResenaPayload>
+          }
+          update: {
+            args: Prisma.ResenaUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ResenaPayload>
+          }
+          deleteMany: {
+            args: Prisma.ResenaDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.ResenaUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          upsert: {
+            args: Prisma.ResenaUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ResenaPayload>
+          }
+          aggregate: {
+            args: Prisma.ResenaAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateResena>
+          }
+          groupBy: {
+            args: Prisma.ResenaGroupByArgs<ExtArgs>
+            result: $Utils.Optional<ResenaGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.ResenaCountArgs<ExtArgs>
+            result: $Utils.Optional<ResenaCountAggregateOutputType> | number
+          }
+        }
+      }
     }
   } & {
     other: {
@@ -4941,6 +5062,7 @@ export namespace Prisma {
     calificacionesClima?: boolean | Empresa$calificacionesClimaArgs<ExtArgs>
     notasConfidenciales?: boolean | Empresa$notasConfidencialesArgs<ExtArgs>
     seguimientosClima?: boolean | Empresa$seguimientosClimaArgs<ExtArgs>
+    resena?: boolean | Empresa$resenaArgs<ExtArgs>
     _count?: boolean | EmpresaCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["empresa"]>
 
@@ -4978,6 +5100,7 @@ export namespace Prisma {
     calificacionesClima?: boolean | Empresa$calificacionesClimaArgs<ExtArgs>
     notasConfidenciales?: boolean | Empresa$notasConfidencialesArgs<ExtArgs>
     seguimientosClima?: boolean | Empresa$seguimientosClimaArgs<ExtArgs>
+    resena?: boolean | Empresa$resenaArgs<ExtArgs>
     _count?: boolean | EmpresaCountOutputTypeDefaultArgs<ExtArgs>
   }
 
@@ -4999,6 +5122,7 @@ export namespace Prisma {
       calificacionesClima: Prisma.$CalificacionClimaPayload<ExtArgs>[]
       notasConfidenciales: Prisma.$ObservacionConfidencialPayload<ExtArgs>[]
       seguimientosClima: Prisma.$SeguimientoClimaPayload<ExtArgs>[]
+      resena: Prisma.$ResenaPayload<ExtArgs> | null
     }
     scalars: $Extensions.GetPayloadResult<{
       id: string
@@ -5370,6 +5494,7 @@ export namespace Prisma {
     calificacionesClima<T extends Empresa$calificacionesClimaArgs<ExtArgs> = {}>(args?: Subset<T, Empresa$calificacionesClimaArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$CalificacionClimaPayload<ExtArgs>, T, "findMany"> | Null>
     notasConfidenciales<T extends Empresa$notasConfidencialesArgs<ExtArgs> = {}>(args?: Subset<T, Empresa$notasConfidencialesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ObservacionConfidencialPayload<ExtArgs>, T, "findMany"> | Null>
     seguimientosClima<T extends Empresa$seguimientosClimaArgs<ExtArgs> = {}>(args?: Subset<T, Empresa$seguimientosClimaArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$SeguimientoClimaPayload<ExtArgs>, T, "findMany"> | Null>
+    resena<T extends Empresa$resenaArgs<ExtArgs> = {}>(args?: Subset<T, Empresa$resenaArgs<ExtArgs>>): Prisma__ResenaClient<$Result.GetResult<Prisma.$ResenaPayload<ExtArgs>, T, "findUniqueOrThrow"> | null, null, ExtArgs>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -5999,6 +6124,21 @@ export namespace Prisma {
     take?: number
     skip?: number
     distinct?: SeguimientoClimaScalarFieldEnum | SeguimientoClimaScalarFieldEnum[]
+  }
+
+  /**
+   * Empresa.resena
+   */
+  export type Empresa$resenaArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Resena
+     */
+    select?: ResenaSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ResenaInclude<ExtArgs> | null
+    where?: ResenaWhereInput
   }
 
   /**
@@ -41292,6 +41432,1136 @@ export namespace Prisma {
 
 
   /**
+   * Model Resena
+   */
+
+  export type AggregateResena = {
+    _count: ResenaCountAggregateOutputType | null
+    _avg: ResenaAvgAggregateOutputType | null
+    _sum: ResenaSumAggregateOutputType | null
+    _min: ResenaMinAggregateOutputType | null
+    _max: ResenaMaxAggregateOutputType | null
+  }
+
+  export type ResenaAvgAggregateOutputType = {
+    estrellas: number | null
+    mesesPagadosAlEnviar: number | null
+  }
+
+  export type ResenaSumAggregateOutputType = {
+    estrellas: number | null
+    mesesPagadosAlEnviar: number | null
+  }
+
+  export type ResenaMinAggregateOutputType = {
+    id: string | null
+    origen: $Enums.OrigenResena | null
+    estado: $Enums.EstadoResena | null
+    empresaId: string | null
+    usuarioId: string | null
+    estrellas: number | null
+    texto: string | null
+    comoAparece: $Enums.ComoAparece | null
+    nombrePublico: string | null
+    cargoPublico: string | null
+    textoAutorizacion: string | null
+    versionPolitica: string | null
+    canal: string | null
+    referencia: string | null
+    autorizacion: string | null
+    fechaOpinion: Date | null
+    registradaPor: string | null
+    planAlEnviar: string | null
+    mesesPagadosAlEnviar: number | null
+    nombreRetiradoEn: Date | null
+    publicadaEn: Date | null
+    creadoEn: Date | null
+    actualizadoEn: Date | null
+  }
+
+  export type ResenaMaxAggregateOutputType = {
+    id: string | null
+    origen: $Enums.OrigenResena | null
+    estado: $Enums.EstadoResena | null
+    empresaId: string | null
+    usuarioId: string | null
+    estrellas: number | null
+    texto: string | null
+    comoAparece: $Enums.ComoAparece | null
+    nombrePublico: string | null
+    cargoPublico: string | null
+    textoAutorizacion: string | null
+    versionPolitica: string | null
+    canal: string | null
+    referencia: string | null
+    autorizacion: string | null
+    fechaOpinion: Date | null
+    registradaPor: string | null
+    planAlEnviar: string | null
+    mesesPagadosAlEnviar: number | null
+    nombreRetiradoEn: Date | null
+    publicadaEn: Date | null
+    creadoEn: Date | null
+    actualizadoEn: Date | null
+  }
+
+  export type ResenaCountAggregateOutputType = {
+    id: number
+    origen: number
+    estado: number
+    empresaId: number
+    usuarioId: number
+    estrellas: number
+    texto: number
+    comoAparece: number
+    nombrePublico: number
+    cargoPublico: number
+    textoAutorizacion: number
+    versionPolitica: number
+    canal: number
+    referencia: number
+    autorizacion: number
+    fechaOpinion: number
+    registradaPor: number
+    planAlEnviar: number
+    mesesPagadosAlEnviar: number
+    nombreRetiradoEn: number
+    publicadaEn: number
+    creadoEn: number
+    actualizadoEn: number
+    _all: number
+  }
+
+
+  export type ResenaAvgAggregateInputType = {
+    estrellas?: true
+    mesesPagadosAlEnviar?: true
+  }
+
+  export type ResenaSumAggregateInputType = {
+    estrellas?: true
+    mesesPagadosAlEnviar?: true
+  }
+
+  export type ResenaMinAggregateInputType = {
+    id?: true
+    origen?: true
+    estado?: true
+    empresaId?: true
+    usuarioId?: true
+    estrellas?: true
+    texto?: true
+    comoAparece?: true
+    nombrePublico?: true
+    cargoPublico?: true
+    textoAutorizacion?: true
+    versionPolitica?: true
+    canal?: true
+    referencia?: true
+    autorizacion?: true
+    fechaOpinion?: true
+    registradaPor?: true
+    planAlEnviar?: true
+    mesesPagadosAlEnviar?: true
+    nombreRetiradoEn?: true
+    publicadaEn?: true
+    creadoEn?: true
+    actualizadoEn?: true
+  }
+
+  export type ResenaMaxAggregateInputType = {
+    id?: true
+    origen?: true
+    estado?: true
+    empresaId?: true
+    usuarioId?: true
+    estrellas?: true
+    texto?: true
+    comoAparece?: true
+    nombrePublico?: true
+    cargoPublico?: true
+    textoAutorizacion?: true
+    versionPolitica?: true
+    canal?: true
+    referencia?: true
+    autorizacion?: true
+    fechaOpinion?: true
+    registradaPor?: true
+    planAlEnviar?: true
+    mesesPagadosAlEnviar?: true
+    nombreRetiradoEn?: true
+    publicadaEn?: true
+    creadoEn?: true
+    actualizadoEn?: true
+  }
+
+  export type ResenaCountAggregateInputType = {
+    id?: true
+    origen?: true
+    estado?: true
+    empresaId?: true
+    usuarioId?: true
+    estrellas?: true
+    texto?: true
+    comoAparece?: true
+    nombrePublico?: true
+    cargoPublico?: true
+    textoAutorizacion?: true
+    versionPolitica?: true
+    canal?: true
+    referencia?: true
+    autorizacion?: true
+    fechaOpinion?: true
+    registradaPor?: true
+    planAlEnviar?: true
+    mesesPagadosAlEnviar?: true
+    nombreRetiradoEn?: true
+    publicadaEn?: true
+    creadoEn?: true
+    actualizadoEn?: true
+    _all?: true
+  }
+
+  export type ResenaAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which Resena to aggregate.
+     */
+    where?: ResenaWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of Resenas to fetch.
+     */
+    orderBy?: ResenaOrderByWithRelationInput | ResenaOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: ResenaWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` Resenas from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` Resenas.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned Resenas
+    **/
+    _count?: true | ResenaCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: ResenaAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: ResenaSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: ResenaMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: ResenaMaxAggregateInputType
+  }
+
+  export type GetResenaAggregateType<T extends ResenaAggregateArgs> = {
+        [P in keyof T & keyof AggregateResena]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateResena[P]>
+      : GetScalarType<T[P], AggregateResena[P]>
+  }
+
+
+
+
+  export type ResenaGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: ResenaWhereInput
+    orderBy?: ResenaOrderByWithAggregationInput | ResenaOrderByWithAggregationInput[]
+    by: ResenaScalarFieldEnum[] | ResenaScalarFieldEnum
+    having?: ResenaScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: ResenaCountAggregateInputType | true
+    _avg?: ResenaAvgAggregateInputType
+    _sum?: ResenaSumAggregateInputType
+    _min?: ResenaMinAggregateInputType
+    _max?: ResenaMaxAggregateInputType
+  }
+
+  export type ResenaGroupByOutputType = {
+    id: string
+    origen: $Enums.OrigenResena
+    estado: $Enums.EstadoResena
+    empresaId: string | null
+    usuarioId: string | null
+    estrellas: number | null
+    texto: string
+    comoAparece: $Enums.ComoAparece | null
+    nombrePublico: string | null
+    cargoPublico: string | null
+    textoAutorizacion: string | null
+    versionPolitica: string | null
+    canal: string | null
+    referencia: string | null
+    autorizacion: string | null
+    fechaOpinion: Date | null
+    registradaPor: string | null
+    planAlEnviar: string | null
+    mesesPagadosAlEnviar: number | null
+    nombreRetiradoEn: Date | null
+    publicadaEn: Date | null
+    creadoEn: Date
+    actualizadoEn: Date
+    _count: ResenaCountAggregateOutputType | null
+    _avg: ResenaAvgAggregateOutputType | null
+    _sum: ResenaSumAggregateOutputType | null
+    _min: ResenaMinAggregateOutputType | null
+    _max: ResenaMaxAggregateOutputType | null
+  }
+
+  type GetResenaGroupByPayload<T extends ResenaGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<ResenaGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof ResenaGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], ResenaGroupByOutputType[P]>
+            : GetScalarType<T[P], ResenaGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type ResenaSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    origen?: boolean
+    estado?: boolean
+    empresaId?: boolean
+    usuarioId?: boolean
+    estrellas?: boolean
+    texto?: boolean
+    comoAparece?: boolean
+    nombrePublico?: boolean
+    cargoPublico?: boolean
+    textoAutorizacion?: boolean
+    versionPolitica?: boolean
+    canal?: boolean
+    referencia?: boolean
+    autorizacion?: boolean
+    fechaOpinion?: boolean
+    registradaPor?: boolean
+    planAlEnviar?: boolean
+    mesesPagadosAlEnviar?: boolean
+    nombreRetiradoEn?: boolean
+    publicadaEn?: boolean
+    creadoEn?: boolean
+    actualizadoEn?: boolean
+    empresa?: boolean | Resena$empresaArgs<ExtArgs>
+  }, ExtArgs["result"]["resena"]>
+
+
+  export type ResenaSelectScalar = {
+    id?: boolean
+    origen?: boolean
+    estado?: boolean
+    empresaId?: boolean
+    usuarioId?: boolean
+    estrellas?: boolean
+    texto?: boolean
+    comoAparece?: boolean
+    nombrePublico?: boolean
+    cargoPublico?: boolean
+    textoAutorizacion?: boolean
+    versionPolitica?: boolean
+    canal?: boolean
+    referencia?: boolean
+    autorizacion?: boolean
+    fechaOpinion?: boolean
+    registradaPor?: boolean
+    planAlEnviar?: boolean
+    mesesPagadosAlEnviar?: boolean
+    nombreRetiradoEn?: boolean
+    publicadaEn?: boolean
+    creadoEn?: boolean
+    actualizadoEn?: boolean
+  }
+
+  export type ResenaInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    empresa?: boolean | Resena$empresaArgs<ExtArgs>
+  }
+
+  export type $ResenaPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "Resena"
+    objects: {
+      empresa: Prisma.$EmpresaPayload<ExtArgs> | null
+    }
+    scalars: $Extensions.GetPayloadResult<{
+      id: string
+      origen: $Enums.OrigenResena
+      estado: $Enums.EstadoResena
+      empresaId: string | null
+      usuarioId: string | null
+      estrellas: number | null
+      texto: string
+      comoAparece: $Enums.ComoAparece | null
+      nombrePublico: string | null
+      cargoPublico: string | null
+      textoAutorizacion: string | null
+      versionPolitica: string | null
+      canal: string | null
+      referencia: string | null
+      autorizacion: string | null
+      fechaOpinion: Date | null
+      registradaPor: string | null
+      planAlEnviar: string | null
+      mesesPagadosAlEnviar: number | null
+      nombreRetiradoEn: Date | null
+      publicadaEn: Date | null
+      creadoEn: Date
+      actualizadoEn: Date
+    }, ExtArgs["result"]["resena"]>
+    composites: {}
+  }
+
+  type ResenaGetPayload<S extends boolean | null | undefined | ResenaDefaultArgs> = $Result.GetResult<Prisma.$ResenaPayload, S>
+
+  type ResenaCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = 
+    Omit<ResenaFindManyArgs, 'select' | 'include' | 'distinct'> & {
+      select?: ResenaCountAggregateInputType | true
+    }
+
+  export interface ResenaDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['Resena'], meta: { name: 'Resena' } }
+    /**
+     * Find zero or one Resena that matches the filter.
+     * @param {ResenaFindUniqueArgs} args - Arguments to find a Resena
+     * @example
+     * // Get one Resena
+     * const resena = await prisma.resena.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends ResenaFindUniqueArgs>(args: SelectSubset<T, ResenaFindUniqueArgs<ExtArgs>>): Prisma__ResenaClient<$Result.GetResult<Prisma.$ResenaPayload<ExtArgs>, T, "findUnique"> | null, null, ExtArgs>
+
+    /**
+     * Find one Resena that matches the filter or throw an error with `error.code='P2025'` 
+     * if no matches were found.
+     * @param {ResenaFindUniqueOrThrowArgs} args - Arguments to find a Resena
+     * @example
+     * // Get one Resena
+     * const resena = await prisma.resena.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends ResenaFindUniqueOrThrowArgs>(args: SelectSubset<T, ResenaFindUniqueOrThrowArgs<ExtArgs>>): Prisma__ResenaClient<$Result.GetResult<Prisma.$ResenaPayload<ExtArgs>, T, "findUniqueOrThrow">, never, ExtArgs>
+
+    /**
+     * Find the first Resena that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ResenaFindFirstArgs} args - Arguments to find a Resena
+     * @example
+     * // Get one Resena
+     * const resena = await prisma.resena.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends ResenaFindFirstArgs>(args?: SelectSubset<T, ResenaFindFirstArgs<ExtArgs>>): Prisma__ResenaClient<$Result.GetResult<Prisma.$ResenaPayload<ExtArgs>, T, "findFirst"> | null, null, ExtArgs>
+
+    /**
+     * Find the first Resena that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ResenaFindFirstOrThrowArgs} args - Arguments to find a Resena
+     * @example
+     * // Get one Resena
+     * const resena = await prisma.resena.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends ResenaFindFirstOrThrowArgs>(args?: SelectSubset<T, ResenaFindFirstOrThrowArgs<ExtArgs>>): Prisma__ResenaClient<$Result.GetResult<Prisma.$ResenaPayload<ExtArgs>, T, "findFirstOrThrow">, never, ExtArgs>
+
+    /**
+     * Find zero or more Resenas that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ResenaFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all Resenas
+     * const resenas = await prisma.resena.findMany()
+     * 
+     * // Get first 10 Resenas
+     * const resenas = await prisma.resena.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const resenaWithIdOnly = await prisma.resena.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends ResenaFindManyArgs>(args?: SelectSubset<T, ResenaFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ResenaPayload<ExtArgs>, T, "findMany">>
+
+    /**
+     * Create a Resena.
+     * @param {ResenaCreateArgs} args - Arguments to create a Resena.
+     * @example
+     * // Create one Resena
+     * const Resena = await prisma.resena.create({
+     *   data: {
+     *     // ... data to create a Resena
+     *   }
+     * })
+     * 
+     */
+    create<T extends ResenaCreateArgs>(args: SelectSubset<T, ResenaCreateArgs<ExtArgs>>): Prisma__ResenaClient<$Result.GetResult<Prisma.$ResenaPayload<ExtArgs>, T, "create">, never, ExtArgs>
+
+    /**
+     * Create many Resenas.
+     * @param {ResenaCreateManyArgs} args - Arguments to create many Resenas.
+     * @example
+     * // Create many Resenas
+     * const resena = await prisma.resena.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends ResenaCreateManyArgs>(args?: SelectSubset<T, ResenaCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Delete a Resena.
+     * @param {ResenaDeleteArgs} args - Arguments to delete one Resena.
+     * @example
+     * // Delete one Resena
+     * const Resena = await prisma.resena.delete({
+     *   where: {
+     *     // ... filter to delete one Resena
+     *   }
+     * })
+     * 
+     */
+    delete<T extends ResenaDeleteArgs>(args: SelectSubset<T, ResenaDeleteArgs<ExtArgs>>): Prisma__ResenaClient<$Result.GetResult<Prisma.$ResenaPayload<ExtArgs>, T, "delete">, never, ExtArgs>
+
+    /**
+     * Update one Resena.
+     * @param {ResenaUpdateArgs} args - Arguments to update one Resena.
+     * @example
+     * // Update one Resena
+     * const resena = await prisma.resena.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends ResenaUpdateArgs>(args: SelectSubset<T, ResenaUpdateArgs<ExtArgs>>): Prisma__ResenaClient<$Result.GetResult<Prisma.$ResenaPayload<ExtArgs>, T, "update">, never, ExtArgs>
+
+    /**
+     * Delete zero or more Resenas.
+     * @param {ResenaDeleteManyArgs} args - Arguments to filter Resenas to delete.
+     * @example
+     * // Delete a few Resenas
+     * const { count } = await prisma.resena.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends ResenaDeleteManyArgs>(args?: SelectSubset<T, ResenaDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more Resenas.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ResenaUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many Resenas
+     * const resena = await prisma.resena.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends ResenaUpdateManyArgs>(args: SelectSubset<T, ResenaUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create or update one Resena.
+     * @param {ResenaUpsertArgs} args - Arguments to update or create a Resena.
+     * @example
+     * // Update or create a Resena
+     * const resena = await prisma.resena.upsert({
+     *   create: {
+     *     // ... data to create a Resena
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the Resena we want to update
+     *   }
+     * })
+     */
+    upsert<T extends ResenaUpsertArgs>(args: SelectSubset<T, ResenaUpsertArgs<ExtArgs>>): Prisma__ResenaClient<$Result.GetResult<Prisma.$ResenaPayload<ExtArgs>, T, "upsert">, never, ExtArgs>
+
+
+    /**
+     * Count the number of Resenas.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ResenaCountArgs} args - Arguments to filter Resenas to count.
+     * @example
+     * // Count the number of Resenas
+     * const count = await prisma.resena.count({
+     *   where: {
+     *     // ... the filter for the Resenas we want to count
+     *   }
+     * })
+    **/
+    count<T extends ResenaCountArgs>(
+      args?: Subset<T, ResenaCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], ResenaCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a Resena.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ResenaAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends ResenaAggregateArgs>(args: Subset<T, ResenaAggregateArgs>): Prisma.PrismaPromise<GetResenaAggregateType<T>>
+
+    /**
+     * Group by Resena.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ResenaGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends ResenaGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: ResenaGroupByArgs['orderBy'] }
+        : { orderBy?: ResenaGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, ResenaGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetResenaGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the Resena model
+   */
+  readonly fields: ResenaFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for Resena.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__ResenaClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    empresa<T extends Resena$empresaArgs<ExtArgs> = {}>(args?: Subset<T, Resena$empresaArgs<ExtArgs>>): Prisma__EmpresaClient<$Result.GetResult<Prisma.$EmpresaPayload<ExtArgs>, T, "findUniqueOrThrow"> | null, null, ExtArgs>
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the Resena model
+   */ 
+  interface ResenaFieldRefs {
+    readonly id: FieldRef<"Resena", 'String'>
+    readonly origen: FieldRef<"Resena", 'OrigenResena'>
+    readonly estado: FieldRef<"Resena", 'EstadoResena'>
+    readonly empresaId: FieldRef<"Resena", 'String'>
+    readonly usuarioId: FieldRef<"Resena", 'String'>
+    readonly estrellas: FieldRef<"Resena", 'Int'>
+    readonly texto: FieldRef<"Resena", 'String'>
+    readonly comoAparece: FieldRef<"Resena", 'ComoAparece'>
+    readonly nombrePublico: FieldRef<"Resena", 'String'>
+    readonly cargoPublico: FieldRef<"Resena", 'String'>
+    readonly textoAutorizacion: FieldRef<"Resena", 'String'>
+    readonly versionPolitica: FieldRef<"Resena", 'String'>
+    readonly canal: FieldRef<"Resena", 'String'>
+    readonly referencia: FieldRef<"Resena", 'String'>
+    readonly autorizacion: FieldRef<"Resena", 'String'>
+    readonly fechaOpinion: FieldRef<"Resena", 'DateTime'>
+    readonly registradaPor: FieldRef<"Resena", 'String'>
+    readonly planAlEnviar: FieldRef<"Resena", 'String'>
+    readonly mesesPagadosAlEnviar: FieldRef<"Resena", 'Int'>
+    readonly nombreRetiradoEn: FieldRef<"Resena", 'DateTime'>
+    readonly publicadaEn: FieldRef<"Resena", 'DateTime'>
+    readonly creadoEn: FieldRef<"Resena", 'DateTime'>
+    readonly actualizadoEn: FieldRef<"Resena", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * Resena findUnique
+   */
+  export type ResenaFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Resena
+     */
+    select?: ResenaSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ResenaInclude<ExtArgs> | null
+    /**
+     * Filter, which Resena to fetch.
+     */
+    where: ResenaWhereUniqueInput
+  }
+
+  /**
+   * Resena findUniqueOrThrow
+   */
+  export type ResenaFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Resena
+     */
+    select?: ResenaSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ResenaInclude<ExtArgs> | null
+    /**
+     * Filter, which Resena to fetch.
+     */
+    where: ResenaWhereUniqueInput
+  }
+
+  /**
+   * Resena findFirst
+   */
+  export type ResenaFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Resena
+     */
+    select?: ResenaSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ResenaInclude<ExtArgs> | null
+    /**
+     * Filter, which Resena to fetch.
+     */
+    where?: ResenaWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of Resenas to fetch.
+     */
+    orderBy?: ResenaOrderByWithRelationInput | ResenaOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for Resenas.
+     */
+    cursor?: ResenaWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` Resenas from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` Resenas.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of Resenas.
+     */
+    distinct?: ResenaScalarFieldEnum | ResenaScalarFieldEnum[]
+  }
+
+  /**
+   * Resena findFirstOrThrow
+   */
+  export type ResenaFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Resena
+     */
+    select?: ResenaSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ResenaInclude<ExtArgs> | null
+    /**
+     * Filter, which Resena to fetch.
+     */
+    where?: ResenaWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of Resenas to fetch.
+     */
+    orderBy?: ResenaOrderByWithRelationInput | ResenaOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for Resenas.
+     */
+    cursor?: ResenaWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` Resenas from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` Resenas.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of Resenas.
+     */
+    distinct?: ResenaScalarFieldEnum | ResenaScalarFieldEnum[]
+  }
+
+  /**
+   * Resena findMany
+   */
+  export type ResenaFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Resena
+     */
+    select?: ResenaSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ResenaInclude<ExtArgs> | null
+    /**
+     * Filter, which Resenas to fetch.
+     */
+    where?: ResenaWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of Resenas to fetch.
+     */
+    orderBy?: ResenaOrderByWithRelationInput | ResenaOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing Resenas.
+     */
+    cursor?: ResenaWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` Resenas from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` Resenas.
+     */
+    skip?: number
+    distinct?: ResenaScalarFieldEnum | ResenaScalarFieldEnum[]
+  }
+
+  /**
+   * Resena create
+   */
+  export type ResenaCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Resena
+     */
+    select?: ResenaSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ResenaInclude<ExtArgs> | null
+    /**
+     * The data needed to create a Resena.
+     */
+    data: XOR<ResenaCreateInput, ResenaUncheckedCreateInput>
+  }
+
+  /**
+   * Resena createMany
+   */
+  export type ResenaCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many Resenas.
+     */
+    data: ResenaCreateManyInput | ResenaCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * Resena update
+   */
+  export type ResenaUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Resena
+     */
+    select?: ResenaSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ResenaInclude<ExtArgs> | null
+    /**
+     * The data needed to update a Resena.
+     */
+    data: XOR<ResenaUpdateInput, ResenaUncheckedUpdateInput>
+    /**
+     * Choose, which Resena to update.
+     */
+    where: ResenaWhereUniqueInput
+  }
+
+  /**
+   * Resena updateMany
+   */
+  export type ResenaUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update Resenas.
+     */
+    data: XOR<ResenaUpdateManyMutationInput, ResenaUncheckedUpdateManyInput>
+    /**
+     * Filter which Resenas to update
+     */
+    where?: ResenaWhereInput
+  }
+
+  /**
+   * Resena upsert
+   */
+  export type ResenaUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Resena
+     */
+    select?: ResenaSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ResenaInclude<ExtArgs> | null
+    /**
+     * The filter to search for the Resena to update in case it exists.
+     */
+    where: ResenaWhereUniqueInput
+    /**
+     * In case the Resena found by the `where` argument doesn't exist, create a new Resena with this data.
+     */
+    create: XOR<ResenaCreateInput, ResenaUncheckedCreateInput>
+    /**
+     * In case the Resena was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<ResenaUpdateInput, ResenaUncheckedUpdateInput>
+  }
+
+  /**
+   * Resena delete
+   */
+  export type ResenaDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Resena
+     */
+    select?: ResenaSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ResenaInclude<ExtArgs> | null
+    /**
+     * Filter which Resena to delete.
+     */
+    where: ResenaWhereUniqueInput
+  }
+
+  /**
+   * Resena deleteMany
+   */
+  export type ResenaDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which Resenas to delete
+     */
+    where?: ResenaWhereInput
+  }
+
+  /**
+   * Resena.empresa
+   */
+  export type Resena$empresaArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Empresa
+     */
+    select?: EmpresaSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: EmpresaInclude<ExtArgs> | null
+    where?: EmpresaWhereInput
+  }
+
+  /**
+   * Resena without action
+   */
+  export type ResenaDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Resena
+     */
+    select?: ResenaSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ResenaInclude<ExtArgs> | null
+  }
+
+
+  /**
    * Enums
    */
 
@@ -41929,6 +43199,35 @@ export namespace Prisma {
   export type ComentarioSeguimientoClimaScalarFieldEnum = (typeof ComentarioSeguimientoClimaScalarFieldEnum)[keyof typeof ComentarioSeguimientoClimaScalarFieldEnum]
 
 
+  export const ResenaScalarFieldEnum: {
+    id: 'id',
+    origen: 'origen',
+    estado: 'estado',
+    empresaId: 'empresaId',
+    usuarioId: 'usuarioId',
+    estrellas: 'estrellas',
+    texto: 'texto',
+    comoAparece: 'comoAparece',
+    nombrePublico: 'nombrePublico',
+    cargoPublico: 'cargoPublico',
+    textoAutorizacion: 'textoAutorizacion',
+    versionPolitica: 'versionPolitica',
+    canal: 'canal',
+    referencia: 'referencia',
+    autorizacion: 'autorizacion',
+    fechaOpinion: 'fechaOpinion',
+    registradaPor: 'registradaPor',
+    planAlEnviar: 'planAlEnviar',
+    mesesPagadosAlEnviar: 'mesesPagadosAlEnviar',
+    nombreRetiradoEn: 'nombreRetiradoEn',
+    publicadaEn: 'publicadaEn',
+    creadoEn: 'creadoEn',
+    actualizadoEn: 'actualizadoEn'
+  };
+
+  export type ResenaScalarFieldEnum = (typeof ResenaScalarFieldEnum)[keyof typeof ResenaScalarFieldEnum]
+
+
   export const SortOrder: {
     asc: 'asc',
     desc: 'desc'
@@ -42161,6 +43460,27 @@ export namespace Prisma {
    */
   export type EnumEstadoSeguimientoClimaFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'EstadoSeguimientoClima'>
     
+
+
+  /**
+   * Reference to a field of type 'OrigenResena'
+   */
+  export type EnumOrigenResenaFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'OrigenResena'>
+    
+
+
+  /**
+   * Reference to a field of type 'EstadoResena'
+   */
+  export type EnumEstadoResenaFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'EstadoResena'>
+    
+
+
+  /**
+   * Reference to a field of type 'ComoAparece'
+   */
+  export type EnumComoApareceFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'ComoAparece'>
+    
   /**
    * Deep Input Types
    */
@@ -42199,6 +43519,7 @@ export namespace Prisma {
     calificacionesClima?: CalificacionClimaListRelationFilter
     notasConfidenciales?: ObservacionConfidencialListRelationFilter
     seguimientosClima?: SeguimientoClimaListRelationFilter
+    resena?: XOR<ResenaNullableRelationFilter, ResenaWhereInput> | null
   }
 
   export type EmpresaOrderByWithRelationInput = {
@@ -42231,6 +43552,7 @@ export namespace Prisma {
     calificacionesClima?: CalificacionClimaOrderByRelationAggregateInput
     notasConfidenciales?: ObservacionConfidencialOrderByRelationAggregateInput
     seguimientosClima?: SeguimientoClimaOrderByRelationAggregateInput
+    resena?: ResenaOrderByWithRelationInput
   }
 
   export type EmpresaWhereUniqueInput = Prisma.AtLeast<{
@@ -42266,6 +43588,7 @@ export namespace Prisma {
     calificacionesClima?: CalificacionClimaListRelationFilter
     notasConfidenciales?: ObservacionConfidencialListRelationFilter
     seguimientosClima?: SeguimientoClimaListRelationFilter
+    resena?: XOR<ResenaNullableRelationFilter, ResenaWhereInput> | null
   }, "id" | "nit" | "marcadorToken">
 
   export type EmpresaOrderByWithAggregationInput = {
@@ -45478,6 +46801,153 @@ export namespace Prisma {
     editadoEn?: DateTimeNullableWithAggregatesFilter<"ComentarioSeguimientoClima"> | Date | string | null
   }
 
+  export type ResenaWhereInput = {
+    AND?: ResenaWhereInput | ResenaWhereInput[]
+    OR?: ResenaWhereInput[]
+    NOT?: ResenaWhereInput | ResenaWhereInput[]
+    id?: StringFilter<"Resena"> | string
+    origen?: EnumOrigenResenaFilter<"Resena"> | $Enums.OrigenResena
+    estado?: EnumEstadoResenaFilter<"Resena"> | $Enums.EstadoResena
+    empresaId?: StringNullableFilter<"Resena"> | string | null
+    usuarioId?: StringNullableFilter<"Resena"> | string | null
+    estrellas?: IntNullableFilter<"Resena"> | number | null
+    texto?: StringFilter<"Resena"> | string
+    comoAparece?: EnumComoApareceNullableFilter<"Resena"> | $Enums.ComoAparece | null
+    nombrePublico?: StringNullableFilter<"Resena"> | string | null
+    cargoPublico?: StringNullableFilter<"Resena"> | string | null
+    textoAutorizacion?: StringNullableFilter<"Resena"> | string | null
+    versionPolitica?: StringNullableFilter<"Resena"> | string | null
+    canal?: StringNullableFilter<"Resena"> | string | null
+    referencia?: StringNullableFilter<"Resena"> | string | null
+    autorizacion?: StringNullableFilter<"Resena"> | string | null
+    fechaOpinion?: DateTimeNullableFilter<"Resena"> | Date | string | null
+    registradaPor?: StringNullableFilter<"Resena"> | string | null
+    planAlEnviar?: StringNullableFilter<"Resena"> | string | null
+    mesesPagadosAlEnviar?: IntNullableFilter<"Resena"> | number | null
+    nombreRetiradoEn?: DateTimeNullableFilter<"Resena"> | Date | string | null
+    publicadaEn?: DateTimeNullableFilter<"Resena"> | Date | string | null
+    creadoEn?: DateTimeFilter<"Resena"> | Date | string
+    actualizadoEn?: DateTimeFilter<"Resena"> | Date | string
+    empresa?: XOR<EmpresaNullableRelationFilter, EmpresaWhereInput> | null
+  }
+
+  export type ResenaOrderByWithRelationInput = {
+    id?: SortOrder
+    origen?: SortOrder
+    estado?: SortOrder
+    empresaId?: SortOrderInput | SortOrder
+    usuarioId?: SortOrderInput | SortOrder
+    estrellas?: SortOrderInput | SortOrder
+    texto?: SortOrder
+    comoAparece?: SortOrderInput | SortOrder
+    nombrePublico?: SortOrderInput | SortOrder
+    cargoPublico?: SortOrderInput | SortOrder
+    textoAutorizacion?: SortOrderInput | SortOrder
+    versionPolitica?: SortOrderInput | SortOrder
+    canal?: SortOrderInput | SortOrder
+    referencia?: SortOrderInput | SortOrder
+    autorizacion?: SortOrderInput | SortOrder
+    fechaOpinion?: SortOrderInput | SortOrder
+    registradaPor?: SortOrderInput | SortOrder
+    planAlEnviar?: SortOrderInput | SortOrder
+    mesesPagadosAlEnviar?: SortOrderInput | SortOrder
+    nombreRetiradoEn?: SortOrderInput | SortOrder
+    publicadaEn?: SortOrderInput | SortOrder
+    creadoEn?: SortOrder
+    actualizadoEn?: SortOrder
+    empresa?: EmpresaOrderByWithRelationInput
+  }
+
+  export type ResenaWhereUniqueInput = Prisma.AtLeast<{
+    id?: string
+    empresaId?: string
+    AND?: ResenaWhereInput | ResenaWhereInput[]
+    OR?: ResenaWhereInput[]
+    NOT?: ResenaWhereInput | ResenaWhereInput[]
+    origen?: EnumOrigenResenaFilter<"Resena"> | $Enums.OrigenResena
+    estado?: EnumEstadoResenaFilter<"Resena"> | $Enums.EstadoResena
+    usuarioId?: StringNullableFilter<"Resena"> | string | null
+    estrellas?: IntNullableFilter<"Resena"> | number | null
+    texto?: StringFilter<"Resena"> | string
+    comoAparece?: EnumComoApareceNullableFilter<"Resena"> | $Enums.ComoAparece | null
+    nombrePublico?: StringNullableFilter<"Resena"> | string | null
+    cargoPublico?: StringNullableFilter<"Resena"> | string | null
+    textoAutorizacion?: StringNullableFilter<"Resena"> | string | null
+    versionPolitica?: StringNullableFilter<"Resena"> | string | null
+    canal?: StringNullableFilter<"Resena"> | string | null
+    referencia?: StringNullableFilter<"Resena"> | string | null
+    autorizacion?: StringNullableFilter<"Resena"> | string | null
+    fechaOpinion?: DateTimeNullableFilter<"Resena"> | Date | string | null
+    registradaPor?: StringNullableFilter<"Resena"> | string | null
+    planAlEnviar?: StringNullableFilter<"Resena"> | string | null
+    mesesPagadosAlEnviar?: IntNullableFilter<"Resena"> | number | null
+    nombreRetiradoEn?: DateTimeNullableFilter<"Resena"> | Date | string | null
+    publicadaEn?: DateTimeNullableFilter<"Resena"> | Date | string | null
+    creadoEn?: DateTimeFilter<"Resena"> | Date | string
+    actualizadoEn?: DateTimeFilter<"Resena"> | Date | string
+    empresa?: XOR<EmpresaNullableRelationFilter, EmpresaWhereInput> | null
+  }, "id" | "empresaId">
+
+  export type ResenaOrderByWithAggregationInput = {
+    id?: SortOrder
+    origen?: SortOrder
+    estado?: SortOrder
+    empresaId?: SortOrderInput | SortOrder
+    usuarioId?: SortOrderInput | SortOrder
+    estrellas?: SortOrderInput | SortOrder
+    texto?: SortOrder
+    comoAparece?: SortOrderInput | SortOrder
+    nombrePublico?: SortOrderInput | SortOrder
+    cargoPublico?: SortOrderInput | SortOrder
+    textoAutorizacion?: SortOrderInput | SortOrder
+    versionPolitica?: SortOrderInput | SortOrder
+    canal?: SortOrderInput | SortOrder
+    referencia?: SortOrderInput | SortOrder
+    autorizacion?: SortOrderInput | SortOrder
+    fechaOpinion?: SortOrderInput | SortOrder
+    registradaPor?: SortOrderInput | SortOrder
+    planAlEnviar?: SortOrderInput | SortOrder
+    mesesPagadosAlEnviar?: SortOrderInput | SortOrder
+    nombreRetiradoEn?: SortOrderInput | SortOrder
+    publicadaEn?: SortOrderInput | SortOrder
+    creadoEn?: SortOrder
+    actualizadoEn?: SortOrder
+    _count?: ResenaCountOrderByAggregateInput
+    _avg?: ResenaAvgOrderByAggregateInput
+    _max?: ResenaMaxOrderByAggregateInput
+    _min?: ResenaMinOrderByAggregateInput
+    _sum?: ResenaSumOrderByAggregateInput
+  }
+
+  export type ResenaScalarWhereWithAggregatesInput = {
+    AND?: ResenaScalarWhereWithAggregatesInput | ResenaScalarWhereWithAggregatesInput[]
+    OR?: ResenaScalarWhereWithAggregatesInput[]
+    NOT?: ResenaScalarWhereWithAggregatesInput | ResenaScalarWhereWithAggregatesInput[]
+    id?: StringWithAggregatesFilter<"Resena"> | string
+    origen?: EnumOrigenResenaWithAggregatesFilter<"Resena"> | $Enums.OrigenResena
+    estado?: EnumEstadoResenaWithAggregatesFilter<"Resena"> | $Enums.EstadoResena
+    empresaId?: StringNullableWithAggregatesFilter<"Resena"> | string | null
+    usuarioId?: StringNullableWithAggregatesFilter<"Resena"> | string | null
+    estrellas?: IntNullableWithAggregatesFilter<"Resena"> | number | null
+    texto?: StringWithAggregatesFilter<"Resena"> | string
+    comoAparece?: EnumComoApareceNullableWithAggregatesFilter<"Resena"> | $Enums.ComoAparece | null
+    nombrePublico?: StringNullableWithAggregatesFilter<"Resena"> | string | null
+    cargoPublico?: StringNullableWithAggregatesFilter<"Resena"> | string | null
+    textoAutorizacion?: StringNullableWithAggregatesFilter<"Resena"> | string | null
+    versionPolitica?: StringNullableWithAggregatesFilter<"Resena"> | string | null
+    canal?: StringNullableWithAggregatesFilter<"Resena"> | string | null
+    referencia?: StringNullableWithAggregatesFilter<"Resena"> | string | null
+    autorizacion?: StringNullableWithAggregatesFilter<"Resena"> | string | null
+    fechaOpinion?: DateTimeNullableWithAggregatesFilter<"Resena"> | Date | string | null
+    registradaPor?: StringNullableWithAggregatesFilter<"Resena"> | string | null
+    planAlEnviar?: StringNullableWithAggregatesFilter<"Resena"> | string | null
+    mesesPagadosAlEnviar?: IntNullableWithAggregatesFilter<"Resena"> | number | null
+    nombreRetiradoEn?: DateTimeNullableWithAggregatesFilter<"Resena"> | Date | string | null
+    publicadaEn?: DateTimeNullableWithAggregatesFilter<"Resena"> | Date | string | null
+    creadoEn?: DateTimeWithAggregatesFilter<"Resena"> | Date | string
+    actualizadoEn?: DateTimeWithAggregatesFilter<"Resena"> | Date | string
+  }
+
   export type EmpresaCreateInput = {
     id?: string
     nombre: string
@@ -45507,6 +46977,7 @@ export namespace Prisma {
     calificacionesClima?: CalificacionClimaCreateNestedManyWithoutEmpresaInput
     notasConfidenciales?: ObservacionConfidencialCreateNestedManyWithoutEmpresaInput
     seguimientosClima?: SeguimientoClimaCreateNestedManyWithoutEmpresaInput
+    resena?: ResenaCreateNestedOneWithoutEmpresaInput
   }
 
   export type EmpresaUncheckedCreateInput = {
@@ -45538,6 +47009,7 @@ export namespace Prisma {
     calificacionesClima?: CalificacionClimaUncheckedCreateNestedManyWithoutEmpresaInput
     notasConfidenciales?: ObservacionConfidencialUncheckedCreateNestedManyWithoutEmpresaInput
     seguimientosClima?: SeguimientoClimaUncheckedCreateNestedManyWithoutEmpresaInput
+    resena?: ResenaUncheckedCreateNestedOneWithoutEmpresaInput
   }
 
   export type EmpresaUpdateInput = {
@@ -45569,6 +47041,7 @@ export namespace Prisma {
     calificacionesClima?: CalificacionClimaUpdateManyWithoutEmpresaNestedInput
     notasConfidenciales?: ObservacionConfidencialUpdateManyWithoutEmpresaNestedInput
     seguimientosClima?: SeguimientoClimaUpdateManyWithoutEmpresaNestedInput
+    resena?: ResenaUpdateOneWithoutEmpresaNestedInput
   }
 
   export type EmpresaUncheckedUpdateInput = {
@@ -45600,6 +47073,7 @@ export namespace Prisma {
     calificacionesClima?: CalificacionClimaUncheckedUpdateManyWithoutEmpresaNestedInput
     notasConfidenciales?: ObservacionConfidencialUncheckedUpdateManyWithoutEmpresaNestedInput
     seguimientosClima?: SeguimientoClimaUncheckedUpdateManyWithoutEmpresaNestedInput
+    resena?: ResenaUncheckedUpdateOneWithoutEmpresaNestedInput
   }
 
   export type EmpresaCreateManyInput = {
@@ -49198,6 +50672,187 @@ export namespace Prisma {
     editadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   }
 
+  export type ResenaCreateInput = {
+    id?: string
+    origen: $Enums.OrigenResena
+    estado?: $Enums.EstadoResena
+    usuarioId?: string | null
+    estrellas?: number | null
+    texto?: string
+    comoAparece?: $Enums.ComoAparece | null
+    nombrePublico?: string | null
+    cargoPublico?: string | null
+    textoAutorizacion?: string | null
+    versionPolitica?: string | null
+    canal?: string | null
+    referencia?: string | null
+    autorizacion?: string | null
+    fechaOpinion?: Date | string | null
+    registradaPor?: string | null
+    planAlEnviar?: string | null
+    mesesPagadosAlEnviar?: number | null
+    nombreRetiradoEn?: Date | string | null
+    publicadaEn?: Date | string | null
+    creadoEn?: Date | string
+    actualizadoEn?: Date | string
+    empresa?: EmpresaCreateNestedOneWithoutResenaInput
+  }
+
+  export type ResenaUncheckedCreateInput = {
+    id?: string
+    origen: $Enums.OrigenResena
+    estado?: $Enums.EstadoResena
+    empresaId?: string | null
+    usuarioId?: string | null
+    estrellas?: number | null
+    texto?: string
+    comoAparece?: $Enums.ComoAparece | null
+    nombrePublico?: string | null
+    cargoPublico?: string | null
+    textoAutorizacion?: string | null
+    versionPolitica?: string | null
+    canal?: string | null
+    referencia?: string | null
+    autorizacion?: string | null
+    fechaOpinion?: Date | string | null
+    registradaPor?: string | null
+    planAlEnviar?: string | null
+    mesesPagadosAlEnviar?: number | null
+    nombreRetiradoEn?: Date | string | null
+    publicadaEn?: Date | string | null
+    creadoEn?: Date | string
+    actualizadoEn?: Date | string
+  }
+
+  export type ResenaUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    origen?: EnumOrigenResenaFieldUpdateOperationsInput | $Enums.OrigenResena
+    estado?: EnumEstadoResenaFieldUpdateOperationsInput | $Enums.EstadoResena
+    usuarioId?: NullableStringFieldUpdateOperationsInput | string | null
+    estrellas?: NullableIntFieldUpdateOperationsInput | number | null
+    texto?: StringFieldUpdateOperationsInput | string
+    comoAparece?: NullableEnumComoApareceFieldUpdateOperationsInput | $Enums.ComoAparece | null
+    nombrePublico?: NullableStringFieldUpdateOperationsInput | string | null
+    cargoPublico?: NullableStringFieldUpdateOperationsInput | string | null
+    textoAutorizacion?: NullableStringFieldUpdateOperationsInput | string | null
+    versionPolitica?: NullableStringFieldUpdateOperationsInput | string | null
+    canal?: NullableStringFieldUpdateOperationsInput | string | null
+    referencia?: NullableStringFieldUpdateOperationsInput | string | null
+    autorizacion?: NullableStringFieldUpdateOperationsInput | string | null
+    fechaOpinion?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    registradaPor?: NullableStringFieldUpdateOperationsInput | string | null
+    planAlEnviar?: NullableStringFieldUpdateOperationsInput | string | null
+    mesesPagadosAlEnviar?: NullableIntFieldUpdateOperationsInput | number | null
+    nombreRetiradoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    publicadaEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    empresa?: EmpresaUpdateOneWithoutResenaNestedInput
+  }
+
+  export type ResenaUncheckedUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    origen?: EnumOrigenResenaFieldUpdateOperationsInput | $Enums.OrigenResena
+    estado?: EnumEstadoResenaFieldUpdateOperationsInput | $Enums.EstadoResena
+    empresaId?: NullableStringFieldUpdateOperationsInput | string | null
+    usuarioId?: NullableStringFieldUpdateOperationsInput | string | null
+    estrellas?: NullableIntFieldUpdateOperationsInput | number | null
+    texto?: StringFieldUpdateOperationsInput | string
+    comoAparece?: NullableEnumComoApareceFieldUpdateOperationsInput | $Enums.ComoAparece | null
+    nombrePublico?: NullableStringFieldUpdateOperationsInput | string | null
+    cargoPublico?: NullableStringFieldUpdateOperationsInput | string | null
+    textoAutorizacion?: NullableStringFieldUpdateOperationsInput | string | null
+    versionPolitica?: NullableStringFieldUpdateOperationsInput | string | null
+    canal?: NullableStringFieldUpdateOperationsInput | string | null
+    referencia?: NullableStringFieldUpdateOperationsInput | string | null
+    autorizacion?: NullableStringFieldUpdateOperationsInput | string | null
+    fechaOpinion?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    registradaPor?: NullableStringFieldUpdateOperationsInput | string | null
+    planAlEnviar?: NullableStringFieldUpdateOperationsInput | string | null
+    mesesPagadosAlEnviar?: NullableIntFieldUpdateOperationsInput | number | null
+    nombreRetiradoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    publicadaEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type ResenaCreateManyInput = {
+    id?: string
+    origen: $Enums.OrigenResena
+    estado?: $Enums.EstadoResena
+    empresaId?: string | null
+    usuarioId?: string | null
+    estrellas?: number | null
+    texto?: string
+    comoAparece?: $Enums.ComoAparece | null
+    nombrePublico?: string | null
+    cargoPublico?: string | null
+    textoAutorizacion?: string | null
+    versionPolitica?: string | null
+    canal?: string | null
+    referencia?: string | null
+    autorizacion?: string | null
+    fechaOpinion?: Date | string | null
+    registradaPor?: string | null
+    planAlEnviar?: string | null
+    mesesPagadosAlEnviar?: number | null
+    nombreRetiradoEn?: Date | string | null
+    publicadaEn?: Date | string | null
+    creadoEn?: Date | string
+    actualizadoEn?: Date | string
+  }
+
+  export type ResenaUpdateManyMutationInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    origen?: EnumOrigenResenaFieldUpdateOperationsInput | $Enums.OrigenResena
+    estado?: EnumEstadoResenaFieldUpdateOperationsInput | $Enums.EstadoResena
+    usuarioId?: NullableStringFieldUpdateOperationsInput | string | null
+    estrellas?: NullableIntFieldUpdateOperationsInput | number | null
+    texto?: StringFieldUpdateOperationsInput | string
+    comoAparece?: NullableEnumComoApareceFieldUpdateOperationsInput | $Enums.ComoAparece | null
+    nombrePublico?: NullableStringFieldUpdateOperationsInput | string | null
+    cargoPublico?: NullableStringFieldUpdateOperationsInput | string | null
+    textoAutorizacion?: NullableStringFieldUpdateOperationsInput | string | null
+    versionPolitica?: NullableStringFieldUpdateOperationsInput | string | null
+    canal?: NullableStringFieldUpdateOperationsInput | string | null
+    referencia?: NullableStringFieldUpdateOperationsInput | string | null
+    autorizacion?: NullableStringFieldUpdateOperationsInput | string | null
+    fechaOpinion?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    registradaPor?: NullableStringFieldUpdateOperationsInput | string | null
+    planAlEnviar?: NullableStringFieldUpdateOperationsInput | string | null
+    mesesPagadosAlEnviar?: NullableIntFieldUpdateOperationsInput | number | null
+    nombreRetiradoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    publicadaEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type ResenaUncheckedUpdateManyInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    origen?: EnumOrigenResenaFieldUpdateOperationsInput | $Enums.OrigenResena
+    estado?: EnumEstadoResenaFieldUpdateOperationsInput | $Enums.EstadoResena
+    empresaId?: NullableStringFieldUpdateOperationsInput | string | null
+    usuarioId?: NullableStringFieldUpdateOperationsInput | string | null
+    estrellas?: NullableIntFieldUpdateOperationsInput | number | null
+    texto?: StringFieldUpdateOperationsInput | string
+    comoAparece?: NullableEnumComoApareceFieldUpdateOperationsInput | $Enums.ComoAparece | null
+    nombrePublico?: NullableStringFieldUpdateOperationsInput | string | null
+    cargoPublico?: NullableStringFieldUpdateOperationsInput | string | null
+    textoAutorizacion?: NullableStringFieldUpdateOperationsInput | string | null
+    versionPolitica?: NullableStringFieldUpdateOperationsInput | string | null
+    canal?: NullableStringFieldUpdateOperationsInput | string | null
+    referencia?: NullableStringFieldUpdateOperationsInput | string | null
+    autorizacion?: NullableStringFieldUpdateOperationsInput | string | null
+    fechaOpinion?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    registradaPor?: NullableStringFieldUpdateOperationsInput | string | null
+    planAlEnviar?: NullableStringFieldUpdateOperationsInput | string | null
+    mesesPagadosAlEnviar?: NullableIntFieldUpdateOperationsInput | number | null
+    nombreRetiradoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    publicadaEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
   export type StringFilter<$PrismaModel = never> = {
     equals?: string | StringFieldRefInput<$PrismaModel>
     in?: string[]
@@ -49339,6 +50994,11 @@ export namespace Prisma {
     every?: SeguimientoClimaWhereInput
     some?: SeguimientoClimaWhereInput
     none?: SeguimientoClimaWhereInput
+  }
+
+  export type ResenaNullableRelationFilter = {
+    is?: ResenaWhereInput | null
+    isNot?: ResenaWhereInput | null
   }
 
   export type SortOrderInput = {
@@ -52061,6 +53721,145 @@ export namespace Prisma {
     editadoEn?: SortOrder
   }
 
+  export type EnumOrigenResenaFilter<$PrismaModel = never> = {
+    equals?: $Enums.OrigenResena | EnumOrigenResenaFieldRefInput<$PrismaModel>
+    in?: $Enums.OrigenResena[]
+    notIn?: $Enums.OrigenResena[]
+    not?: NestedEnumOrigenResenaFilter<$PrismaModel> | $Enums.OrigenResena
+  }
+
+  export type EnumEstadoResenaFilter<$PrismaModel = never> = {
+    equals?: $Enums.EstadoResena | EnumEstadoResenaFieldRefInput<$PrismaModel>
+    in?: $Enums.EstadoResena[]
+    notIn?: $Enums.EstadoResena[]
+    not?: NestedEnumEstadoResenaFilter<$PrismaModel> | $Enums.EstadoResena
+  }
+
+  export type EnumComoApareceNullableFilter<$PrismaModel = never> = {
+    equals?: $Enums.ComoAparece | EnumComoApareceFieldRefInput<$PrismaModel> | null
+    in?: $Enums.ComoAparece[] | null
+    notIn?: $Enums.ComoAparece[] | null
+    not?: NestedEnumComoApareceNullableFilter<$PrismaModel> | $Enums.ComoAparece | null
+  }
+
+  export type ResenaCountOrderByAggregateInput = {
+    id?: SortOrder
+    origen?: SortOrder
+    estado?: SortOrder
+    empresaId?: SortOrder
+    usuarioId?: SortOrder
+    estrellas?: SortOrder
+    texto?: SortOrder
+    comoAparece?: SortOrder
+    nombrePublico?: SortOrder
+    cargoPublico?: SortOrder
+    textoAutorizacion?: SortOrder
+    versionPolitica?: SortOrder
+    canal?: SortOrder
+    referencia?: SortOrder
+    autorizacion?: SortOrder
+    fechaOpinion?: SortOrder
+    registradaPor?: SortOrder
+    planAlEnviar?: SortOrder
+    mesesPagadosAlEnviar?: SortOrder
+    nombreRetiradoEn?: SortOrder
+    publicadaEn?: SortOrder
+    creadoEn?: SortOrder
+    actualizadoEn?: SortOrder
+  }
+
+  export type ResenaAvgOrderByAggregateInput = {
+    estrellas?: SortOrder
+    mesesPagadosAlEnviar?: SortOrder
+  }
+
+  export type ResenaMaxOrderByAggregateInput = {
+    id?: SortOrder
+    origen?: SortOrder
+    estado?: SortOrder
+    empresaId?: SortOrder
+    usuarioId?: SortOrder
+    estrellas?: SortOrder
+    texto?: SortOrder
+    comoAparece?: SortOrder
+    nombrePublico?: SortOrder
+    cargoPublico?: SortOrder
+    textoAutorizacion?: SortOrder
+    versionPolitica?: SortOrder
+    canal?: SortOrder
+    referencia?: SortOrder
+    autorizacion?: SortOrder
+    fechaOpinion?: SortOrder
+    registradaPor?: SortOrder
+    planAlEnviar?: SortOrder
+    mesesPagadosAlEnviar?: SortOrder
+    nombreRetiradoEn?: SortOrder
+    publicadaEn?: SortOrder
+    creadoEn?: SortOrder
+    actualizadoEn?: SortOrder
+  }
+
+  export type ResenaMinOrderByAggregateInput = {
+    id?: SortOrder
+    origen?: SortOrder
+    estado?: SortOrder
+    empresaId?: SortOrder
+    usuarioId?: SortOrder
+    estrellas?: SortOrder
+    texto?: SortOrder
+    comoAparece?: SortOrder
+    nombrePublico?: SortOrder
+    cargoPublico?: SortOrder
+    textoAutorizacion?: SortOrder
+    versionPolitica?: SortOrder
+    canal?: SortOrder
+    referencia?: SortOrder
+    autorizacion?: SortOrder
+    fechaOpinion?: SortOrder
+    registradaPor?: SortOrder
+    planAlEnviar?: SortOrder
+    mesesPagadosAlEnviar?: SortOrder
+    nombreRetiradoEn?: SortOrder
+    publicadaEn?: SortOrder
+    creadoEn?: SortOrder
+    actualizadoEn?: SortOrder
+  }
+
+  export type ResenaSumOrderByAggregateInput = {
+    estrellas?: SortOrder
+    mesesPagadosAlEnviar?: SortOrder
+  }
+
+  export type EnumOrigenResenaWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.OrigenResena | EnumOrigenResenaFieldRefInput<$PrismaModel>
+    in?: $Enums.OrigenResena[]
+    notIn?: $Enums.OrigenResena[]
+    not?: NestedEnumOrigenResenaWithAggregatesFilter<$PrismaModel> | $Enums.OrigenResena
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedEnumOrigenResenaFilter<$PrismaModel>
+    _max?: NestedEnumOrigenResenaFilter<$PrismaModel>
+  }
+
+  export type EnumEstadoResenaWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.EstadoResena | EnumEstadoResenaFieldRefInput<$PrismaModel>
+    in?: $Enums.EstadoResena[]
+    notIn?: $Enums.EstadoResena[]
+    not?: NestedEnumEstadoResenaWithAggregatesFilter<$PrismaModel> | $Enums.EstadoResena
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedEnumEstadoResenaFilter<$PrismaModel>
+    _max?: NestedEnumEstadoResenaFilter<$PrismaModel>
+  }
+
+  export type EnumComoApareceNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.ComoAparece | EnumComoApareceFieldRefInput<$PrismaModel> | null
+    in?: $Enums.ComoAparece[] | null
+    notIn?: $Enums.ComoAparece[] | null
+    not?: NestedEnumComoApareceNullableWithAggregatesFilter<$PrismaModel> | $Enums.ComoAparece | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _min?: NestedEnumComoApareceNullableFilter<$PrismaModel>
+    _max?: NestedEnumComoApareceNullableFilter<$PrismaModel>
+  }
+
   export type UsuarioCreateNestedManyWithoutEmpresaInput = {
     create?: XOR<UsuarioCreateWithoutEmpresaInput, UsuarioUncheckedCreateWithoutEmpresaInput> | UsuarioCreateWithoutEmpresaInput[] | UsuarioUncheckedCreateWithoutEmpresaInput[]
     connectOrCreate?: UsuarioCreateOrConnectWithoutEmpresaInput | UsuarioCreateOrConnectWithoutEmpresaInput[]
@@ -52164,6 +53963,12 @@ export namespace Prisma {
     connect?: SeguimientoClimaWhereUniqueInput | SeguimientoClimaWhereUniqueInput[]
   }
 
+  export type ResenaCreateNestedOneWithoutEmpresaInput = {
+    create?: XOR<ResenaCreateWithoutEmpresaInput, ResenaUncheckedCreateWithoutEmpresaInput>
+    connectOrCreate?: ResenaCreateOrConnectWithoutEmpresaInput
+    connect?: ResenaWhereUniqueInput
+  }
+
   export type UsuarioUncheckedCreateNestedManyWithoutEmpresaInput = {
     create?: XOR<UsuarioCreateWithoutEmpresaInput, UsuarioUncheckedCreateWithoutEmpresaInput> | UsuarioCreateWithoutEmpresaInput[] | UsuarioUncheckedCreateWithoutEmpresaInput[]
     connectOrCreate?: UsuarioCreateOrConnectWithoutEmpresaInput | UsuarioCreateOrConnectWithoutEmpresaInput[]
@@ -52259,6 +54064,12 @@ export namespace Prisma {
     connectOrCreate?: SeguimientoClimaCreateOrConnectWithoutEmpresaInput | SeguimientoClimaCreateOrConnectWithoutEmpresaInput[]
     createMany?: SeguimientoClimaCreateManyEmpresaInputEnvelope
     connect?: SeguimientoClimaWhereUniqueInput | SeguimientoClimaWhereUniqueInput[]
+  }
+
+  export type ResenaUncheckedCreateNestedOneWithoutEmpresaInput = {
+    create?: XOR<ResenaCreateWithoutEmpresaInput, ResenaUncheckedCreateWithoutEmpresaInput>
+    connectOrCreate?: ResenaCreateOrConnectWithoutEmpresaInput
+    connect?: ResenaWhereUniqueInput
   }
 
   export type StringFieldUpdateOperationsInput = {
@@ -52483,6 +54294,16 @@ export namespace Prisma {
     deleteMany?: SeguimientoClimaScalarWhereInput | SeguimientoClimaScalarWhereInput[]
   }
 
+  export type ResenaUpdateOneWithoutEmpresaNestedInput = {
+    create?: XOR<ResenaCreateWithoutEmpresaInput, ResenaUncheckedCreateWithoutEmpresaInput>
+    connectOrCreate?: ResenaCreateOrConnectWithoutEmpresaInput
+    upsert?: ResenaUpsertWithoutEmpresaInput
+    disconnect?: ResenaWhereInput | boolean
+    delete?: ResenaWhereInput | boolean
+    connect?: ResenaWhereUniqueInput
+    update?: XOR<XOR<ResenaUpdateToOneWithWhereWithoutEmpresaInput, ResenaUpdateWithoutEmpresaInput>, ResenaUncheckedUpdateWithoutEmpresaInput>
+  }
+
   export type UsuarioUncheckedUpdateManyWithoutEmpresaNestedInput = {
     create?: XOR<UsuarioCreateWithoutEmpresaInput, UsuarioUncheckedCreateWithoutEmpresaInput> | UsuarioCreateWithoutEmpresaInput[] | UsuarioUncheckedCreateWithoutEmpresaInput[]
     connectOrCreate?: UsuarioCreateOrConnectWithoutEmpresaInput | UsuarioCreateOrConnectWithoutEmpresaInput[]
@@ -52673,6 +54494,16 @@ export namespace Prisma {
     update?: SeguimientoClimaUpdateWithWhereUniqueWithoutEmpresaInput | SeguimientoClimaUpdateWithWhereUniqueWithoutEmpresaInput[]
     updateMany?: SeguimientoClimaUpdateManyWithWhereWithoutEmpresaInput | SeguimientoClimaUpdateManyWithWhereWithoutEmpresaInput[]
     deleteMany?: SeguimientoClimaScalarWhereInput | SeguimientoClimaScalarWhereInput[]
+  }
+
+  export type ResenaUncheckedUpdateOneWithoutEmpresaNestedInput = {
+    create?: XOR<ResenaCreateWithoutEmpresaInput, ResenaUncheckedCreateWithoutEmpresaInput>
+    connectOrCreate?: ResenaCreateOrConnectWithoutEmpresaInput
+    upsert?: ResenaUpsertWithoutEmpresaInput
+    disconnect?: ResenaWhereInput | boolean
+    delete?: ResenaWhereInput | boolean
+    connect?: ResenaWhereUniqueInput
+    update?: XOR<XOR<ResenaUpdateToOneWithWhereWithoutEmpresaInput, ResenaUpdateWithoutEmpresaInput>, ResenaUncheckedUpdateWithoutEmpresaInput>
   }
 
   export type EmpresaCreateNestedOneWithoutSuscripcionInput = {
@@ -54609,6 +56440,34 @@ export namespace Prisma {
     update?: XOR<XOR<SeguimientoClimaUpdateToOneWithWhereWithoutComentariosInput, SeguimientoClimaUpdateWithoutComentariosInput>, SeguimientoClimaUncheckedUpdateWithoutComentariosInput>
   }
 
+  export type EmpresaCreateNestedOneWithoutResenaInput = {
+    create?: XOR<EmpresaCreateWithoutResenaInput, EmpresaUncheckedCreateWithoutResenaInput>
+    connectOrCreate?: EmpresaCreateOrConnectWithoutResenaInput
+    connect?: EmpresaWhereUniqueInput
+  }
+
+  export type EnumOrigenResenaFieldUpdateOperationsInput = {
+    set?: $Enums.OrigenResena
+  }
+
+  export type EnumEstadoResenaFieldUpdateOperationsInput = {
+    set?: $Enums.EstadoResena
+  }
+
+  export type NullableEnumComoApareceFieldUpdateOperationsInput = {
+    set?: $Enums.ComoAparece | null
+  }
+
+  export type EmpresaUpdateOneWithoutResenaNestedInput = {
+    create?: XOR<EmpresaCreateWithoutResenaInput, EmpresaUncheckedCreateWithoutResenaInput>
+    connectOrCreate?: EmpresaCreateOrConnectWithoutResenaInput
+    upsert?: EmpresaUpsertWithoutResenaInput
+    disconnect?: EmpresaWhereInput | boolean
+    delete?: EmpresaWhereInput | boolean
+    connect?: EmpresaWhereUniqueInput
+    update?: XOR<XOR<EmpresaUpdateToOneWithWhereWithoutResenaInput, EmpresaUpdateWithoutResenaInput>, EmpresaUncheckedUpdateWithoutResenaInput>
+  }
+
   export type NestedStringFilter<$PrismaModel = never> = {
     equals?: string | StringFieldRefInput<$PrismaModel>
     in?: string[]
@@ -55256,6 +57115,57 @@ export namespace Prisma {
     _max?: NestedEnumEstadoSeguimientoClimaFilter<$PrismaModel>
   }
 
+  export type NestedEnumOrigenResenaFilter<$PrismaModel = never> = {
+    equals?: $Enums.OrigenResena | EnumOrigenResenaFieldRefInput<$PrismaModel>
+    in?: $Enums.OrigenResena[]
+    notIn?: $Enums.OrigenResena[]
+    not?: NestedEnumOrigenResenaFilter<$PrismaModel> | $Enums.OrigenResena
+  }
+
+  export type NestedEnumEstadoResenaFilter<$PrismaModel = never> = {
+    equals?: $Enums.EstadoResena | EnumEstadoResenaFieldRefInput<$PrismaModel>
+    in?: $Enums.EstadoResena[]
+    notIn?: $Enums.EstadoResena[]
+    not?: NestedEnumEstadoResenaFilter<$PrismaModel> | $Enums.EstadoResena
+  }
+
+  export type NestedEnumComoApareceNullableFilter<$PrismaModel = never> = {
+    equals?: $Enums.ComoAparece | EnumComoApareceFieldRefInput<$PrismaModel> | null
+    in?: $Enums.ComoAparece[] | null
+    notIn?: $Enums.ComoAparece[] | null
+    not?: NestedEnumComoApareceNullableFilter<$PrismaModel> | $Enums.ComoAparece | null
+  }
+
+  export type NestedEnumOrigenResenaWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.OrigenResena | EnumOrigenResenaFieldRefInput<$PrismaModel>
+    in?: $Enums.OrigenResena[]
+    notIn?: $Enums.OrigenResena[]
+    not?: NestedEnumOrigenResenaWithAggregatesFilter<$PrismaModel> | $Enums.OrigenResena
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedEnumOrigenResenaFilter<$PrismaModel>
+    _max?: NestedEnumOrigenResenaFilter<$PrismaModel>
+  }
+
+  export type NestedEnumEstadoResenaWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.EstadoResena | EnumEstadoResenaFieldRefInput<$PrismaModel>
+    in?: $Enums.EstadoResena[]
+    notIn?: $Enums.EstadoResena[]
+    not?: NestedEnumEstadoResenaWithAggregatesFilter<$PrismaModel> | $Enums.EstadoResena
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedEnumEstadoResenaFilter<$PrismaModel>
+    _max?: NestedEnumEstadoResenaFilter<$PrismaModel>
+  }
+
+  export type NestedEnumComoApareceNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.ComoAparece | EnumComoApareceFieldRefInput<$PrismaModel> | null
+    in?: $Enums.ComoAparece[] | null
+    notIn?: $Enums.ComoAparece[] | null
+    not?: NestedEnumComoApareceNullableWithAggregatesFilter<$PrismaModel> | $Enums.ComoAparece | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _min?: NestedEnumComoApareceNullableFilter<$PrismaModel>
+    _max?: NestedEnumComoApareceNullableFilter<$PrismaModel>
+  }
+
   export type UsuarioCreateWithoutEmpresaInput = {
     id?: string
     email: string
@@ -55842,6 +57752,61 @@ export namespace Prisma {
     skipDuplicates?: boolean
   }
 
+  export type ResenaCreateWithoutEmpresaInput = {
+    id?: string
+    origen: $Enums.OrigenResena
+    estado?: $Enums.EstadoResena
+    usuarioId?: string | null
+    estrellas?: number | null
+    texto?: string
+    comoAparece?: $Enums.ComoAparece | null
+    nombrePublico?: string | null
+    cargoPublico?: string | null
+    textoAutorizacion?: string | null
+    versionPolitica?: string | null
+    canal?: string | null
+    referencia?: string | null
+    autorizacion?: string | null
+    fechaOpinion?: Date | string | null
+    registradaPor?: string | null
+    planAlEnviar?: string | null
+    mesesPagadosAlEnviar?: number | null
+    nombreRetiradoEn?: Date | string | null
+    publicadaEn?: Date | string | null
+    creadoEn?: Date | string
+    actualizadoEn?: Date | string
+  }
+
+  export type ResenaUncheckedCreateWithoutEmpresaInput = {
+    id?: string
+    origen: $Enums.OrigenResena
+    estado?: $Enums.EstadoResena
+    usuarioId?: string | null
+    estrellas?: number | null
+    texto?: string
+    comoAparece?: $Enums.ComoAparece | null
+    nombrePublico?: string | null
+    cargoPublico?: string | null
+    textoAutorizacion?: string | null
+    versionPolitica?: string | null
+    canal?: string | null
+    referencia?: string | null
+    autorizacion?: string | null
+    fechaOpinion?: Date | string | null
+    registradaPor?: string | null
+    planAlEnviar?: string | null
+    mesesPagadosAlEnviar?: number | null
+    nombreRetiradoEn?: Date | string | null
+    publicadaEn?: Date | string | null
+    creadoEn?: Date | string
+    actualizadoEn?: Date | string
+  }
+
+  export type ResenaCreateOrConnectWithoutEmpresaInput = {
+    where: ResenaWhereUniqueInput
+    create: XOR<ResenaCreateWithoutEmpresaInput, ResenaUncheckedCreateWithoutEmpresaInput>
+  }
+
   export type UsuarioUpsertWithWhereUniqueWithoutEmpresaInput = {
     where: UsuarioWhereUniqueInput
     update: XOR<UsuarioUpdateWithoutEmpresaInput, UsuarioUncheckedUpdateWithoutEmpresaInput>
@@ -56370,6 +58335,67 @@ export namespace Prisma {
     actualizadoEn?: DateTimeFilter<"SeguimientoClima"> | Date | string
   }
 
+  export type ResenaUpsertWithoutEmpresaInput = {
+    update: XOR<ResenaUpdateWithoutEmpresaInput, ResenaUncheckedUpdateWithoutEmpresaInput>
+    create: XOR<ResenaCreateWithoutEmpresaInput, ResenaUncheckedCreateWithoutEmpresaInput>
+    where?: ResenaWhereInput
+  }
+
+  export type ResenaUpdateToOneWithWhereWithoutEmpresaInput = {
+    where?: ResenaWhereInput
+    data: XOR<ResenaUpdateWithoutEmpresaInput, ResenaUncheckedUpdateWithoutEmpresaInput>
+  }
+
+  export type ResenaUpdateWithoutEmpresaInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    origen?: EnumOrigenResenaFieldUpdateOperationsInput | $Enums.OrigenResena
+    estado?: EnumEstadoResenaFieldUpdateOperationsInput | $Enums.EstadoResena
+    usuarioId?: NullableStringFieldUpdateOperationsInput | string | null
+    estrellas?: NullableIntFieldUpdateOperationsInput | number | null
+    texto?: StringFieldUpdateOperationsInput | string
+    comoAparece?: NullableEnumComoApareceFieldUpdateOperationsInput | $Enums.ComoAparece | null
+    nombrePublico?: NullableStringFieldUpdateOperationsInput | string | null
+    cargoPublico?: NullableStringFieldUpdateOperationsInput | string | null
+    textoAutorizacion?: NullableStringFieldUpdateOperationsInput | string | null
+    versionPolitica?: NullableStringFieldUpdateOperationsInput | string | null
+    canal?: NullableStringFieldUpdateOperationsInput | string | null
+    referencia?: NullableStringFieldUpdateOperationsInput | string | null
+    autorizacion?: NullableStringFieldUpdateOperationsInput | string | null
+    fechaOpinion?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    registradaPor?: NullableStringFieldUpdateOperationsInput | string | null
+    planAlEnviar?: NullableStringFieldUpdateOperationsInput | string | null
+    mesesPagadosAlEnviar?: NullableIntFieldUpdateOperationsInput | number | null
+    nombreRetiradoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    publicadaEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type ResenaUncheckedUpdateWithoutEmpresaInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    origen?: EnumOrigenResenaFieldUpdateOperationsInput | $Enums.OrigenResena
+    estado?: EnumEstadoResenaFieldUpdateOperationsInput | $Enums.EstadoResena
+    usuarioId?: NullableStringFieldUpdateOperationsInput | string | null
+    estrellas?: NullableIntFieldUpdateOperationsInput | number | null
+    texto?: StringFieldUpdateOperationsInput | string
+    comoAparece?: NullableEnumComoApareceFieldUpdateOperationsInput | $Enums.ComoAparece | null
+    nombrePublico?: NullableStringFieldUpdateOperationsInput | string | null
+    cargoPublico?: NullableStringFieldUpdateOperationsInput | string | null
+    textoAutorizacion?: NullableStringFieldUpdateOperationsInput | string | null
+    versionPolitica?: NullableStringFieldUpdateOperationsInput | string | null
+    canal?: NullableStringFieldUpdateOperationsInput | string | null
+    referencia?: NullableStringFieldUpdateOperationsInput | string | null
+    autorizacion?: NullableStringFieldUpdateOperationsInput | string | null
+    fechaOpinion?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    registradaPor?: NullableStringFieldUpdateOperationsInput | string | null
+    planAlEnviar?: NullableStringFieldUpdateOperationsInput | string | null
+    mesesPagadosAlEnviar?: NullableIntFieldUpdateOperationsInput | number | null
+    nombreRetiradoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    publicadaEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
   export type EmpresaCreateWithoutSuscripcionInput = {
     id?: string
     nombre: string
@@ -56398,6 +58424,7 @@ export namespace Prisma {
     calificacionesClima?: CalificacionClimaCreateNestedManyWithoutEmpresaInput
     notasConfidenciales?: ObservacionConfidencialCreateNestedManyWithoutEmpresaInput
     seguimientosClima?: SeguimientoClimaCreateNestedManyWithoutEmpresaInput
+    resena?: ResenaCreateNestedOneWithoutEmpresaInput
   }
 
   export type EmpresaUncheckedCreateWithoutSuscripcionInput = {
@@ -56428,6 +58455,7 @@ export namespace Prisma {
     calificacionesClima?: CalificacionClimaUncheckedCreateNestedManyWithoutEmpresaInput
     notasConfidenciales?: ObservacionConfidencialUncheckedCreateNestedManyWithoutEmpresaInput
     seguimientosClima?: SeguimientoClimaUncheckedCreateNestedManyWithoutEmpresaInput
+    resena?: ResenaUncheckedCreateNestedOneWithoutEmpresaInput
   }
 
   export type EmpresaCreateOrConnectWithoutSuscripcionInput = {
@@ -56516,6 +58544,7 @@ export namespace Prisma {
     calificacionesClima?: CalificacionClimaUpdateManyWithoutEmpresaNestedInput
     notasConfidenciales?: ObservacionConfidencialUpdateManyWithoutEmpresaNestedInput
     seguimientosClima?: SeguimientoClimaUpdateManyWithoutEmpresaNestedInput
+    resena?: ResenaUpdateOneWithoutEmpresaNestedInput
   }
 
   export type EmpresaUncheckedUpdateWithoutSuscripcionInput = {
@@ -56546,6 +58575,7 @@ export namespace Prisma {
     calificacionesClima?: CalificacionClimaUncheckedUpdateManyWithoutEmpresaNestedInput
     notasConfidenciales?: ObservacionConfidencialUncheckedUpdateManyWithoutEmpresaNestedInput
     seguimientosClima?: SeguimientoClimaUncheckedUpdateManyWithoutEmpresaNestedInput
+    resena?: ResenaUncheckedUpdateOneWithoutEmpresaNestedInput
   }
 
   export type PagoUpsertWithWhereUniqueWithoutSuscripcionInput = {
@@ -56771,6 +58801,7 @@ export namespace Prisma {
     calificacionesClima?: CalificacionClimaCreateNestedManyWithoutEmpresaInput
     notasConfidenciales?: ObservacionConfidencialCreateNestedManyWithoutEmpresaInput
     seguimientosClima?: SeguimientoClimaCreateNestedManyWithoutEmpresaInput
+    resena?: ResenaCreateNestedOneWithoutEmpresaInput
   }
 
   export type EmpresaUncheckedCreateWithoutHorariosInput = {
@@ -56801,6 +58832,7 @@ export namespace Prisma {
     calificacionesClima?: CalificacionClimaUncheckedCreateNestedManyWithoutEmpresaInput
     notasConfidenciales?: ObservacionConfidencialUncheckedCreateNestedManyWithoutEmpresaInput
     seguimientosClima?: SeguimientoClimaUncheckedCreateNestedManyWithoutEmpresaInput
+    resena?: ResenaUncheckedCreateNestedOneWithoutEmpresaInput
   }
 
   export type EmpresaCreateOrConnectWithoutHorariosInput = {
@@ -56967,6 +58999,7 @@ export namespace Prisma {
     calificacionesClima?: CalificacionClimaUpdateManyWithoutEmpresaNestedInput
     notasConfidenciales?: ObservacionConfidencialUpdateManyWithoutEmpresaNestedInput
     seguimientosClima?: SeguimientoClimaUpdateManyWithoutEmpresaNestedInput
+    resena?: ResenaUpdateOneWithoutEmpresaNestedInput
   }
 
   export type EmpresaUncheckedUpdateWithoutHorariosInput = {
@@ -56997,6 +59030,7 @@ export namespace Prisma {
     calificacionesClima?: CalificacionClimaUncheckedUpdateManyWithoutEmpresaNestedInput
     notasConfidenciales?: ObservacionConfidencialUncheckedUpdateManyWithoutEmpresaNestedInput
     seguimientosClima?: SeguimientoClimaUncheckedUpdateManyWithoutEmpresaNestedInput
+    resena?: ResenaUncheckedUpdateOneWithoutEmpresaNestedInput
   }
 
   export type FranjaHorarioUpsertWithWhereUniqueWithoutHorarioInput = {
@@ -57146,6 +59180,7 @@ export namespace Prisma {
     calificacionesClima?: CalificacionClimaCreateNestedManyWithoutEmpresaInput
     notasConfidenciales?: ObservacionConfidencialCreateNestedManyWithoutEmpresaInput
     seguimientosClima?: SeguimientoClimaCreateNestedManyWithoutEmpresaInput
+    resena?: ResenaCreateNestedOneWithoutEmpresaInput
   }
 
   export type EmpresaUncheckedCreateWithoutPlantillasTurnoInput = {
@@ -57176,6 +59211,7 @@ export namespace Prisma {
     calificacionesClima?: CalificacionClimaUncheckedCreateNestedManyWithoutEmpresaInput
     notasConfidenciales?: ObservacionConfidencialUncheckedCreateNestedManyWithoutEmpresaInput
     seguimientosClima?: SeguimientoClimaUncheckedCreateNestedManyWithoutEmpresaInput
+    resena?: ResenaUncheckedCreateNestedOneWithoutEmpresaInput
   }
 
   export type EmpresaCreateOrConnectWithoutPlantillasTurnoInput = {
@@ -57315,6 +59351,7 @@ export namespace Prisma {
     calificacionesClima?: CalificacionClimaUpdateManyWithoutEmpresaNestedInput
     notasConfidenciales?: ObservacionConfidencialUpdateManyWithoutEmpresaNestedInput
     seguimientosClima?: SeguimientoClimaUpdateManyWithoutEmpresaNestedInput
+    resena?: ResenaUpdateOneWithoutEmpresaNestedInput
   }
 
   export type EmpresaUncheckedUpdateWithoutPlantillasTurnoInput = {
@@ -57345,6 +59382,7 @@ export namespace Prisma {
     calificacionesClima?: CalificacionClimaUncheckedUpdateManyWithoutEmpresaNestedInput
     notasConfidenciales?: ObservacionConfidencialUncheckedUpdateManyWithoutEmpresaNestedInput
     seguimientosClima?: SeguimientoClimaUncheckedUpdateManyWithoutEmpresaNestedInput
+    resena?: ResenaUncheckedUpdateOneWithoutEmpresaNestedInput
   }
 
   export type SedeUpsertWithoutPlantillasInput = {
@@ -57461,6 +59499,7 @@ export namespace Prisma {
     calificacionesClima?: CalificacionClimaCreateNestedManyWithoutEmpresaInput
     notasConfidenciales?: ObservacionConfidencialCreateNestedManyWithoutEmpresaInput
     seguimientosClima?: SeguimientoClimaCreateNestedManyWithoutEmpresaInput
+    resena?: ResenaCreateNestedOneWithoutEmpresaInput
   }
 
   export type EmpresaUncheckedCreateWithoutDispositivosInput = {
@@ -57491,6 +59530,7 @@ export namespace Prisma {
     calificacionesClima?: CalificacionClimaUncheckedCreateNestedManyWithoutEmpresaInput
     notasConfidenciales?: ObservacionConfidencialUncheckedCreateNestedManyWithoutEmpresaInput
     seguimientosClima?: SeguimientoClimaUncheckedCreateNestedManyWithoutEmpresaInput
+    resena?: ResenaUncheckedCreateNestedOneWithoutEmpresaInput
   }
 
   export type EmpresaCreateOrConnectWithoutDispositivosInput = {
@@ -57537,6 +59577,7 @@ export namespace Prisma {
     calificacionesClima?: CalificacionClimaUpdateManyWithoutEmpresaNestedInput
     notasConfidenciales?: ObservacionConfidencialUpdateManyWithoutEmpresaNestedInput
     seguimientosClima?: SeguimientoClimaUpdateManyWithoutEmpresaNestedInput
+    resena?: ResenaUpdateOneWithoutEmpresaNestedInput
   }
 
   export type EmpresaUncheckedUpdateWithoutDispositivosInput = {
@@ -57567,6 +59608,7 @@ export namespace Prisma {
     calificacionesClima?: CalificacionClimaUncheckedUpdateManyWithoutEmpresaNestedInput
     notasConfidenciales?: ObservacionConfidencialUncheckedUpdateManyWithoutEmpresaNestedInput
     seguimientosClima?: SeguimientoClimaUncheckedUpdateManyWithoutEmpresaNestedInput
+    resena?: ResenaUncheckedUpdateOneWithoutEmpresaNestedInput
   }
 
   export type EmpresaCreateWithoutColaboradoresInput = {
@@ -57597,6 +59639,7 @@ export namespace Prisma {
     calificacionesClima?: CalificacionClimaCreateNestedManyWithoutEmpresaInput
     notasConfidenciales?: ObservacionConfidencialCreateNestedManyWithoutEmpresaInput
     seguimientosClima?: SeguimientoClimaCreateNestedManyWithoutEmpresaInput
+    resena?: ResenaCreateNestedOneWithoutEmpresaInput
   }
 
   export type EmpresaUncheckedCreateWithoutColaboradoresInput = {
@@ -57627,6 +59670,7 @@ export namespace Prisma {
     calificacionesClima?: CalificacionClimaUncheckedCreateNestedManyWithoutEmpresaInput
     notasConfidenciales?: ObservacionConfidencialUncheckedCreateNestedManyWithoutEmpresaInput
     seguimientosClima?: SeguimientoClimaUncheckedCreateNestedManyWithoutEmpresaInput
+    resena?: ResenaUncheckedCreateNestedOneWithoutEmpresaInput
   }
 
   export type EmpresaCreateOrConnectWithoutColaboradoresInput = {
@@ -58138,6 +60182,7 @@ export namespace Prisma {
     calificacionesClima?: CalificacionClimaUpdateManyWithoutEmpresaNestedInput
     notasConfidenciales?: ObservacionConfidencialUpdateManyWithoutEmpresaNestedInput
     seguimientosClima?: SeguimientoClimaUpdateManyWithoutEmpresaNestedInput
+    resena?: ResenaUpdateOneWithoutEmpresaNestedInput
   }
 
   export type EmpresaUncheckedUpdateWithoutColaboradoresInput = {
@@ -58168,6 +60213,7 @@ export namespace Prisma {
     calificacionesClima?: CalificacionClimaUncheckedUpdateManyWithoutEmpresaNestedInput
     notasConfidenciales?: ObservacionConfidencialUncheckedUpdateManyWithoutEmpresaNestedInput
     seguimientosClima?: SeguimientoClimaUncheckedUpdateManyWithoutEmpresaNestedInput
+    resena?: ResenaUncheckedUpdateOneWithoutEmpresaNestedInput
   }
 
   export type DescansoTrabajadoUpsertWithWhereUniqueWithoutColaboradorInput = {
@@ -58556,6 +60602,7 @@ export namespace Prisma {
     calificacionesClima?: CalificacionClimaCreateNestedManyWithoutEmpresaInput
     notasConfidenciales?: ObservacionConfidencialCreateNestedManyWithoutEmpresaInput
     seguimientosClima?: SeguimientoClimaCreateNestedManyWithoutEmpresaInput
+    resena?: ResenaCreateNestedOneWithoutEmpresaInput
   }
 
   export type EmpresaUncheckedCreateWithoutSedesInput = {
@@ -58586,6 +60633,7 @@ export namespace Prisma {
     calificacionesClima?: CalificacionClimaUncheckedCreateNestedManyWithoutEmpresaInput
     notasConfidenciales?: ObservacionConfidencialUncheckedCreateNestedManyWithoutEmpresaInput
     seguimientosClima?: SeguimientoClimaUncheckedCreateNestedManyWithoutEmpresaInput
+    resena?: ResenaUncheckedCreateNestedOneWithoutEmpresaInput
   }
 
   export type EmpresaCreateOrConnectWithoutSedesInput = {
@@ -58832,6 +60880,7 @@ export namespace Prisma {
     calificacionesClima?: CalificacionClimaUpdateManyWithoutEmpresaNestedInput
     notasConfidenciales?: ObservacionConfidencialUpdateManyWithoutEmpresaNestedInput
     seguimientosClima?: SeguimientoClimaUpdateManyWithoutEmpresaNestedInput
+    resena?: ResenaUpdateOneWithoutEmpresaNestedInput
   }
 
   export type EmpresaUncheckedUpdateWithoutSedesInput = {
@@ -58862,6 +60911,7 @@ export namespace Prisma {
     calificacionesClima?: CalificacionClimaUncheckedUpdateManyWithoutEmpresaNestedInput
     notasConfidenciales?: ObservacionConfidencialUncheckedUpdateManyWithoutEmpresaNestedInput
     seguimientosClima?: SeguimientoClimaUncheckedUpdateManyWithoutEmpresaNestedInput
+    resena?: ResenaUncheckedUpdateOneWithoutEmpresaNestedInput
   }
 
   export type ColaboradorSedeUpsertWithWhereUniqueWithoutSedeInput = {
@@ -60226,6 +62276,7 @@ export namespace Prisma {
     calificacionesClima?: CalificacionClimaCreateNestedManyWithoutEmpresaInput
     notasConfidenciales?: ObservacionConfidencialCreateNestedManyWithoutEmpresaInput
     seguimientosClima?: SeguimientoClimaCreateNestedManyWithoutEmpresaInput
+    resena?: ResenaCreateNestedOneWithoutEmpresaInput
   }
 
   export type EmpresaUncheckedCreateWithoutFestivosInput = {
@@ -60256,6 +62307,7 @@ export namespace Prisma {
     calificacionesClima?: CalificacionClimaUncheckedCreateNestedManyWithoutEmpresaInput
     notasConfidenciales?: ObservacionConfidencialUncheckedCreateNestedManyWithoutEmpresaInput
     seguimientosClima?: SeguimientoClimaUncheckedCreateNestedManyWithoutEmpresaInput
+    resena?: ResenaUncheckedCreateNestedOneWithoutEmpresaInput
   }
 
   export type EmpresaCreateOrConnectWithoutFestivosInput = {
@@ -60302,6 +62354,7 @@ export namespace Prisma {
     calificacionesClima?: CalificacionClimaUpdateManyWithoutEmpresaNestedInput
     notasConfidenciales?: ObservacionConfidencialUpdateManyWithoutEmpresaNestedInput
     seguimientosClima?: SeguimientoClimaUpdateManyWithoutEmpresaNestedInput
+    resena?: ResenaUpdateOneWithoutEmpresaNestedInput
   }
 
   export type EmpresaUncheckedUpdateWithoutFestivosInput = {
@@ -60332,6 +62385,7 @@ export namespace Prisma {
     calificacionesClima?: CalificacionClimaUncheckedUpdateManyWithoutEmpresaNestedInput
     notasConfidenciales?: ObservacionConfidencialUncheckedUpdateManyWithoutEmpresaNestedInput
     seguimientosClima?: SeguimientoClimaUncheckedUpdateManyWithoutEmpresaNestedInput
+    resena?: ResenaUncheckedUpdateOneWithoutEmpresaNestedInput
   }
 
   export type EmpresaCreateWithoutConfiguracionInput = {
@@ -60362,6 +62416,7 @@ export namespace Prisma {
     calificacionesClima?: CalificacionClimaCreateNestedManyWithoutEmpresaInput
     notasConfidenciales?: ObservacionConfidencialCreateNestedManyWithoutEmpresaInput
     seguimientosClima?: SeguimientoClimaCreateNestedManyWithoutEmpresaInput
+    resena?: ResenaCreateNestedOneWithoutEmpresaInput
   }
 
   export type EmpresaUncheckedCreateWithoutConfiguracionInput = {
@@ -60392,6 +62447,7 @@ export namespace Prisma {
     calificacionesClima?: CalificacionClimaUncheckedCreateNestedManyWithoutEmpresaInput
     notasConfidenciales?: ObservacionConfidencialUncheckedCreateNestedManyWithoutEmpresaInput
     seguimientosClima?: SeguimientoClimaUncheckedCreateNestedManyWithoutEmpresaInput
+    resena?: ResenaUncheckedCreateNestedOneWithoutEmpresaInput
   }
 
   export type EmpresaCreateOrConnectWithoutConfiguracionInput = {
@@ -60438,6 +62494,7 @@ export namespace Prisma {
     calificacionesClima?: CalificacionClimaUpdateManyWithoutEmpresaNestedInput
     notasConfidenciales?: ObservacionConfidencialUpdateManyWithoutEmpresaNestedInput
     seguimientosClima?: SeguimientoClimaUpdateManyWithoutEmpresaNestedInput
+    resena?: ResenaUpdateOneWithoutEmpresaNestedInput
   }
 
   export type EmpresaUncheckedUpdateWithoutConfiguracionInput = {
@@ -60468,6 +62525,7 @@ export namespace Prisma {
     calificacionesClima?: CalificacionClimaUncheckedUpdateManyWithoutEmpresaNestedInput
     notasConfidenciales?: ObservacionConfidencialUncheckedUpdateManyWithoutEmpresaNestedInput
     seguimientosClima?: SeguimientoClimaUncheckedUpdateManyWithoutEmpresaNestedInput
+    resena?: ResenaUncheckedUpdateOneWithoutEmpresaNestedInput
   }
 
   export type EmpresaCreateWithoutNotificacionesInput = {
@@ -60498,6 +62556,7 @@ export namespace Prisma {
     calificacionesClima?: CalificacionClimaCreateNestedManyWithoutEmpresaInput
     notasConfidenciales?: ObservacionConfidencialCreateNestedManyWithoutEmpresaInput
     seguimientosClima?: SeguimientoClimaCreateNestedManyWithoutEmpresaInput
+    resena?: ResenaCreateNestedOneWithoutEmpresaInput
   }
 
   export type EmpresaUncheckedCreateWithoutNotificacionesInput = {
@@ -60528,6 +62587,7 @@ export namespace Prisma {
     calificacionesClima?: CalificacionClimaUncheckedCreateNestedManyWithoutEmpresaInput
     notasConfidenciales?: ObservacionConfidencialUncheckedCreateNestedManyWithoutEmpresaInput
     seguimientosClima?: SeguimientoClimaUncheckedCreateNestedManyWithoutEmpresaInput
+    resena?: ResenaUncheckedCreateNestedOneWithoutEmpresaInput
   }
 
   export type EmpresaCreateOrConnectWithoutNotificacionesInput = {
@@ -60574,6 +62634,7 @@ export namespace Prisma {
     calificacionesClima?: CalificacionClimaUpdateManyWithoutEmpresaNestedInput
     notasConfidenciales?: ObservacionConfidencialUpdateManyWithoutEmpresaNestedInput
     seguimientosClima?: SeguimientoClimaUpdateManyWithoutEmpresaNestedInput
+    resena?: ResenaUpdateOneWithoutEmpresaNestedInput
   }
 
   export type EmpresaUncheckedUpdateWithoutNotificacionesInput = {
@@ -60604,6 +62665,7 @@ export namespace Prisma {
     calificacionesClima?: CalificacionClimaUncheckedUpdateManyWithoutEmpresaNestedInput
     notasConfidenciales?: ObservacionConfidencialUncheckedUpdateManyWithoutEmpresaNestedInput
     seguimientosClima?: SeguimientoClimaUncheckedUpdateManyWithoutEmpresaNestedInput
+    resena?: ResenaUncheckedUpdateOneWithoutEmpresaNestedInput
   }
 
   export type EmpresaCreateWithoutUsuariosInput = {
@@ -60634,6 +62696,7 @@ export namespace Prisma {
     calificacionesClima?: CalificacionClimaCreateNestedManyWithoutEmpresaInput
     notasConfidenciales?: ObservacionConfidencialCreateNestedManyWithoutEmpresaInput
     seguimientosClima?: SeguimientoClimaCreateNestedManyWithoutEmpresaInput
+    resena?: ResenaCreateNestedOneWithoutEmpresaInput
   }
 
   export type EmpresaUncheckedCreateWithoutUsuariosInput = {
@@ -60664,6 +62727,7 @@ export namespace Prisma {
     calificacionesClima?: CalificacionClimaUncheckedCreateNestedManyWithoutEmpresaInput
     notasConfidenciales?: ObservacionConfidencialUncheckedCreateNestedManyWithoutEmpresaInput
     seguimientosClima?: SeguimientoClimaUncheckedCreateNestedManyWithoutEmpresaInput
+    resena?: ResenaUncheckedCreateNestedOneWithoutEmpresaInput
   }
 
   export type EmpresaCreateOrConnectWithoutUsuariosInput = {
@@ -60757,6 +62821,7 @@ export namespace Prisma {
     calificacionesClima?: CalificacionClimaUpdateManyWithoutEmpresaNestedInput
     notasConfidenciales?: ObservacionConfidencialUpdateManyWithoutEmpresaNestedInput
     seguimientosClima?: SeguimientoClimaUpdateManyWithoutEmpresaNestedInput
+    resena?: ResenaUpdateOneWithoutEmpresaNestedInput
   }
 
   export type EmpresaUncheckedUpdateWithoutUsuariosInput = {
@@ -60787,6 +62852,7 @@ export namespace Prisma {
     calificacionesClima?: CalificacionClimaUncheckedUpdateManyWithoutEmpresaNestedInput
     notasConfidenciales?: ObservacionConfidencialUncheckedUpdateManyWithoutEmpresaNestedInput
     seguimientosClima?: SeguimientoClimaUncheckedUpdateManyWithoutEmpresaNestedInput
+    resena?: ResenaUncheckedUpdateOneWithoutEmpresaNestedInput
   }
 
   export type AfiliadoUpsertWithoutUsuariosInput = {
@@ -60912,6 +62978,7 @@ export namespace Prisma {
     calificacionesClima?: CalificacionClimaCreateNestedManyWithoutEmpresaInput
     notasConfidenciales?: ObservacionConfidencialCreateNestedManyWithoutEmpresaInput
     seguimientosClima?: SeguimientoClimaCreateNestedManyWithoutEmpresaInput
+    resena?: ResenaCreateNestedOneWithoutEmpresaInput
   }
 
   export type EmpresaUncheckedCreateWithoutAfiliadoInput = {
@@ -60942,6 +63009,7 @@ export namespace Prisma {
     calificacionesClima?: CalificacionClimaUncheckedCreateNestedManyWithoutEmpresaInput
     notasConfidenciales?: ObservacionConfidencialUncheckedCreateNestedManyWithoutEmpresaInput
     seguimientosClima?: SeguimientoClimaUncheckedCreateNestedManyWithoutEmpresaInput
+    resena?: ResenaUncheckedCreateNestedOneWithoutEmpresaInput
   }
 
   export type EmpresaCreateOrConnectWithoutAfiliadoInput = {
@@ -61192,6 +63260,7 @@ export namespace Prisma {
     calificacionesClima?: CalificacionClimaCreateNestedManyWithoutEmpresaInput
     notasConfidenciales?: ObservacionConfidencialCreateNestedManyWithoutEmpresaInput
     seguimientosClima?: SeguimientoClimaCreateNestedManyWithoutEmpresaInput
+    resena?: ResenaCreateNestedOneWithoutEmpresaInput
   }
 
   export type EmpresaUncheckedCreateWithoutComisionesInput = {
@@ -61222,6 +63291,7 @@ export namespace Prisma {
     calificacionesClima?: CalificacionClimaUncheckedCreateNestedManyWithoutEmpresaInput
     notasConfidenciales?: ObservacionConfidencialUncheckedCreateNestedManyWithoutEmpresaInput
     seguimientosClima?: SeguimientoClimaUncheckedCreateNestedManyWithoutEmpresaInput
+    resena?: ResenaUncheckedCreateNestedOneWithoutEmpresaInput
   }
 
   export type EmpresaCreateOrConnectWithoutComisionesInput = {
@@ -61358,6 +63428,7 @@ export namespace Prisma {
     calificacionesClima?: CalificacionClimaUpdateManyWithoutEmpresaNestedInput
     notasConfidenciales?: ObservacionConfidencialUpdateManyWithoutEmpresaNestedInput
     seguimientosClima?: SeguimientoClimaUpdateManyWithoutEmpresaNestedInput
+    resena?: ResenaUpdateOneWithoutEmpresaNestedInput
   }
 
   export type EmpresaUncheckedUpdateWithoutComisionesInput = {
@@ -61388,6 +63459,7 @@ export namespace Prisma {
     calificacionesClima?: CalificacionClimaUncheckedUpdateManyWithoutEmpresaNestedInput
     notasConfidenciales?: ObservacionConfidencialUncheckedUpdateManyWithoutEmpresaNestedInput
     seguimientosClima?: SeguimientoClimaUncheckedUpdateManyWithoutEmpresaNestedInput
+    resena?: ResenaUncheckedUpdateOneWithoutEmpresaNestedInput
   }
 
   export type PagoUpsertWithoutComisionInput = {
@@ -62825,6 +64897,7 @@ export namespace Prisma {
     comisiones?: ComisionCreateNestedManyWithoutEmpresaInput
     notasConfidenciales?: ObservacionConfidencialCreateNestedManyWithoutEmpresaInput
     seguimientosClima?: SeguimientoClimaCreateNestedManyWithoutEmpresaInput
+    resena?: ResenaCreateNestedOneWithoutEmpresaInput
   }
 
   export type EmpresaUncheckedCreateWithoutCalificacionesClimaInput = {
@@ -62855,6 +64928,7 @@ export namespace Prisma {
     comisiones?: ComisionUncheckedCreateNestedManyWithoutEmpresaInput
     notasConfidenciales?: ObservacionConfidencialUncheckedCreateNestedManyWithoutEmpresaInput
     seguimientosClima?: SeguimientoClimaUncheckedCreateNestedManyWithoutEmpresaInput
+    resena?: ResenaUncheckedCreateNestedOneWithoutEmpresaInput
   }
 
   export type EmpresaCreateOrConnectWithoutCalificacionesClimaInput = {
@@ -62984,6 +65058,7 @@ export namespace Prisma {
     comisiones?: ComisionUpdateManyWithoutEmpresaNestedInput
     notasConfidenciales?: ObservacionConfidencialUpdateManyWithoutEmpresaNestedInput
     seguimientosClima?: SeguimientoClimaUpdateManyWithoutEmpresaNestedInput
+    resena?: ResenaUpdateOneWithoutEmpresaNestedInput
   }
 
   export type EmpresaUncheckedUpdateWithoutCalificacionesClimaInput = {
@@ -63014,6 +65089,7 @@ export namespace Prisma {
     comisiones?: ComisionUncheckedUpdateManyWithoutEmpresaNestedInput
     notasConfidenciales?: ObservacionConfidencialUncheckedUpdateManyWithoutEmpresaNestedInput
     seguimientosClima?: SeguimientoClimaUncheckedUpdateManyWithoutEmpresaNestedInput
+    resena?: ResenaUncheckedUpdateOneWithoutEmpresaNestedInput
   }
 
   export type ColaboradorUpsertWithoutCalificacionesClimaInput = {
@@ -63133,6 +65209,7 @@ export namespace Prisma {
     comisiones?: ComisionCreateNestedManyWithoutEmpresaInput
     calificacionesClima?: CalificacionClimaCreateNestedManyWithoutEmpresaInput
     seguimientosClima?: SeguimientoClimaCreateNestedManyWithoutEmpresaInput
+    resena?: ResenaCreateNestedOneWithoutEmpresaInput
   }
 
   export type EmpresaUncheckedCreateWithoutNotasConfidencialesInput = {
@@ -63163,6 +65240,7 @@ export namespace Prisma {
     comisiones?: ComisionUncheckedCreateNestedManyWithoutEmpresaInput
     calificacionesClima?: CalificacionClimaUncheckedCreateNestedManyWithoutEmpresaInput
     seguimientosClima?: SeguimientoClimaUncheckedCreateNestedManyWithoutEmpresaInput
+    resena?: ResenaUncheckedCreateNestedOneWithoutEmpresaInput
   }
 
   export type EmpresaCreateOrConnectWithoutNotasConfidencialesInput = {
@@ -63209,6 +65287,7 @@ export namespace Prisma {
     comisiones?: ComisionUpdateManyWithoutEmpresaNestedInput
     calificacionesClima?: CalificacionClimaUpdateManyWithoutEmpresaNestedInput
     seguimientosClima?: SeguimientoClimaUpdateManyWithoutEmpresaNestedInput
+    resena?: ResenaUpdateOneWithoutEmpresaNestedInput
   }
 
   export type EmpresaUncheckedUpdateWithoutNotasConfidencialesInput = {
@@ -63239,6 +65318,7 @@ export namespace Prisma {
     comisiones?: ComisionUncheckedUpdateManyWithoutEmpresaNestedInput
     calificacionesClima?: CalificacionClimaUncheckedUpdateManyWithoutEmpresaNestedInput
     seguimientosClima?: SeguimientoClimaUncheckedUpdateManyWithoutEmpresaNestedInput
+    resena?: ResenaUncheckedUpdateOneWithoutEmpresaNestedInput
   }
 
   export type EmpresaCreateWithoutSeguimientosClimaInput = {
@@ -63269,6 +65349,7 @@ export namespace Prisma {
     comisiones?: ComisionCreateNestedManyWithoutEmpresaInput
     calificacionesClima?: CalificacionClimaCreateNestedManyWithoutEmpresaInput
     notasConfidenciales?: ObservacionConfidencialCreateNestedManyWithoutEmpresaInput
+    resena?: ResenaCreateNestedOneWithoutEmpresaInput
   }
 
   export type EmpresaUncheckedCreateWithoutSeguimientosClimaInput = {
@@ -63299,6 +65380,7 @@ export namespace Prisma {
     comisiones?: ComisionUncheckedCreateNestedManyWithoutEmpresaInput
     calificacionesClima?: CalificacionClimaUncheckedCreateNestedManyWithoutEmpresaInput
     notasConfidenciales?: ObservacionConfidencialUncheckedCreateNestedManyWithoutEmpresaInput
+    resena?: ResenaUncheckedCreateNestedOneWithoutEmpresaInput
   }
 
   export type EmpresaCreateOrConnectWithoutSeguimientosClimaInput = {
@@ -63456,6 +65538,7 @@ export namespace Prisma {
     comisiones?: ComisionUpdateManyWithoutEmpresaNestedInput
     calificacionesClima?: CalificacionClimaUpdateManyWithoutEmpresaNestedInput
     notasConfidenciales?: ObservacionConfidencialUpdateManyWithoutEmpresaNestedInput
+    resena?: ResenaUpdateOneWithoutEmpresaNestedInput
   }
 
   export type EmpresaUncheckedUpdateWithoutSeguimientosClimaInput = {
@@ -63486,6 +65569,7 @@ export namespace Prisma {
     comisiones?: ComisionUncheckedUpdateManyWithoutEmpresaNestedInput
     calificacionesClima?: CalificacionClimaUncheckedUpdateManyWithoutEmpresaNestedInput
     notasConfidenciales?: ObservacionConfidencialUncheckedUpdateManyWithoutEmpresaNestedInput
+    resena?: ResenaUncheckedUpdateOneWithoutEmpresaNestedInput
   }
 
   export type ColaboradorUpsertWithoutSeguimientosClimaInput = {
@@ -63668,6 +65752,146 @@ export namespace Prisma {
     abiertoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     cerradoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type EmpresaCreateWithoutResenaInput = {
+    id?: string
+    nombre: string
+    nit: string
+    email: string
+    telefono?: string | null
+    marcadorToken?: string
+    exentaPago?: boolean
+    activa?: boolean
+    auxilioRevisadoEn?: Date | string | null
+    creadoEn?: Date | string
+    actualizadoEn?: Date | string
+    atribuidoEn?: Date | string | null
+    primerPagoComisionEn?: Date | string | null
+    usuarios?: UsuarioCreateNestedManyWithoutEmpresaInput
+    colaboradores?: ColaboradorCreateNestedManyWithoutEmpresaInput
+    festivos?: DiaFestivoCreateNestedManyWithoutEmpresaInput
+    configuracion?: ConfiguracionCreateNestedManyWithoutEmpresaInput
+    suscripcion?: SuscripcionCreateNestedOneWithoutEmpresaInput
+    horarios?: HorarioCreateNestedManyWithoutEmpresaInput
+    sedes?: SedeCreateNestedManyWithoutEmpresaInput
+    plantillasTurno?: PlantillaTurnoCreateNestedManyWithoutEmpresaInput
+    dispositivos?: DispositivoKioscoCreateNestedManyWithoutEmpresaInput
+    notificaciones?: NotificacionCreateNestedManyWithoutEmpresaInput
+    afiliado?: AfiliadoCreateNestedOneWithoutEmpresasInput
+    comisiones?: ComisionCreateNestedManyWithoutEmpresaInput
+    calificacionesClima?: CalificacionClimaCreateNestedManyWithoutEmpresaInput
+    notasConfidenciales?: ObservacionConfidencialCreateNestedManyWithoutEmpresaInput
+    seguimientosClima?: SeguimientoClimaCreateNestedManyWithoutEmpresaInput
+  }
+
+  export type EmpresaUncheckedCreateWithoutResenaInput = {
+    id?: string
+    nombre: string
+    nit: string
+    email: string
+    telefono?: string | null
+    marcadorToken?: string
+    exentaPago?: boolean
+    activa?: boolean
+    auxilioRevisadoEn?: Date | string | null
+    creadoEn?: Date | string
+    actualizadoEn?: Date | string
+    afiliadoId?: string | null
+    atribuidoEn?: Date | string | null
+    primerPagoComisionEn?: Date | string | null
+    usuarios?: UsuarioUncheckedCreateNestedManyWithoutEmpresaInput
+    colaboradores?: ColaboradorUncheckedCreateNestedManyWithoutEmpresaInput
+    festivos?: DiaFestivoUncheckedCreateNestedManyWithoutEmpresaInput
+    configuracion?: ConfiguracionUncheckedCreateNestedManyWithoutEmpresaInput
+    suscripcion?: SuscripcionUncheckedCreateNestedOneWithoutEmpresaInput
+    horarios?: HorarioUncheckedCreateNestedManyWithoutEmpresaInput
+    sedes?: SedeUncheckedCreateNestedManyWithoutEmpresaInput
+    plantillasTurno?: PlantillaTurnoUncheckedCreateNestedManyWithoutEmpresaInput
+    dispositivos?: DispositivoKioscoUncheckedCreateNestedManyWithoutEmpresaInput
+    notificaciones?: NotificacionUncheckedCreateNestedManyWithoutEmpresaInput
+    comisiones?: ComisionUncheckedCreateNestedManyWithoutEmpresaInput
+    calificacionesClima?: CalificacionClimaUncheckedCreateNestedManyWithoutEmpresaInput
+    notasConfidenciales?: ObservacionConfidencialUncheckedCreateNestedManyWithoutEmpresaInput
+    seguimientosClima?: SeguimientoClimaUncheckedCreateNestedManyWithoutEmpresaInput
+  }
+
+  export type EmpresaCreateOrConnectWithoutResenaInput = {
+    where: EmpresaWhereUniqueInput
+    create: XOR<EmpresaCreateWithoutResenaInput, EmpresaUncheckedCreateWithoutResenaInput>
+  }
+
+  export type EmpresaUpsertWithoutResenaInput = {
+    update: XOR<EmpresaUpdateWithoutResenaInput, EmpresaUncheckedUpdateWithoutResenaInput>
+    create: XOR<EmpresaCreateWithoutResenaInput, EmpresaUncheckedCreateWithoutResenaInput>
+    where?: EmpresaWhereInput
+  }
+
+  export type EmpresaUpdateToOneWithWhereWithoutResenaInput = {
+    where?: EmpresaWhereInput
+    data: XOR<EmpresaUpdateWithoutResenaInput, EmpresaUncheckedUpdateWithoutResenaInput>
+  }
+
+  export type EmpresaUpdateWithoutResenaInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    nombre?: StringFieldUpdateOperationsInput | string
+    nit?: StringFieldUpdateOperationsInput | string
+    email?: StringFieldUpdateOperationsInput | string
+    telefono?: NullableStringFieldUpdateOperationsInput | string | null
+    marcadorToken?: StringFieldUpdateOperationsInput | string
+    exentaPago?: BoolFieldUpdateOperationsInput | boolean
+    activa?: BoolFieldUpdateOperationsInput | boolean
+    auxilioRevisadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    atribuidoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    primerPagoComisionEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    usuarios?: UsuarioUpdateManyWithoutEmpresaNestedInput
+    colaboradores?: ColaboradorUpdateManyWithoutEmpresaNestedInput
+    festivos?: DiaFestivoUpdateManyWithoutEmpresaNestedInput
+    configuracion?: ConfiguracionUpdateManyWithoutEmpresaNestedInput
+    suscripcion?: SuscripcionUpdateOneWithoutEmpresaNestedInput
+    horarios?: HorarioUpdateManyWithoutEmpresaNestedInput
+    sedes?: SedeUpdateManyWithoutEmpresaNestedInput
+    plantillasTurno?: PlantillaTurnoUpdateManyWithoutEmpresaNestedInput
+    dispositivos?: DispositivoKioscoUpdateManyWithoutEmpresaNestedInput
+    notificaciones?: NotificacionUpdateManyWithoutEmpresaNestedInput
+    afiliado?: AfiliadoUpdateOneWithoutEmpresasNestedInput
+    comisiones?: ComisionUpdateManyWithoutEmpresaNestedInput
+    calificacionesClima?: CalificacionClimaUpdateManyWithoutEmpresaNestedInput
+    notasConfidenciales?: ObservacionConfidencialUpdateManyWithoutEmpresaNestedInput
+    seguimientosClima?: SeguimientoClimaUpdateManyWithoutEmpresaNestedInput
+  }
+
+  export type EmpresaUncheckedUpdateWithoutResenaInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    nombre?: StringFieldUpdateOperationsInput | string
+    nit?: StringFieldUpdateOperationsInput | string
+    email?: StringFieldUpdateOperationsInput | string
+    telefono?: NullableStringFieldUpdateOperationsInput | string | null
+    marcadorToken?: StringFieldUpdateOperationsInput | string
+    exentaPago?: BoolFieldUpdateOperationsInput | boolean
+    activa?: BoolFieldUpdateOperationsInput | boolean
+    auxilioRevisadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    afiliadoId?: NullableStringFieldUpdateOperationsInput | string | null
+    atribuidoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    primerPagoComisionEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    usuarios?: UsuarioUncheckedUpdateManyWithoutEmpresaNestedInput
+    colaboradores?: ColaboradorUncheckedUpdateManyWithoutEmpresaNestedInput
+    festivos?: DiaFestivoUncheckedUpdateManyWithoutEmpresaNestedInput
+    configuracion?: ConfiguracionUncheckedUpdateManyWithoutEmpresaNestedInput
+    suscripcion?: SuscripcionUncheckedUpdateOneWithoutEmpresaNestedInput
+    horarios?: HorarioUncheckedUpdateManyWithoutEmpresaNestedInput
+    sedes?: SedeUncheckedUpdateManyWithoutEmpresaNestedInput
+    plantillasTurno?: PlantillaTurnoUncheckedUpdateManyWithoutEmpresaNestedInput
+    dispositivos?: DispositivoKioscoUncheckedUpdateManyWithoutEmpresaNestedInput
+    notificaciones?: NotificacionUncheckedUpdateManyWithoutEmpresaNestedInput
+    comisiones?: ComisionUncheckedUpdateManyWithoutEmpresaNestedInput
+    calificacionesClima?: CalificacionClimaUncheckedUpdateManyWithoutEmpresaNestedInput
+    notasConfidenciales?: ObservacionConfidencialUncheckedUpdateManyWithoutEmpresaNestedInput
+    seguimientosClima?: SeguimientoClimaUncheckedUpdateManyWithoutEmpresaNestedInput
   }
 
   export type UsuarioCreateManyEmpresaInput = {
@@ -65866,6 +68090,7 @@ export namespace Prisma {
     calificacionesClima?: CalificacionClimaUpdateManyWithoutEmpresaNestedInput
     notasConfidenciales?: ObservacionConfidencialUpdateManyWithoutEmpresaNestedInput
     seguimientosClima?: SeguimientoClimaUpdateManyWithoutEmpresaNestedInput
+    resena?: ResenaUpdateOneWithoutEmpresaNestedInput
   }
 
   export type EmpresaUncheckedUpdateWithoutAfiliadoInput = {
@@ -65896,6 +68121,7 @@ export namespace Prisma {
     calificacionesClima?: CalificacionClimaUncheckedUpdateManyWithoutEmpresaNestedInput
     notasConfidenciales?: ObservacionConfidencialUncheckedUpdateManyWithoutEmpresaNestedInput
     seguimientosClima?: SeguimientoClimaUncheckedUpdateManyWithoutEmpresaNestedInput
+    resena?: ResenaUncheckedUpdateOneWithoutEmpresaNestedInput
   }
 
   export type EmpresaUncheckedUpdateManyWithoutAfiliadoInput = {
@@ -66293,6 +68519,10 @@ export namespace Prisma {
      * @deprecated Use ComentarioSeguimientoClimaDefaultArgs instead
      */
     export type ComentarioSeguimientoClimaArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = ComentarioSeguimientoClimaDefaultArgs<ExtArgs>
+    /**
+     * @deprecated Use ResenaDefaultArgs instead
+     */
+    export type ResenaArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = ResenaDefaultArgs<ExtArgs>
 
   /**
    * Batch Payload for updateMany & deleteMany & createMany
