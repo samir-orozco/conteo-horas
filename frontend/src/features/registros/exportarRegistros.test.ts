@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { COLUMNAS_REGISTROS, filasDeRegistros, nombreDelArchivo } from './exportarRegistros';
+import { COLUMNAS_REGISTROS, filasDeRegistros, matrizDeEntradas, nombreDelArchivo } from './exportarRegistros';
 
 // EL EXCEL DE LOS REGISTROS (4 de octubre de 2026, peticiones 7, 19 y 32 del dueño).
 //
@@ -186,5 +186,130 @@ describe('filasDeRegistros', () => {
 describe('nombreDelArchivo', () => {
   it('lleva el rango que se exportó, para no confundir dos descargas', () => {
     expect(nombreDelArchivo('2026-09-01', '2026-09-30')).toBe('Registros_2026-09-01_a_2026-09-30');
+  });
+});
+
+// LA HOJA «ENTRADAS POR DÍA» (9 de octubre de 2026, petición del dueño): una fila por persona, una columna
+// por día y, en cada celda, la hora de la PRIMERA entrada de ese día. Es la tabla dinámica que se armaba a
+// mano con el Excel de Registros, escrita directamente.
+describe('matrizDeEntradas', () => {
+  const persona = (id: string, nombre: string, apellido: string) => ({ id, nombre, apellido });
+  const dia = (d: number) => bog(0, 0, d);
+  const j = (extra: Record<string, unknown>) => jornada({ fecha: dia(1), ...extra });
+  const matriz = (jornadas: ReturnType<typeof jornada>[], desde = '2026-09-01', hasta = '2026-09-03', sinMarcas: ReturnType<typeof persona>[] = []) =>
+    matrizDeEntradas(jornadas, desde, hasta, sinMarcas);
+
+  describe('las columnas', () => {
+    it('son la persona y TODOS los días del rango, también los que nadie marcó', () => {
+      expect(matriz([j({})]).columnas).toEqual(['Colaborador', '2026-09-01', '2026-09-02', '2026-09-03']);
+    });
+
+    // Los días se cuentan sin pasar por la zona horaria de la máquina: las pruebas corren en Los Ángeles.
+    it('cruzan el cambio de mes sin comerse ni repetir un día', () => {
+      expect(matriz([], '2026-09-29', '2026-10-02').columnas)
+        .toEqual(['Colaborador', '2026-09-29', '2026-09-30', '2026-10-01', '2026-10-02']);
+    });
+
+    it('un rango de un solo día tiene una sola columna de día', () => {
+      expect(matriz([], '2026-09-05', '2026-09-05').columnas).toEqual(['Colaborador', '2026-09-05']);
+    });
+
+    it('un rango al revés no cuelga ni inventa días', () => {
+      expect(matriz([], '2026-09-05', '2026-09-01').columnas).toEqual(['Colaborador']);
+    });
+
+    // Una marcación NUNCA se pierde por caer fuera de las columnas. El servidor ya filtra por rango, así que en
+    // uso real no pasa; pero si pasara, cortarla en silencio daría un archivo plausible y falso.
+    it('un día con marcaciones fuera del rango se agrega, en su lugar, y no se pierde', () => {
+      const m = matriz([j({ fecha: bog(0, 0, 10), entrada: bog(8, 0, 10) })], '2026-09-01', '2026-09-03');
+      expect(m.columnas).toEqual(['Colaborador', '2026-09-01', '2026-09-02', '2026-09-03', '2026-09-10']);
+      expect(m.filas).toEqual([['Ana María Gómez', '', '', '', '08:00']]);
+    });
+
+    it('un día fuera del rango por antes queda de primero', () => {
+      const m = matriz([j({ fecha: bog(0, 0, 28, ), entrada: bog(8, 0, 28) })], '2026-09-29', '2026-09-30');
+      expect(m.columnas[1]).toBe('2026-09-28');
+    });
+
+    // Un campo de fecha vaciado a medias llega como texto vacío: no puede reventar el botón de exportar.
+    it('un rango vacío o ilegible no revienta ni inventa días', () => {
+      expect(matriz([], '', '2026-09-03').columnas).toEqual(['Colaborador']);
+      expect(matriz([], '2026-09-01', '').columnas).toEqual(['Colaborador']);
+      expect(matriz([], 'ayer', 'hoy').columnas).toEqual(['Colaborador']);
+    });
+  });
+
+  describe('las celdas', () => {
+    it('dicen la hora de la entrada, en hora de Bogotá', () => {
+      expect(matriz([j({ entrada: bog(8, 30) })]).filas).toEqual([['Ana María Gómez', '08:30', '', '']]);
+    });
+
+    it('un día sin marcación queda vacío, como en la tabla dinámica', () => {
+      const [fila] = matriz([j({ fecha: dia(2), entrada: bog(9, 5, 2) })]).filas;
+      expect(fila).toEqual(['Ana María Gómez', '', '09:05', '']);
+    });
+
+    // Con dos jornadas el mismo día, la matriz dice a qué hora EMPEZÓ a trabajar.
+    it('con dos jornadas el mismo día, la hora es la de la primera entrada', () => {
+      const filas = matriz([
+        j({ id: 'tarde', entrada: bog(14), salida: bog(18) }),
+        j({ id: 'manana', entrada: bog(8, 15), salida: bog(12) }),
+      ]).filas;
+      expect(filas).toEqual([['Ana María Gómez', '08:15', '', '']]);
+    });
+
+    // La jornada pertenece al día de su `fecha`, aunque la entrada caiga tarde en la noche: en UTC ya es
+    // el día siguiente, y en Bogotá no.
+    it('una entrada a las 23:30 de Bogotá cuenta en su día y no en el siguiente', () => {
+      expect(matriz([j({ entrada: bog(23, 30) })]).filas).toEqual([['Ana María Gómez', '23:30', '', '']]);
+    });
+
+    it('una jornada sin entrada deja la celda vacía', () => {
+      expect(matriz([j({ entrada: null })]).filas).toEqual([['Ana María Gómez', '', '', '']]);
+    });
+  });
+
+  describe('las filas', () => {
+    it('van en orden alfabético, con la tilde donde corresponde', () => {
+      const filas = matriz([
+        j({ colaboradorId: 'c3', colaborador: { nombre: 'Zoila', apellido: 'Rojas' } }),
+        j({ colaboradorId: 'c2', colaborador: { nombre: 'Álvaro', apellido: 'Díaz' } }),
+        j({ colaboradorId: 'c1', colaborador: { nombre: 'Beatriz', apellido: 'Gil' } }),
+      ]).filas.map(f => f[0]);
+      expect(filas).toEqual(['Álvaro Díaz', 'Beatriz Gil', 'Zoila Rojas']);
+    });
+
+    it('una persona con varias jornadas sale en UNA sola fila', () => {
+      const filas = matriz([
+        j({ id: 'a', entrada: bog(8) }),
+        j({ id: 'b', fecha: dia(2), entrada: bog(9, 0, 2) }),
+      ]).filas;
+      expect(filas).toEqual([['Ana María Gómez', '08:00', '09:00', '']]);
+    });
+
+    // Dos personas pueden llamarse igual: se separan por identificador, no por nombre.
+    it('dos personas con el mismo nombre no se mezclan', () => {
+      const filas = matriz([
+        j({ colaboradorId: 'c1', entrada: bog(8) }),
+        j({ colaboradorId: 'c9', entrada: bog(10) }),
+      ]).filas;
+      expect(filas).toEqual([['Ana María Gómez', '08:00', '', ''], ['Ana María Gómez', '10:00', '', '']]);
+    });
+
+    // Quien no marcó NADA en el rango es justo a quien más se busca en una matriz de asistencia, y una
+    // tabla dinámica hecha desde el Excel de Registros no lo trae.
+    it('las personas sin ninguna marcación salen con la fila en blanco', () => {
+      const filas = matriz([j({})], '2026-09-01', '2026-09-03', [persona('c7', 'Carlos', 'Peña')]).filas;
+      expect(filas).toEqual([['Ana María Gómez', '08:00', '', ''], ['Carlos Peña', '', '', '']]);
+    });
+
+    it('quien ya sale por sus jornadas no se repite aunque venga en la lista de personas', () => {
+      const filas = matriz([j({})], '2026-09-01', '2026-09-03', [persona('c1', 'Ana María', 'Gómez')]).filas;
+      expect(filas).toHaveLength(1);
+    });
+  });
+
+  it('sin jornadas ni personas, solo trae los encabezados', () => {
+    expect(matriz([])).toEqual({ columnas: ['Colaborador', '2026-09-01', '2026-09-02', '2026-09-03'], filas: [] });
   });
 });

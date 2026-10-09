@@ -17,7 +17,7 @@ import SelectorColaborador from '../components/SelectorColaborador';
 import ActividadRegistro from '../features/registros/ActividadRegistro';
 import { ingresosDelDia, type Ingreso } from '../features/registros/ingresosDelDia';
 import { descargarExcelHojas } from '../lib/exportar';
-import { COLUMNAS_REGISTROS, filasDeRegistros, nombreDelArchivo } from '../features/registros/exportarRegistros';
+import { COLUMNAS_REGISTROS, HOJA_ENTRADAS, filasDeRegistros, matrizDeEntradas, nombreDelArchivo } from '../features/registros/exportarRegistros';
 import { avisoDeFotosPorBorrar, type FotoPorBorrar } from '../lib/fotosPorBorrar';
 import AvatarMini from '../components/AvatarMini';
 
@@ -598,12 +598,20 @@ export default function Registros() {
   // Con `registros` el archivo ignoraría los filtros puestos; con `visibles`
   // bajaría solo la página en curso, 50 filas de 300 sin avisar. Las dos formas
   // de equivocarse dan un archivo plausible, que es lo peligroso.
+  //
+  // La segunda hoja, «Entradas por día», sigue la misma regla. Sin filtros de jornada suma a las personas
+  // activas que no marcaron nada (y respeta la persona elegida, si hay una): su fila en blanco es el dato.
+  // Con un filtro puesto no las suma, porque ahí un blanco querría decir «la filtré» y no «faltó».
   const exportarAExcel = () => {
-    descargarExcelHojas(nombreDelArchivo(desde, hasta), [{
-      nombre: 'Registros',
-      columnas: COLUMNAS_REGISTROS,
-      filas: filasDeRegistros(filtrados, id => cedulaDe(colaboradores, id), id => sedesAsignadasDe(colaboradores, id)),
-    }]);
+    const sinMarcas = hayFiltro ? [] : colaboradores.filter(c => !filtroColaborador || c.id === filtroColaborador);
+    descargarExcelHojas(nombreDelArchivo(desde, hasta), [
+      {
+        nombre: 'Registros',
+        columnas: COLUMNAS_REGISTROS,
+        filas: filasDeRegistros(filtrados, id => cedulaDe(colaboradores, id), id => sedesAsignadasDe(colaboradores, id)),
+      },
+      { nombre: HOJA_ENTRADAS, ...matrizDeEntradas(filtrados, desde, hasta, sinMarcas) },
+    ]);
   };
 
   const totalPaginas = Math.max(1, Math.ceil(filtrados.length / porPagina));

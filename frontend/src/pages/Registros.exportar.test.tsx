@@ -34,11 +34,13 @@ const jornada = (id: string, extra: Record<string, unknown> = {}) => ({
   ...extra,
 });
 
-const montar = (jornadas: unknown[]) => {
+const BEATRIZ = { id: 'c2', nombre: 'Beatriz', apellido: 'Ruiz', cedula: '555', sedeNombres: ['Norte'] };
+
+const montar = (jornadas: unknown[], colaboradores: unknown[] = [COLABORADOR]) => {
   get.mockReset();
   exportar.mockReset();
   get.mockImplementation((url: string) => Promise.resolve({
-    data: url === '/registros' ? jornadas : url === '/colaboradores' ? [COLABORADOR] : [],
+    data: url === '/registros' ? jornadas : url === '/colaboradores' ? colaboradores : [],
   }));
   render(<Registros />);
   return userEvent.setup();
@@ -46,7 +48,9 @@ const montar = (jornadas: unknown[]) => {
 
 const boton = () => screen.findByRole('button', { name: /exportar/i });
 // La hoja que recibió el motor de Excel.
-const hoja = () => exportar.mock.calls[0][1][0] as { nombre: string; columnas: string[]; filas: unknown[][] };
+type Hoja = { nombre: string; columnas: string[]; filas: unknown[][] };
+const hoja = () => exportar.mock.calls[0][1][0] as Hoja;
+const hojas = () => exportar.mock.calls[0][1] as Hoja[];
 
 beforeEach(() => { get.mockReset(); exportar.mockReset(); });
 
@@ -71,6 +75,71 @@ describe('Registros · exportar a Excel', () => {
     await u.click(await boton());
     expect(hoja().filas[0][COLUMNAS_REGISTROS.indexOf('Sede')]).toBe('Norte');
     expect(hoja().filas[0][COLUMNAS_REGISTROS.indexOf('Marcó en')]).toBe('Sur');
+  });
+
+  // LA HOJA «ENTRADAS POR DÍA» (petición del dueño del 9 de octubre): personas por días, con la hora de
+  // la primera entrada. Va como segunda hoja del MISMO archivo, así que respeta lo mismo que la primera.
+  describe('la hoja «Entradas por día»', () => {
+    const enMatriz = () => hojas()[1];
+
+    it('va como segunda hoja, después de «Registros»', async () => {
+      const u = montar([jornada('a')]);
+      await u.click(await boton());
+      expect(hojas().map(h => h.nombre)).toEqual(['Registros', 'Entradas por día']);
+      expect(enMatriz().columnas[0]).toBe('Colaborador');
+      expect(enMatriz().columnas.slice(1).every(c => /^\d{4}-\d{2}-\d{2}$/.test(c))).toBe(true);
+    });
+
+    it('trae la hora de entrada de la persona en el día de su jornada', async () => {
+      const u = montar([jornada('a', { entrada: bog(8, 30) })]);
+      await u.click(await boton());
+      const col = enMatriz().columnas.indexOf('2026-09-01');
+      expect(col).toBeGreaterThan(0);
+      expect(enMatriz().filas[0][0]).toBe('Ana María Gómez');
+      expect(enMatriz().filas[0][col]).toBe('08:30');
+    });
+
+    // Sin filtros, la persona que no marcó nada sale con su fila en blanco: es a quien se busca.
+    it('sin filtros, una persona activa sin marcaciones sale con la fila en blanco', async () => {
+      const u = montar([jornada('a')], [COLABORADOR, BEATRIZ]);
+      await u.click(await boton());
+      const nombres = enMatriz().filas.map(f => f[0]);
+      expect(nombres).toEqual(['Ana María Gómez', 'Beatriz Ruiz']);
+      expect(enMatriz().filas[1].slice(1).every(c => c === '')).toBe(true);
+    });
+
+    // Con una persona elegida, la matriz es de ELLA: las demás personas activas no se suman en blanco. El
+    // servidor ya devuelve solo sus jornadas, y el simulacro lo respeta.
+    it('con una persona elegida, solo ella sale, aunque haya otras activas', async () => {
+      const u = montar([], [COLABORADOR, BEATRIZ]);
+      const todas = [jornada('a'), jornada('b', { colaboradorId: 'c2', colaborador: { id: 'c2', nombre: 'Beatriz', apellido: 'Ruiz' } })];
+      get.mockImplementation((url: string, cfg?: { params?: { colaboradorId?: string } }) => Promise.resolve({
+        data: url === '/registros'
+          ? todas.filter(j => !cfg?.params?.colaboradorId || j.colaboradorId === cfg.params.colaboradorId)
+          : url === '/colaboradores' ? [COLABORADOR, BEATRIZ] : [],
+      }));
+      await u.click(await screen.findByRole('button', { name: /todos los colaboradores/i }));
+      await u.click(await screen.findByRole('button', { name: /Beatriz Ruiz/ }));
+      await u.click(await boton());
+      expect(enMatriz().filas.map(f => f[0])).toEqual(['Beatriz Ruiz']);
+    });
+
+    // LA QUE IMPORTA: con un filtro de jornadas puesto, una celda en blanco querría decir «la filtré» y no
+    // «faltó». Se vuelve a lo que se está viendo: solo quien tiene jornadas en lo filtrado. Tres personas:
+    // Ana (jornada normal), Beatriz (jornada con la salida puesta por el sistema) y Carlos (activo, sin
+    // marcas). Filtrando por «No marcó salida» solo debe quedar Beatriz: Ana sale por el filtro, y a Carlos
+    // no se le suma en blanco.
+    it('con un filtro de jornadas puesto, la matriz es solo lo filtrado, sin sumar a nadie en blanco', async () => {
+      const CARLOS = { id: 'c3', nombre: 'Carlos', apellido: 'Peña', cedula: '777', sedeNombres: ['Norte'] };
+      const u = montar([
+        jornada('a'),
+        jornada('b', { colaboradorId: 'c2', colaborador: { id: 'c2', nombre: 'Beatriz', apellido: 'Ruiz' }, salidaEstimada: true }),
+      ], [COLABORADOR, BEATRIZ, CARLOS]);
+      await u.click(await screen.findByRole('button', { name: /filtros/i }));
+      await u.click(await screen.findByRole('button', { name: 'No marcó salida' }));
+      await u.click(await boton());
+      expect(enMatriz().filas.map(f => f[0])).toEqual(['Beatriz Ruiz']);
+    });
   });
 
   it('el archivo lleva el rango de fechas en el nombre', async () => {

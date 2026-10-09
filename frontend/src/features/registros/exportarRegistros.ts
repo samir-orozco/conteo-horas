@@ -105,6 +105,73 @@ export function filasDeRegistros(
   ]);
 }
 
+// ===== LA HOJA «ENTRADAS POR DÍA» (9 de octubre de 2026, petición del dueño) =====
+//
+// Una fila por persona, una columna por día y, en la celda, la hora de la PRIMERA entrada de ese día. Es lo que
+// se armaba a mano con una tabla dinámica sobre la hoja «Registros»; escrita aquí, además, trae lo que una
+// tabla dinámica no puede traer: los días del rango en los que nadie marcó, y las personas sin ninguna marcación.
+//
+// La celda vacía es vacía: no dice si la persona descansó, tenía una novedad o faltó. Eso necesita los días
+// esperados, que viven en el servidor, y sería otro reporte.
+
+export const HOJA_ENTRADAS = 'Entradas por día';
+
+export type PersonaSinMarcas = { id: string; nombre: string; apellido: string };
+
+const FECHA_ISO = /^\d{4}-\d{2}-\d{2}$/;
+
+// Los días de `desde` a `hasta`, ambos incluidos, como «yyyy-MM-dd». Se cuentan con aritmética de UTC sobre las
+// partes del texto y no con `new Date(texto)` leído en hora local: una fecha sin hora es medianoche UTC, y en una
+// máquina al occidente de Colombia (las pruebas corren en Los Ángeles) saldría el día anterior.
+function diasDelRango(desde: string, hasta: string): string[] {
+  if (!FECHA_ISO.test(desde) || !FECHA_ISO.test(hasta)) return [];
+  const [a, m, d] = desde.split('-').map(Number);
+  const dias: string[] = [];
+  for (let i = 0; ; i++) {
+    const dia = new Date(Date.UTC(a, m - 1, d + i)).toISOString().slice(0, 10);
+    if (dia > hasta) break;
+    dias.push(dia);
+  }
+  return dias;
+}
+
+// `sinMarcas` son las personas que van aunque no tengan ninguna jornada en `jornadas`: quien llama decide si hay
+// que sumarlas. La pantalla las suma solo cuando no hay filtros de jornada puestos; con uno puesto, una celda en
+// blanco querría decir «la filtré» y no «faltó».
+export function matrizDeEntradas(
+  jornadas: JornadaExportable[],
+  desde: string,
+  hasta: string,
+  sinMarcas: PersonaSinMarcas[],
+): { columnas: string[]; filas: Celda[][] } {
+  // Por identificador y no por nombre: dos personas pueden llamarse igual.
+  const personas = new Map<string, { nombre: string; primera: Map<string, string> }>();
+
+  for (const j of jornadas) {
+    const p = personas.get(j.colaboradorId)
+      ?? { nombre: `${j.colaborador.nombre} ${j.colaborador.apellido}`, primera: new Map<string, string>() };
+    personas.set(j.colaboradorId, p);
+    if (!j.entrada) continue;
+    const d = dia(j.fecha);
+    const antes = p.primera.get(d);
+    if (!antes || new Date(j.entrada).getTime() < new Date(antes).getTime()) p.primera.set(d, j.entrada);
+  }
+  for (const p of sinMarcas) {
+    if (!personas.has(p.id)) personas.set(p.id, { nombre: `${p.nombre} ${p.apellido}`, primera: new Map() });
+  }
+
+  // Los días del rango y, además, cualquier día que tenga una marcación: una marcación nunca se pierde por caer
+  // fuera de las columnas. El servidor ya filtra por rango, así que en uso real son los mismos; si no lo fueran,
+  // cortarla en silencio daría un archivo plausible y falso. «yyyy-MM-dd» se ordena como texto.
+  const conMarcas = [...personas.values()].flatMap(p => [...p.primera.keys()]);
+  const dias = [...new Set([...diasDelRango(desde, hasta), ...conMarcas])].sort();
+
+  const filas = [...personas.values()]
+    .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'))
+    .map(p => [p.nombre, ...dias.map(d => { const entrada = p.primera.get(d); return entrada ? hora(entrada) : ''; })]);
+  return { columnas: ['Colaborador', ...dias], filas };
+}
+
 // El rango va en el nombre: dos descargas del mismo mes distinto se distinguen
 // en la carpeta de descargas sin abrirlas.
 export const nombreDelArchivo = (desde: string, hasta: string) => `Registros_${desde}_a_${hasta}`;
