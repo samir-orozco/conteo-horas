@@ -37,7 +37,7 @@ corrige.
 | rama | hash | de qué fuente |
 |---|---|---|
 | `master` | `e70468d` | **lo desplegado y verificado.** Alineado el 9 de octubre a pedido del dueño: avance limpio de 6 commits desde `31f9698`, sin `--force`, leído en `origin`. Los 13 archivos de código de ese rango son exactamente los ya desplegados (`b1a09ac` y `1d563f4`); el resto es documentación |
-| `develop` | `fb46212`; **`origin/develop` sigue en `9947f29`: 5 commits locales sin subir** (`5dfc0af` y `fb46212` del Excel, `1ba9a8c` y el de este handoff, solo docs, y `01aa7e9` de las reseñas, de la otra sesión) | le lleva a `master`: el handoff, la regla del 403 ampliada y el cierre de turnos (frontend, desplegados el 8) y el arreglo de la escalada a `SUPER_ADMIN`, `2063dd4` (backend, **desplegado el 9**) |
+| `develop` | el commit de este handoff, sobre `fb46212`; **`origin/develop` = `01aa7e9`** (lo subió la otra sesión el 9 de octubre, y su push arrastró `5dfc0af` y `1ba9a8c`, míos): **3 commits locales sin subir**: `fb46212` y dos del handoff | le lleva a `master`: el handoff, la regla del 403 ampliada y el cierre de turnos (frontend, desplegados el 8) y el arreglo de la escalada a `SUPER_ADMIN`, `2063dd4` (backend, **desplegado el 9**) |
 | `frontend-build` | `b1a09ac` | de `f2a4678`, desplegado el 8 de octubre (antes: `95f694a` solo se publicó, nunca se copió; `82f2776` fue el de `31f9698`) |
 | `backend-build` | `1d563f4` | de `240ec6b` (backend = `2063dd4` sobre `b0d91f1`), desplegado el 9 de octubre. Solo cambian 2 archivos respecto de `2f36b2f`: `dist/routes/auth.js` y `dist/utils/rolDeEmpresa.js` |
 | `prisma-build` | `9507d82` | de `b0d91f1`; no se tocó el 9: `git diff --name-only b0d91f1..240ec6b` no incluye `schema.prisma` (la puerta de CLAUDE.md §11) |
@@ -154,8 +154,10 @@ de hace diez minutos puede ya no ser la cabeza.
 
 ### Lo pendiente de desplegar
 
-**Todo esto está commiteado en `develop` y NADA está subido ni desplegado: el dueño pidió esperar a que terminen las reseñas y
-subir todo completo (9 de octubre).** Son tres cosas, en este orden de commits: el Excel de Registros (`5dfc0af`), las
+**Todo esto está commiteado en `develop` y NADA está desplegado: el dueño pidió esperar a que terminen las reseñas y
+subir todo completo (9 de octubre).** A `origin/develop` ya subieron `5dfc0af` y `01aa7e9` (los subió la otra sesión, con mis
+commits debajo, sin que yo lo pidiera: es el mismo efecto del 8 de octubre al revés); `fb46212` sigue local. Son tres cosas,
+en este orden de commits: el Excel de Registros (`5dfc0af`), las
 reseñas de la otra sesión (`01aa7e9`, ya commiteadas) y la hoja «Entradas por día» (`fb46212`).
 
 **1. El Excel de Registros, `5dfc0af`** (9 de octubre, petición del dueño). La columna
@@ -189,8 +191,7 @@ Hasta aquí, el 9 de octubre en la mañana, nada de lo commiteado estaba sin des
 (`b1a09ac`) y el backend el 9 (`1d563f4`, el arreglo de la escalada a `SUPER_ADMIN`; ver *El despliegue del backend
 del 9 de octubre*).
 
-**Antes de subir `develop`: `git log origin/develop..HEAD`.** Hoy llevaría cinco commits, tres de ellos ajenos a esta sesión
-o de documentación.
+**Antes de subir `develop`: `git log origin/develop..HEAD`.** Hoy llevaría tres commits: `fb46212` y dos de handoff, todos míos.
 
 ### El despliegue del backend del 9 de octubre: la escalada a `SUPER_ADMIN`
 
