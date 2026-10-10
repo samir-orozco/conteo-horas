@@ -37,17 +37,16 @@ corrige.
 | rama | hash | de qué fuente |
 |---|---|---|
 | `master` | `e70468d` | **lo desplegado y verificado.** Alineado el 9 de octubre a pedido del dueño: avance limpio de 6 commits desde `31f9698`, sin `--force`, leído en `origin`. Los 13 archivos de código de ese rango son exactamente los ya desplegados (`b1a09ac` y `1d563f4`); el resto es documentación |
-| `develop` | el commit de este handoff, sobre `fb46212`; **`origin/develop` = `01aa7e9`** (lo subió la otra sesión el 9 de octubre, y su push arrastró `5dfc0af` y `1ba9a8c`, míos): **3 commits locales sin subir**: `fb46212` y dos del handoff | le lleva a `master`: el handoff, la regla del 403 ampliada y el cierre de turnos (frontend, desplegados el 8) y el arreglo de la escalada a `SUPER_ADMIN`, `2063dd4` (backend, **desplegado el 9**) |
-| `frontend-build` | `b1a09ac` | de `f2a4678`, desplegado el 8 de octubre (antes: `95f694a` solo se publicó, nunca se copió; `82f2776` fue el de `31f9698`) |
-| `backend-build` | `1d563f4` | de `240ec6b` (backend = `2063dd4` sobre `b0d91f1`), desplegado el 9 de octubre. Solo cambian 2 archivos respecto de `2f36b2f`: `dist/routes/auth.js` y `dist/utils/rolDeEmpresa.js` |
-| `prisma-build` | `9507d82` | de `b0d91f1`; no se tocó el 9: `git diff --name-only b0d91f1..240ec6b` no incluye `schema.prisma` (la puerta de CLAUDE.md §11) |
-| bundle público | `index-ommmrJo5.js` | comprobado el 8 de octubre: el `index.html` del docroot lo pide, trae el texto nuevo y el sitio lo entrega por HTTPS (`curl` desde el servidor) |
+| `develop` | `fa690de` + el commit de este handoff (solo docs); **`origin/develop` = `fa690de`**, subido el 9 de octubre antes de armar los artefactos | todo lo de arriba, **ya desplegado**: reseñas, Excel de Registros con dos columnas de sede y su hoja «Entradas por día» |
+| `frontend-build` | `a19b885` | de `fa690de`, desplegado el 9 de octubre (antes: `b1a09ac` el 8; `95f694a` solo se publicó y nunca se copió) |
+| `backend-build` | `c1bea8d` | de `fa690de`, desplegado el 9 de octubre: 6 archivos modificados y 2 nuevos (`routes/resenas.js`, `utils/resenas.js`) respecto de `1d563f4` (la escalada, del mismo día) |
+| `prisma-build` | `6ccd2be` | de `fa690de`, desplegado el 9 de octubre ANTES del backend: 7 archivos; el esquema solo suma (0 líneas quitadas, 69 añadidas: el modelo `Resena`); binarios idénticos |
+| bundle público | `index-BSG4ZGoU.js` | comprobado el 9 de octubre: el `index.html` del docroot lo pide, el sitio lo entrega por HTTPS (`curl` desde el servidor) y trae «Entradas por día» |
 
-`prisma-build` no se movió desde la noche del 4 de octubre **porque el esquema no cambió**
-(`schema.prisma` no sale en `git diff --name-only b0d91f1..develop`). `backend-build` se movió el 9
-de octubre, con el único cambio de backend desde entonces: `2063dd4`, el arreglo de la escalada a
-`SUPER_ADMIN` (`routes/auth.ts`, `utils/rolDeEmpresa*`, el tope del lint a 168 en `package.json`).
-**Código commiteado de `develop` sin desplegar (9 de octubre): 1 commit, de frontend, `5dfc0af`** (el Excel de Registros con dos columnas de sede; ver *Lo pendiente de desplegar*).
+Las tres ramas de build se movieron el 9 de octubre: `backend-build` primero con `2063dd4` (el arreglo de la escalada a
+`SUPER_ADMIN`, `1d563f4`) y esa misma noche con las reseñas; `prisma-build` con el modelo `Resena`, que es el primer cambio de esquema
+desde el 4 de octubre; y `frontend-build` con las reseñas y el Excel. **Código commiteado de `develop` sin desplegar, medido el 9 de octubre
+a las 22:30: ninguno.**
 
 Qué llevan, según los mensajes de los propios artefactos: el backend y el esquema, el clima
 laboral y el kiosco que se pausa si no se paga; el frontend, además, lo que se hizo del 4 al 6
@@ -154,11 +153,9 @@ de hace diez minutos puede ya no ser la cabeza.
 
 ### Lo pendiente de desplegar
 
-**Todo esto está commiteado en `develop` y NADA está desplegado: el dueño pidió esperar a que terminen las reseñas y
-subir todo completo (9 de octubre).** A `origin/develop` ya subieron `5dfc0af` y `01aa7e9` (los subió la otra sesión, con mis
-commits debajo, sin que yo lo pidiera: es el mismo efecto del 8 de octubre al revés); `fb46212` sigue local. Son tres cosas,
-en este orden de commits: el Excel de Registros (`5dfc0af`), las
-reseñas de la otra sesión (`01aa7e9`, ya commiteadas) y la hoja «Entradas por día» (`fb46212`).
+**Nada.** Todo lo commiteado en `develop` está desplegado desde el 9 de octubre (entre las 21:30 y las 22:30 de Bogotá; ver
+*El despliegue completo del 9 de octubre*). Lo que sigue, tal como estaba descrito antes de desplegar, es **lo que llevó**:
+el Excel de Registros (`5dfc0af`), las reseñas de la otra sesión (`01aa7e9`) y la hoja «Entradas por día» (`fb46212`).
 
 **1. El Excel de Registros, `5dfc0af`** (9 de octubre, petición del dueño). La columna
 «Sede» pasa a ser la sede a la que PERTENECE la persona (la asignada; si no tiene, la atribuida) y se añade
@@ -184,14 +181,57 @@ errores heredados, no uno más).
 esquema y tabla nueva**, así que el despliegue de «todo completo» lleva LAS CUATRO ramas, en este orden (CLAUDE.md §11):
 (1) `sql/resenas.sql` en phpMyAdmin; (2) `prisma-build`; (3) `backend-build`; (4) `frontend-build`. `schema.prisma` suma
 74 líneas, solo aditivas: el modelo `Resena` y su relación con `Empresa`. Las pruebas del frontend de las reseñas pasan
-dentro de las 2527. **El backend no se midió con ellas**: antes de armar `backend-build` hay que correr sus puertas en un
-árbol limpio (la última medida, 104 archivos / 1764 pruebas y lint 168, es de antes de las reseñas).
+dentro de las 2527. El backend se midió con ellas en un árbol limpio sobre `fa690de`: `tsc --noEmit` en 0, **107 archivos / 1916
+pruebas** (+1 fallo esperado) y lint en **168**, su tope.
 
-Hasta aquí, el 9 de octubre en la mañana, nada de lo commiteado estaba sin desplegar: el frontend quedó al día el 8
-(`b1a09ac`) y el backend el 9 (`1d563f4`, el arreglo de la escalada a `SUPER_ADMIN`; ver *El despliegue del backend
-del 9 de octubre*).
+### El despliegue completo del 9 de octubre: reseñas y Excel
 
-**Antes de subir `develop`: `git log origin/develop..HEAD`.** Hoy llevaría tres commits: `fb46212` y dos de handoff, todos míos.
+**Pasos, con un «sí» del dueño en cada uno que cambia producción.** Antes: la copia de la base la descargó el dueño (lo exige
+el propio SQL), y se verificó que el `kill` del día anterior había hecho efecto (solo quedaba el proceso 3416140).
+
+1. **SQL `sql/resenas.sql`** en phpMyAdmin. Antes, en producción: `resenas_existe = 0`, 37 tablas, MariaDB 11.4.13. Después: **23
+   columnas, llave `resenas_empresaId_fkey` → `empresas` con `CASCADE`, 3 filas `POR_REVISAR` sin estrellas y los índices
+   `PRIMARY`, `resenas_empresaId_key` y `resenas_estado_idx`**. Los textos con tildes llegaron bien: `CHAR_LENGTH` 184, 183 y 213 es
+   el largo real (Python `len`). Se probó antes en una MariaDB 12.3 desechable, porque el archivo avisaba que los ids de los
+   testimonios cambiaron DESPUÉS de su última prueba.
+2. **`prisma-build` `6ccd2be`** al cliente vivo: `grep -c nombreRetiradoEn` pasó de **0 a 31** y el `diff` contra el artefacto quedó vacío,
+   ANTES del reinicio.
+3. **`backend-build` `c1bea8d`**: antes de copiar, `diff -rq` contra la `dist` viva mostró SOLO los 6 modificados y los 2 nuevos; después, vacío.
+4. **Reinicio** (`touch tmp/restart.txt`): proceso `lsnode` nuevo (2158836, 27 s) y el viejo desapareció solo; `/api/health` →
+   `{"status":"ok"}` y **`/api/resenas/publicas` → `{"resenas":[]}`**, que ejercita código, cliente y tabla nuevos a la vez (un 401 no lo haría).
+5. **`frontend-build` `a19b885`** al docroot: la vista previa dijo «añade 5 archivos y cambia 6» (`index.html`, `sitemap.xml` y 4
+   calculadoras con la fecha del día); después, vacío. `curl https://horapro.co/` entrega `index-BSG4ZGoU.js` y ese bundle trae «Entradas por día».
+6. **Comprobación del esquema entero** (DESPLIEGUE.md §4.1.1, `prisma/sql-contra-esquema.ts`): **cero filas = las 425 columnas de las 38 tablas
+   de `schema.prisma` existen en producción**. La consulta tardó 1,37 s; la página se quedó en «Loading…» más de dos minutos y la
+   lista de procesos de MariaDB confirmó que no había nada corriendo. La UI miente, la base no.
+
+**Lo que NO se comprobó: el kiosco con el cliente de Prisma nuevo.** Eran las 22:34 en Bogotá (la última marcación, 19:08): cero marcaciones y
+cero errores desde el reinicio, sin tráfico, no prueban nada. **Primera cosa de mañana**: tras las primeras marcaciones, correr en phpMyAdmin
+`SELECT COUNT(*) FROM registros WHERE creadoEn >= UTC_TIMESTAMP() - INTERVAL 40 MINUTE` y los eventos `tipo = 'ERROR'` del mismo lapso. Si
+el kiosco falla, `prisma-build` es el primer sospechoso (CLAUDE.md §11, el 10 de septiembre).
+
+**Efecto visible:** la landing **no tiene sección de reseñas** hasta que el dueño publique alguna desde el super admin, llenando «Dónde
+quedó» y «Cómo autorizó». Los tres testimonios de antes están en la tabla como manuales y `POR_REVISAR`.
+
+**Trampas de herramienta de este despliegue**, para no repetirlas:
+- **phpMyAdmin pregunta «¿Seguro que quieres ejecutar…?» con un `UPDATE` sin `WHERE`**, y `ON UPDATE CASCADE` y `ON DUPLICATE KEY UPDATE` lo
+  disparan. El navegador integrado desactiva los diálogos del sistema y contesta «no» solo: tres intentos se cancelaron sin ruido, y la
+  señal estaba en la CONSOLA, no en la página. Se resolvió con el dueño anteponiendo el comentario inerte `/* WHERE */`; el resto del texto
+  era idéntico por hash. No se apagó el aviso en la configuración de phpMyAdmin.
+- **El clic por referencia usa píxeles de la página, pero la captura está escalada** (0,757 con una ventana de 1057×969): el botón «Go» queda en
+  (353, 475) de la captura. `Ctrl+A` y `Ctrl+Home` no funcionan en el editor del navegador integrado, así que no se puede reemplazar ni
+  anteponer: se recarga la página (editor vacío) y se escribe el texto entero una sola vez. Un intento de anteponer dejó el texto corrupto y
+  otro lo duplicó; ninguno se envió, porque cada texto se verificó por hash antes de ejecutar.
+- **La terminal de cPanel se congela a mitad de línea** (varias veces, casi siempre en el segundo bloque de una línea larga). No pulsar Enter
+  sobre una línea que no se dibuja completa: recargar y repetir, con comandos de menos de 100 teclas en un solo bloque. Una `t` que «falta» en
+  `restart.tx` no se rellena a ciegas: si fuera retraso de dibujo, quedaría `restart.txtt`.
+- **El cliente `mariadb` de la prueba local debe llevar `--default-character-set=utf8mb4`**: sin eso leyó el `.sql` como latin1 y guardó las
+  tildes como dos caracteres (190 y 189 donde el texto real mide 184 y 183). Lo cazó producción.
+- **Dije «es hora laboral» sin mirar la hora.** Eran las 21:30 a 22:30. Antes de hablar de tráfico, `SELECT UTC_TIMESTAMP()`.
+
+**Pendiente tras este despliegue:** (1) el dueño publica reseñas desde el super admin; (2) comprobar el kiosco mañana, como arriba; (3) `master`
+sigue en `e70468d`, detrás de lo desplegado (`fa690de`): alinearlo es un avance limpio y lo pide el dueño; (4) la columna «Sede» de la tabla de
+Registros (PENDIENTES nº 38) espera su decisión.
 
 ### El despliegue del backend del 9 de octubre: la escalada a `SUPER_ADMIN`
 
@@ -290,8 +330,8 @@ octubre, y el `push` de `develop` para el cierre de turnos lo subió sin propon�
 desplegó el 9 (*El despliegue del backend del 9 de octubre*). La regla para la próxima vez: antes de subir
 `develop`, `git log origin/develop..HEAD` y mirar QUÉ más va en el viaje.
 
-**El trabajo de la otra sesión (las reseñas) ya está COMMITEADO, no sube ni se despliega todavía** (`01aa7e9`, 9 de octubre
-a las 16:17; el detalle y el orden de despliegue, en *Lo pendiente de desplegar*, punto 3). Hasta las 16:08 de ese día seguía
+**El trabajo de la otra sesión (las reseñas) está COMMITEADO y DESPLEGADO** (`01aa7e9`, 9 de octubre a las 16:17; desplegado esa
+noche, ver *El despliegue completo del 9 de octubre*). Hasta las 16:08 de ese día seguía
 sin commitear y mezclado en la misma carpeta: es la razón por la que los artefactos siempre se compilan en un `git worktree`
 limpio y por la que una prueba de «¿la puerta ve un intruso?» puede quedarse sin intruso (ver *Lo que NO hay que volver a hacer*).
 
