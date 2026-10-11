@@ -332,10 +332,11 @@ Marcar fuera de la geocerca con alerta, configurado POR SEDE al crearla o editar
 - Dos ajustes nuevos en la sede: «Permitir marcar fuera de la geocerca» (sí/no) y «hasta qué distancia» (el
   rango extra). Dentro de la geocerca, igual que hoy; fuera pero dentro del rango, marca y el registro queda con
   alerta («Fuera de sede · a 320 m de Norte»); más lejos, se bloquea como hoy.
-- Aplica a presenciales e híbridos. La alerta se ve en Registros y TAMBIÉN en la campana.
+- El margen aplica a presenciales e híbridos; la alerta (Registros y campana) solo a presenciales.
 - Una sede sin geocerca (sin coordenadas) no cambia: no hay distancia que medir, y la celda dirá «Sin ubicación de sede».
-- **Sin decidir:** el choque con los híbridos, que marcan fuera de sede por definición los días en casa: (a) guardar
-  la distancia y mostrarla, sin campana; o (b) alertar solo fuera del rango extra. Recomendación: (a).
+- **Híbridos (decidido el 11 de octubre): NUNCA alerta ni campana.** Dentro del rango de una sede (geocerca o margen
+  extra) Registros muestra esa sede; fuera, marcan normal y la celda dice «Fuera de sede». La alerta y la campana son
+  solo para presenciales que marcan fuera de la geocerca pero dentro del margen.
 - Se apoya en `registros.distanciaEntrada` / `distanciaSalida`, que ya existen: no guarda la coordenada, así que no
   choca con la política 1.2. Cambio de esquema (dos columnas en `sedes`): SQL y `prisma-build`.
 - La celda de Registros sin sede de marcación pasa a decir el caso: «Remoto», «Fuera de sede» o «Sin ubicación de sede»
