@@ -63,4 +63,22 @@ describe('TabConexiones: los avisos de Telegram', () => {
     await userEvent.click(sw);
     expect(put).toHaveBeenLastCalledWith('/configuracion', { TELEGRAM_ALERTAS_TARDE: '0' });
   });
+
+  // Encontrado en el navegador el 11 de octubre: el servidor se reinició justo al apagar el aviso, el
+  // guardado falló y la pantalla quedó diciendo «apagado» con el aviso encendido en la base. Quien lo
+  // apagó cree que ya no llegan, y siguen llegando al grupo.
+  it('si no se pudo guardar, el interruptor vuelve a como estaba y lo dice', async () => {
+    conConfig({ TELEGRAM_NO_HA_LLEGADO: '1', TELEGRAM_ALERTAS_TARDE: '1' });
+    put.mockRejectedValue(new Error('red'));
+    montar();
+    const noLlego = await interruptor(/quién no ha llegado/i);
+    await waitFor(() => expect(noLlego).toHaveAttribute('aria-checked', 'true'));
+    await userEvent.click(noLlego);
+    expect(await screen.findByText('No pudimos guardar el cambio. Intenta de nuevo.')).toBeInTheDocument();
+    expect(noLlego).toHaveAttribute('aria-checked', 'true');
+
+    const tarde = await interruptor(/llegadas tarde/i);
+    await userEvent.click(tarde);
+    expect(tarde).toHaveAttribute('aria-checked', 'true');
+  });
 });

@@ -25,17 +25,22 @@ export default function TabConexiones() {
     });
   }, []);
 
-  const toggleAlertas = async () => {
-    const nuevo = !alertasTarde;
-    setAlertasTarde(nuevo);
-    await api.put('/configuracion', { TELEGRAM_ALERTAS_TARDE: nuevo ? '1' : '0' });
-  };
+  const [errorAviso, setErrorAviso] = useState(false);
 
-  const toggleNoHaLlegado = async () => {
-    const nuevo = !noHaLlegado;
-    setNoHaLlegado(nuevo);
-    await api.put('/configuracion', { TELEGRAM_NO_HA_LLEGADO: nuevo ? '1' : '0' });
+  // Si el guardado falla, el interruptor vuelve a como estaba y se dice. Antes quedaba mostrando el
+  // valor nuevo: se encontró en el navegador el 11 de octubre de 2026, con el aviso «apagado» en
+  // pantalla y encendido en la base, que es justo lo que no puede pasar con algo que escribe a un grupo.
+  const cambiarAviso = async (clave: string, actual: boolean, poner: (v: boolean) => void) => {
+    const nuevo = !actual;
+    poner(nuevo); setErrorAviso(false);
+    try {
+      await api.put('/configuracion', { [clave]: nuevo ? '1' : '0' });
+    } catch {
+      poner(actual); setErrorAviso(true);
+    }
   };
+  const toggleAlertas = () => cambiarAviso('TELEGRAM_ALERTAS_TARDE', alertasTarde, setAlertasTarde);
+  const toggleNoHaLlegado = () => cambiarAviso('TELEGRAM_NO_HA_LLEGADO', noHaLlegado, setNoHaLlegado);
 
   // Los pasos del chat se ven con CUALQUIERA de los dos avisos encendido: lo comparten.
   const algunAviso = alertasTarde || noHaLlegado;
@@ -96,6 +101,8 @@ export default function TabConexiones() {
             </div>
             <Interruptor encendido={noHaLlegado} onClick={toggleNoHaLlegado} disabled={!cargado} etiqueta="tg-no-llego" />
           </div>
+
+          {errorAviso && <p className="text-red-600 text-sm">No pudimos guardar el cambio. Intenta de nuevo.</p>}
 
           {algunAviso && cargado && (
             <div className="border-t border-gray-100 pt-5 space-y-3">
