@@ -327,6 +327,20 @@ explícitos.
 buscó en los archivos del frontend, donde no hay. Antes de incrustar un mapa hay
 que mirarlo.
 
+**Decisiones del dueño del 11 de octubre de 2026 (sin mapa: la parte del mapa sigue en pausa).**
+Marcar fuera de la geocerca con alerta, configurado POR SEDE al crearla o editarla:
+- Dos ajustes nuevos en la sede: «Permitir marcar fuera de la geocerca» (sí/no) y «hasta qué distancia» (el
+  rango extra). Dentro de la geocerca, igual que hoy; fuera pero dentro del rango, marca y el registro queda con
+  alerta («Fuera de sede · a 320 m de Norte»); más lejos, se bloquea como hoy.
+- Aplica a presenciales e híbridos. La alerta se ve en Registros y TAMBIÉN en la campana.
+- Una sede sin geocerca (sin coordenadas) no cambia: no hay distancia que medir, y la celda dirá «Sin ubicación de sede».
+- **Sin decidir:** el choque con los híbridos, que marcan fuera de sede por definición los días en casa: (a) guardar
+  la distancia y mostrarla, sin campana; o (b) alertar solo fuera del rango extra. Recomendación: (a).
+- Se apoya en `registros.distanciaEntrada` / `distanciaSalida`, que ya existen: no guarda la coordenada, así que no
+  choca con la política 1.2. Cambio de esquema (dos columnas en `sedes`): SQL y `prisma-build`.
+- La celda de Registros sin sede de marcación pasa a decir el caso: «Remoto», «Fuera de sede» o «Sin ubicación de sede»
+  (nº 38, opción 3 elegida por el dueño, junto con que las empresas carguen las coordenadas de sus sedes).
+
 ## 12. Enlace para que alguien en la sede capture la ubicación · petición 5
 
 Un enlace de un solo uso y corta vida: la persona que está en la sede lo abre, da
