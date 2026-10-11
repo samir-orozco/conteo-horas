@@ -9,7 +9,7 @@ import Fastify from 'fastify';
 const { prisma, estado } = vi.hoisted(() => {
   const estado = {
     sedesActivas: 1,
-    existente: null as null | { id: string; empresaId: string; nombre: string; lat: number | null; lng: number | null; radio: number },
+    existente: null as null | { id: string; empresaId: string; nombre: string; lat: number | null; lng: number | null; radio: number; margenFuera: number },
     features: {} as Record<string, boolean>,
   };
   const prisma = {
@@ -42,7 +42,7 @@ const UBICACION = { lat: 6.2087, lng: -75.5674, radio: 150 };
 beforeEach(() => {
   vi.clearAllMocks();
   estado.sedesActivas = 1;
-  estado.existente = { id: 's1', empresaId: 'emp1', nombre: 'Sede principal', ...UBICACION };
+  estado.existente = { id: 's1', empresaId: 'emp1', nombre: 'Sede principal', ...UBICACION, margenFuera: 0 };
   estado.features = { gps: false, multiSede: true };
 });
 
@@ -125,6 +125,56 @@ describe('con el permiso de GPS', () => {
     expect(r.statusCode).toBe(403);
     expect(r.json()).toMatchObject({ codigo: 'FUNCION_PLAN', funcion: 'multiSede' });
     expect(prisma.sede.create).not.toHaveBeenCalled();
+    await app.close();
+  });
+});
+
+// El margen para marcar fuera de la geocerca, con alerta (11 de octubre de 2026). Qué valores valen lo
+// decide leerMargenFuera, con sus pruebas; aquí, que la ruta lo aplica.
+describe('el margen fuera de la geocerca', () => {
+  const datosEscritos = () => (prisma.sede.update.mock.calls[0] as unknown as [{ data: Record<string, unknown> }])[0].data;
+
+  it('un PUT que no lo manda lo deja como estaba, no lo apaga', async () => {
+    estado.existente = { ...estado.existente!, margenFuera: 200 };
+    const app = await montar();
+    const r = await app.inject({ method: 'PUT', url: '/api/sedes/s1', payload: { nombre: 'Principal', ...UBICACION } });
+    expect(r.statusCode).toBe(200);
+    expect(datosEscritos().margenFuera).toBe(200);
+    await app.close();
+  });
+
+  it('con el permiso de GPS se guarda lo que se manda', async () => {
+    estado.features = { gps: true, multiSede: true };
+    const app = await montar();
+    const r = await app.inject({ method: 'PUT', url: '/api/sedes/s1', payload: { nombre: 'Principal', ...UBICACION, margenFuera: 250 } });
+    expect(r.statusCode).toBe(200);
+    expect(datosEscritos().margenFuera).toBe(250);
+    await app.close();
+  });
+
+  it('sin el permiso de GPS, abrir el margen de una sede con ubicación es cambiar la geocerca: 403', async () => {
+    const app = await montar();
+    const r = await app.inject({ method: 'PUT', url: '/api/sedes/s1', payload: { nombre: 'Principal', ...UBICACION, margenFuera: 250 } });
+    expect(r.statusCode).toBe(403);
+    expect(prisma.sede.update).not.toHaveBeenCalled();
+    await app.close();
+  });
+
+  it('un valor inválido se rechaza con 400 y no se escribe nada, al crear y al editar', async () => {
+    estado.features = { gps: true, multiSede: true };
+    const app = await montar();
+    const crear = await app.inject({ method: 'POST', url: '/api/sedes', payload: { nombre: 'Norte', ...UBICACION, margenFuera: -5 } });
+    const editar = await app.inject({ method: 'PUT', url: '/api/sedes/s1', payload: { nombre: 'Principal', ...UBICACION, margenFuera: 'mucho' } });
+    expect([crear.statusCode, editar.statusCode]).toEqual([400, 400]);
+    expect(prisma.sede.create).not.toHaveBeenCalled();
+    expect(prisma.sede.update).not.toHaveBeenCalled();
+    await app.close();
+  });
+
+  it('al crear sin mandarlo queda en 0, apagado', async () => {
+    const app = await montar();
+    await app.inject({ method: 'POST', url: '/api/sedes', payload: { nombre: 'Norte', lat: null, lng: null } });
+    expect((prisma.sede.create.mock.calls[0] as unknown as [{ data: Record<string, unknown> }])[0].data.margenFuera).toBe(0);
     await app.close();
   });
 });

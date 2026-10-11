@@ -350,7 +350,11 @@ Marcar fuera de la geocerca con alerta, configurado POR SEDE al crearla o editar
    `sql/margen-fuera-de-geocerca.sql`, probado en MariaDB 12.3 desechable: dos corridas sin copiar la tabla y el
    deshacer limpio. Campana con `MARCO_FUERA_DE_GEOCERCA` (`utils/avisoFueraDeGeocerca.ts`) y aviso «Fuera de la
    geocerca» junto a la sede en Registros. **Toca `schema.prisma`: el despliegue son cuatro ramas (CLAUDE.md §11).**
-3. Falta: la pantalla de la sede para fijar el margen. Hasta entonces todas quedan en 0 y nada cambia.
+3. Hecho: la pantalla de la sede. «Permitir marcar fuera de la geocerca» y «hasta cuántos metros más allá del
+   radio» (propone 200, tope 1000), solo con «Exigir ubicación» encendido; sin GPS en el plan no se cambia, porque
+   abrirlo agranda la geocerca. Un PUT sin el campo lo deja como estaba (un frontend viejo no lo apaga). La costura
+   del kiosco se comprueba con `backend/prisma/probar-margen-kiosco.ts` contra el servidor local, y se vio fallar
+   quitando a propósito la línea que guarda la marca.
 4. Falta: los textos de la celda sin sede («Remoto», «Fuera de sede», «Sin ubicación de sede») y el Excel.
 - La celda de Registros sin sede de marcación pasa a decir el caso: «Remoto», «Fuera de sede» o «Sin ubicación de sede»
   (nº 38, opción 3 elegida por el dueño, junto con que las empresas carguen las coordenadas de sus sedes).

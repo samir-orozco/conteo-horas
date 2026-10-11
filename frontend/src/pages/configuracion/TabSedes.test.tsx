@@ -89,7 +89,7 @@ describe('TabSedes sin el permiso de GPS', () => {
     montar();
     await u.click(await screen.findByRole('button', { name: /nueva sede/i }));
     expect(await screen.findByText(/tu plan no incluye la marcación por gps/i)).toBeInTheDocument();
-    expect(screen.getByRole('switch')).toBeDisabled();
+    expect(screen.getByRole('switch', { name: 'Exigir ubicación para marcar' })).toBeDisabled();
   });
 
   it('a la sede que ya tenía ubicación se la puede quitar, pero no mover', async () => {
@@ -98,11 +98,11 @@ describe('TabSedes sin el permiso de GPS', () => {
     montar();
     await u.click(await screen.findByRole('button', { name: 'Editar' }));
     expect(await screen.findByText(/tu plan no incluye la marcación por gps/i)).toBeInTheDocument();
-    expect(screen.getByRole('switch')).toBeEnabled();
+    expect(screen.getByRole('switch', { name: 'Exigir ubicación para marcar' })).toBeEnabled();
     expect(screen.getByPlaceholderText('6.208700')).toBeDisabled();
     expect(screen.getByPlaceholderText('-75.567400')).toBeDisabled();
     expect(screen.getByRole('button', { name: /usar mi ubicación actual/i })).toBeDisabled();
-    expect(screen.getByRole('spinbutton')).toBeDisabled();
+    expect(screen.getByRole('spinbutton', { name: 'Radio permitido (metros)' })).toBeDisabled();
   });
 
   it('con el permiso de GPS, la ubicación se puede poner', async () => {
@@ -110,7 +110,103 @@ describe('TabSedes sin el permiso de GPS', () => {
     const u = userEvent.setup();
     montar();
     await u.click(await screen.findByRole('button', { name: /nueva sede/i }));
-    await u.click(screen.getByRole('switch'));
+    await u.click(screen.getByRole('switch', { name: 'Exigir ubicación para marcar' }));
     expect(screen.getByPlaceholderText('6.208700')).toBeEnabled();
+  });
+});
+
+// MARCAR FUERA DE LA GEOCERCA, CON ALERTA (11 de octubre de 2026, PENDIENTES nº 11). Dos ajustes en la
+// sede, como los pidió el dueño: si se permite y hasta cuántos metros más allá del radio. Se guardan en
+// un solo número, `margenFuera`, donde 0 es «no se permite». El servidor valida igual
+// (utils/ubicacionDeSede.ts y routes/sedes.gps.test.ts).
+describe('TabSedes · marcar fuera de la geocerca', () => {
+  const put = api.put as unknown as ReturnType<typeof vi.fn>;
+  const NORTE = { ...SEDES[0], lat: 6.2087, lng: -75.5674, margenFuera: 0 };
+  const conSedes = (sedes: object[], features: Record<string, boolean> = { multiSede: true, gps: true }) => {
+    invalidarMiPlan();
+    put.mockReset();
+    put.mockResolvedValue({ data: {} });
+    get.mockImplementation((url: string) => {
+      if (url === '/sedes') return Promise.resolve({ data: sedes });
+      if (url === '/suscripcion/mi-plan') {
+        return Promise.resolve({ data: { plan: 'EMPRESARIAL', nombrePlan: 'Empresarial', ilimitado: true, limite: null, features } });
+      }
+      return Promise.reject(new Error('url inesperada: ' + url));
+    });
+  };
+  const PERMITIR = 'Permitir marcar fuera de la geocerca';
+  const METROS = 'Metros más allá del radio';
+  const editar = async (u: ReturnType<typeof userEvent.setup>) => {
+    montar();
+    await u.click((await screen.findAllByRole('button', { name: 'Editar' }))[0]);
+  };
+  const cuerpo = () => put.mock.calls[0][1] as Record<string, unknown>;
+
+  it('encenderlo propone 200 m y los guarda', async () => {
+    conSedes([NORTE]);
+    const u = userEvent.setup();
+    await editar(u);
+    expect(screen.getByRole('switch', { name: PERMITIR })).toHaveAttribute('aria-checked', 'false');
+    await u.click(screen.getByRole('switch', { name: PERMITIR }));
+    expect(screen.getByRole('spinbutton', { name: METROS })).toHaveValue(200);
+    await u.click(screen.getByRole('button', { name: 'Guardar' }));
+    expect(cuerpo().margenFuera).toBe(200);
+  });
+
+  it('una sede con margen lo trae puesto, y apagarlo guarda 0', async () => {
+    conSedes([{ ...NORTE, margenFuera: 300 }]);
+    const u = userEvent.setup();
+    await editar(u);
+    expect(screen.getByRole('switch', { name: PERMITIR })).toHaveAttribute('aria-checked', 'true');
+    expect(screen.getByRole('spinbutton', { name: METROS })).toHaveValue(300);
+    await u.click(screen.getByRole('switch', { name: PERMITIR }));
+    await u.click(screen.getByRole('button', { name: 'Guardar' }));
+    expect(cuerpo().margenFuera).toBe(0);
+  });
+
+  it('sin exigir ubicación no se ofrece, porque no hay geocerca de la cual salirse, y se guarda 0', async () => {
+    conSedes([{ ...NORTE, lat: null, lng: null }]);
+    const u = userEvent.setup();
+    await editar(u);
+    expect(screen.queryByRole('switch', { name: PERMITIR })).toBeNull();
+    await u.click(screen.getByRole('button', { name: 'Guardar' }));
+    expect(cuerpo().margenFuera).toBe(0);
+  });
+
+  it('quitarle la ubicación a una sede con margen lo apaga también: sin geocerca no hay margen', async () => {
+    conSedes([{ ...NORTE, margenFuera: 300 }]);
+    const u = userEvent.setup();
+    await editar(u);
+    await u.click(screen.getByRole('switch', { name: 'Exigir ubicación para marcar' }));
+    await u.click(screen.getByRole('button', { name: 'Guardar' }));
+    expect(cuerpo()).toMatchObject({ lat: null, lng: null, margenFuera: 0 });
+  });
+
+  it('encendido con 0 o con más de 1000 m no se guarda, y dice por qué', async () => {
+    conSedes([NORTE]);
+    const u = userEvent.setup();
+    await editar(u);
+    await u.click(screen.getByRole('switch', { name: PERMITIR }));
+    const metros = screen.getByRole('spinbutton', { name: METROS });
+    for (const malo of ['0', '1500']) {
+      await u.clear(metros);
+      await u.type(metros, malo);
+      await u.click(screen.getByRole('button', { name: 'Guardar' }));
+      expect(screen.getByText('Escribe hasta cuántos metros más allá del radio, entre 1 y 1000.')).toBeInTheDocument();
+    }
+    expect(put).not.toHaveBeenCalled();
+  });
+
+  it('la lista dice el margen de la sede que lo tiene', async () => {
+    conSedes([{ ...NORTE, margenFuera: 300 }]);
+    montar();
+    expect(await screen.findByText(/hasta 300 m más, con alerta/)).toBeInTheDocument();
+  });
+
+  it('sin el permiso de GPS no se puede cambiar: abrirlo agranda la geocerca', async () => {
+    conSedes([NORTE], { multiSede: true, gps: false });
+    const u = userEvent.setup();
+    await editar(u);
+    expect(screen.getByRole('switch', { name: PERMITIR })).toBeDisabled();
   });
 });

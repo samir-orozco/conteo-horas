@@ -1,7 +1,7 @@
 import { FastifyInstance } from 'fastify';
 import { prisma } from '../prisma';
 import { capacidadesEmpresa } from '../utils/capacidades';
-import { cambiaLaGeocerca } from '../utils/ubicacionDeSede';
+import { cambiaLaGeocerca, leerMargenFuera, MARGEN_FUERA_MAXIMO } from '../utils/ubicacionDeSede';
 import { sedePrincipal } from '../utils/sedePrincipal';
 
 // Sedes de la empresa: cada local con su propia geocerca.
@@ -22,7 +22,7 @@ import { sedePrincipal } from '../utils/sedePrincipal';
 
 type SedeInput = {
   nombre?: string; direccion?: string | null;
-  lat?: unknown; lng?: unknown; radio?: unknown; activa?: unknown;
+  lat?: unknown; lng?: unknown; radio?: unknown; activa?: unknown; margenFuera?: unknown;
 };
 
 // Coordenada válida o null. Una sede sin coordenadas no exige ubicación, que es
@@ -46,6 +46,10 @@ function camposSede(body: SedeInput) {
     radio,
   };
 }
+
+const MARGEN_INVALIDO = {
+  error: `El margen para marcar fuera de la geocerca tiene que ser un número de metros entre 0 y ${MARGEN_FUERA_MAXIMO}.`,
+};
 
 export default async function sedeRoutes(app: FastifyInstance) {
   const auth = { preHandler: [app.requireEmpresa] };
@@ -76,7 +80,9 @@ export default async function sedeRoutes(app: FastifyInstance) {
     const nombre = body.nombre?.trim();
     if (!nombre) return reply.status(400).send({ error: 'El nombre de la sede es obligatorio' });
 
-    const campos = camposSede(body);
+    const margenFuera = leerMargenFuera(body.margenFuera);
+    if (margenFuera === null) return reply.status(400).send(MARGEN_INVALIDO);
+    const campos = { ...camposSede(body), margenFuera: margenFuera ?? 0 };
     const existentes = await prisma.sede.count({ where: { empresaId: request.empresaId, activa: true } });
     const conGeocerca = cambiaLaGeocerca(null, campos);
     if (existentes >= 1 || conGeocerca) {
@@ -105,7 +111,10 @@ export default async function sedeRoutes(app: FastifyInstance) {
     const nombre = body.nombre?.trim();
     if (!nombre) return reply.status(400).send({ error: 'El nombre de la sede es obligatorio' });
 
-    const campos = camposSede(body);
+    // Ausente, el margen se queda como estaba (ver leerMargenFuera).
+    const margenFuera = leerMargenFuera(body.margenFuera);
+    if (margenFuera === null) return reply.status(400).send(MARGEN_INVALIDO);
+    const campos = { ...camposSede(body), margenFuera: margenFuera ?? existente.margenFuera };
     if (cambiaLaGeocerca(existente, campos) && !(await capacidadesEmpresa(request.empresaId!)).features.gps) {
       return reply.status(403).send(SIN_GPS);
     }

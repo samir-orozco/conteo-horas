@@ -9,13 +9,23 @@ import { avisoAlEliminarSede } from '../../lib/sedePrincipal';
 export type Sede = {
   id: string; nombre: string; direccion: string | null;
   lat: number | null; lng: number | null; radio: number;
+  // Metros más allá del radio en los que un presencial todavía marca, con alerta; 0 = no se permite
+  // (11 de octubre de 2026). Opcional por la ventana del despliegue: un servidor anterior no lo manda.
+  margenFuera?: number;
   _count?: { colaboradores: number };
   principal?: boolean;
   // Con la fecha se sabe qué sede queda como principal si se elimina la actual.
   creadoEn: string;
 };
 
-const VACIA = { nombre: '', direccion: '', lat: '', lng: '', radio: '150', exigeUbicacion: false };
+// Lo que se propone al encender «Permitir marcar fuera de la geocerca». El servidor acepta hasta 1000.
+const MARGEN_PROPUESTO = '200';
+const MARGEN_MAXIMO = 1000;
+
+const VACIA = {
+  nombre: '', direccion: '', lat: '', lng: '', radio: '150', exigeUbicacion: false,
+  permiteFuera: false, margenFuera: MARGEN_PROPUESTO,
+};
 
 export default function TabSedes() {
   const navigate = useNavigate();
@@ -43,7 +53,10 @@ export default function TabSedes() {
     setEditando(s ?? null);
     setError('');
     setForm(s
-      ? { nombre: s.nombre, direccion: s.direccion ?? '', lat: s.lat?.toString() ?? '', lng: s.lng?.toString() ?? '', radio: String(s.radio), exigeUbicacion: s.lat !== null && s.lng !== null }
+      ? {
+        nombre: s.nombre, direccion: s.direccion ?? '', lat: s.lat?.toString() ?? '', lng: s.lng?.toString() ?? '', radio: String(s.radio), exigeUbicacion: s.lat !== null && s.lng !== null,
+        permiteFuera: (s.margenFuera ?? 0) > 0, margenFuera: (s.margenFuera ?? 0) > 0 ? String(s.margenFuera) : MARGEN_PROPUESTO,
+      }
       : VACIA);
     setModal(true);
   };
@@ -71,11 +84,18 @@ export default function TabSedes() {
     if (form.exigeUbicacion && (form.lat === '' || form.lng === '')) {
       return setError('Fija la ubicación con "Usar mi ubicación actual" o escribe latitud y longitud.');
     }
+    // El margen solo existe con geocerca: sin ubicación no hay de qué salirse, y se guarda 0.
+    const conMargen = form.exigeUbicacion && form.permiteFuera;
+    const metros = Number(form.margenFuera);
+    if (conMargen && !(Number.isInteger(metros) && metros >= 1 && metros <= MARGEN_MAXIMO)) {
+      return setError(`Escribe hasta cuántos metros más allá del radio, entre 1 y ${MARGEN_MAXIMO}.`);
+    }
     const cuerpo = {
       nombre: form.nombre, direccion: form.direccion,
       lat: form.exigeUbicacion ? Number(form.lat) : null,
       lng: form.exigeUbicacion ? Number(form.lng) : null,
       radio: Number(form.radio) || 150,
+      margenFuera: conMargen ? metros : 0,
     };
     try {
       if (editando) await api.put(`/sedes/${editando.id}`, cuerpo);
@@ -143,7 +163,10 @@ export default function TabSedes() {
                   {s.direccion && <p className="text-xs text-muted">{s.direccion}</p>}
                   <p className="text-xs text-muted mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1">
                     {s.lat !== null && s.lng !== null ? (
-                      <span className="flex items-center gap-1"><Crosshair size={12} /> {s.lat.toFixed(5)}, {s.lng.toFixed(5)} · radio {s.radio} m</span>
+                      <span className="flex items-center gap-1">
+                        <Crosshair size={12} /> {s.lat.toFixed(5)}, {s.lng.toFixed(5)} · radio {s.radio} m
+                        {(s.margenFuera ?? 0) > 0 && <> · hasta {s.margenFuera} m más, con alerta</>}
+                      </span>
                     ) : (
                       <span className="text-amber-700">No exige ubicación: pueden marcar desde cualquier lugar</span>
                     )}
@@ -264,7 +287,7 @@ export default function TabSedes() {
 
                     <div>
                       <label className="block text-xs font-medium text-muted mb-1">Radio permitido (metros)</label>
-                      <input type="number" min={20} max={5000} value={form.radio}
+                      <input type="number" min={20} max={5000} value={form.radio} aria-label="Radio permitido (metros)"
                         onChange={e => setForm(p => ({ ...p, radio: e.target.value }))}
                         disabled={sinGps}
                         className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm disabled:bg-gray-50 disabled:text-muted" />
@@ -272,6 +295,40 @@ export default function TabSedes() {
                         Recomendado <b>100–150 m</b>. Ni el mejor GPS es exacto, y un radio muy corto deja a
                         gente honesta sin poder marcar.
                       </p>
+                    </div>
+
+                    {/* Marcar fuera de la geocerca, con alerta (11 de octubre de 2026, PENDIENTES nº 11). Sin GPS
+                        no se cambia: abrirlo agranda la geocerca y cerrarlo también es moverla. */}
+                    <div className="border-t border-gray-100 pt-3 space-y-3">
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <p className="text-sm font-semibold text-ink">Permitir marcar fuera de la geocerca</p>
+                          <p className="text-xs text-muted mt-0.5">
+                            {form.permiteFuera
+                              ? 'Quien trabaja presencial podrá marcar un poco más lejos. La marcación queda con alerta en Registros y en la campana.'
+                              : 'Fuera del radio no se puede marcar.'}
+                          </p>
+                        </div>
+                        <button type="button" role="switch" aria-checked={form.permiteFuera} aria-label="Permitir marcar fuera de la geocerca"
+                          disabled={sinGps}
+                          onClick={() => setForm(p => ({ ...p, permiteFuera: !p.permiteFuera }))}
+                          className={`relative w-12 h-7 rounded-full transition-colors shrink-0 disabled:opacity-50 disabled:cursor-not-allowed ${form.permiteFuera ? 'bg-primary' : 'bg-gray-200'}`}>
+                          <span className={`absolute top-1 w-5 h-5 bg-white rounded-full shadow transition-all ${form.permiteFuera ? 'left-6' : 'left-1'}`} />
+                        </button>
+                      </div>
+                      {form.permiteFuera && (
+                        <div>
+                          <label className="block text-xs font-medium text-muted mb-1">Hasta cuántos metros más allá del radio</label>
+                          <input type="number" value={form.margenFuera} aria-label="Metros más allá del radio"
+                            onChange={e => setForm(p => ({ ...p, margenFuera: e.target.value }))}
+                            disabled={sinGps}
+                            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm disabled:bg-gray-50 disabled:text-muted" />
+                          <p className="text-[11px] text-muted mt-1">
+                            Con radio de {form.radio || 150} m y {form.margenFuera || 0} m más, podrán marcar hasta
+                            a {(Number(form.radio) || 150) + (Number(form.margenFuera) || 0)} m de la sede. Más lejos, no.
+                          </p>
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}
