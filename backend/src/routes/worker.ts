@@ -6,6 +6,7 @@ import { registrarAcceso } from '../utils/registrarEvento';
 import { esDescriptorValido, identificarRostro, esParecidoDudoso, continuidadConLaAnterior, type CapturaAnterior } from '../utils/rostro';
 import { camposDeAutenticacion } from '../utils/metodoMarcacion';
 import { enviarTelegram } from '../utils/telegram';
+import { avisarSiYaLlego } from '../utils/avisoNoHaLlegado';
 import { notificar } from '../utils/notificaciones';
 import { avisoFueraDeGeocerca, type Momento } from '../utils/avisoFueraDeGeocerca';
 import { kioscoPausado, mensajeKioscoPausado } from '../utils/suscripcion';
@@ -1023,6 +1024,12 @@ export default async function workerRoutes(app: FastifyInstance) {
             cuerpo: `Marcó entrada con ${tardeTxt} de retraso.`,
             entidad: 'colaborador', entidadId: col.id,
           });
+        }
+        // Si el barrido avisó hoy que esta persona no había llegado, se cierra el tema en el grupo y en
+        // la campana. Volver de una pausa no es llegar (11 de octubre de 2026).
+        if (col && !volviendoDePausa) {
+          avisarSiYaLlego(col.empresaId, col.id, `${col.nombre} ${col.apellido}`, entradaReal)
+            .catch(err => app.log.error(err, 'No se pudo avisar que ya llegó'));
         }
         return { accion: 'ENTRADA', registro: nuevo, hora: entradaReal, regresoEstimado: esRegresoEstimado };
       }

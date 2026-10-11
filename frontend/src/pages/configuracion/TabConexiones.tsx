@@ -9,6 +9,8 @@ export default function TabConexiones() {
   const { plan } = useMiPlan();
   const [cargado, setCargado] = useState(false);
   const [alertasTarde, setAlertasTarde] = useState(false);
+  // «No ha llegado» (11 de octubre de 2026): comparte el chat con el de llegadas tarde.
+  const [noHaLlegado, setNoHaLlegado] = useState(false);
   const [chatId, setChatId] = useState('');
   const [guardandoTg, setGuardandoTg] = useState(false);
   const [probandoTg, setProbandoTg] = useState(false);
@@ -17,6 +19,7 @@ export default function TabConexiones() {
   useEffect(() => {
     api.get('/configuracion').then(r => {
       setAlertasTarde(r.data.TELEGRAM_ALERTAS_TARDE === '1');
+      setNoHaLlegado(r.data.TELEGRAM_NO_HA_LLEGADO === '1');
       setChatId(r.data.TELEGRAM_CHAT_ID || '');
       setCargado(true);
     });
@@ -27,6 +30,15 @@ export default function TabConexiones() {
     setAlertasTarde(nuevo);
     await api.put('/configuracion', { TELEGRAM_ALERTAS_TARDE: nuevo ? '1' : '0' });
   };
+
+  const toggleNoHaLlegado = async () => {
+    const nuevo = !noHaLlegado;
+    setNoHaLlegado(nuevo);
+    await api.put('/configuracion', { TELEGRAM_NO_HA_LLEGADO: nuevo ? '1' : '0' });
+  };
+
+  // Los pasos del chat se ven con CUALQUIERA de los dos avisos encendido: lo comparten.
+  const algunAviso = alertasTarde || noHaLlegado;
 
   const guardarChat = async () => {
     setGuardandoTg(true); setMsgTg(null);
@@ -58,24 +70,34 @@ export default function TabConexiones() {
       <div className="columns-1 xl:columns-2 gap-6 [&>*]:mb-6 [&>*]:break-inside-avoid">
         {/* Telegram */}
         {plan && !plan.features.telegram ? (
-          <FuncionBloqueada titulo="Telegram — alertas de llegada tarde"
-            descripcion="Recibe un aviso apenas un colaborador marque entrada tarde. Disponible desde el plan Profesional." />
+          <FuncionBloqueada titulo="Telegram — alertas de asistencia"
+            descripcion="Recibe un aviso cuando alguien llega tarde o no ha llegado. Disponible desde el plan Profesional." />
         ) : (
         <div className="bg-white rounded-card border border-gray-200 p-6 space-y-5">
+          <p className="font-semibold text-ink flex items-center gap-2"><Send size={17} className="text-[#229ED9]" /> Telegram — alertas de asistencia</p>
+
           <div className="flex items-start justify-between gap-4">
             <div>
-              <p className="font-semibold text-ink mb-1 flex items-center gap-2"><Send size={17} className="text-[#229ED9]" /> Telegram — alertas de llegada tarde</p>
+              <p id="tg-tarde" className="font-medium text-ink text-sm mb-0.5">Llegadas tarde</p>
               <p className="text-sm text-muted">
-                Recibe un mensaje apenas un colaborador marque <b>entrada tarde</b> (según su horario y tolerancia).
+                Un mensaje apenas un colaborador marque <b>entrada tarde</b> (según su horario y tolerancia).
               </p>
             </div>
-            <button onClick={toggleAlertas} disabled={!cargado} role="switch" aria-checked={alertasTarde}
-              className={`relative w-12 h-7 rounded-full transition-colors shrink-0 disabled:opacity-50 ${alertasTarde ? 'bg-primary' : 'bg-gray-200'}`}>
-              <span className={`absolute top-1 w-5 h-5 bg-white rounded-full shadow transition-all ${alertasTarde ? 'left-6' : 'left-1'}`} />
-            </button>
+            <Interruptor encendido={alertasTarde} onClick={toggleAlertas} disabled={!cargado} etiqueta="tg-tarde" />
           </div>
 
-          {alertasTarde && cargado && (
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <p id="tg-no-llego" className="font-medium text-ink text-sm mb-0.5">Quién no ha llegado</p>
+              <p className="text-sm text-muted">
+                Si alguien con turno no marca entrada pasados <b>su tolerancia y 15 minutos</b>, llega un mensaje con
+                la lista, y otro cuando la persona llega. También queda en la campana.
+              </p>
+            </div>
+            <Interruptor encendido={noHaLlegado} onClick={toggleNoHaLlegado} disabled={!cargado} etiqueta="tg-no-llego" />
+          </div>
+
+          {algunAviso && cargado && (
             <div className="border-t border-gray-100 pt-5 space-y-3">
               <div className="bg-gray-50 rounded-xl p-4 text-sm text-muted space-y-1.5">
                 <p className="font-semibold text-ink">Cómo conectar (fácil)</p>
@@ -84,8 +106,8 @@ export default function TabConexiones() {
                 <p>3. Pega ese ID abajo, <b>Guarda</b> y presiona <b>Enviar prueba</b>.</p>
               </div>
 
-              <label className="block text-xs font-medium text-muted mb-1">ID del chat de Telegram</label>
-              <input value={chatId} onChange={e => setChatId(e.target.value)} placeholder="Ej: -1001234567890"
+              <label htmlFor="tg-chat" className="block text-xs font-medium text-muted mb-1">ID del chat de Telegram</label>
+              <input id="tg-chat" value={chatId} onChange={e => setChatId(e.target.value)} placeholder="Ej: -1001234567890"
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary" />
 
               <div className="flex flex-wrap gap-3">
@@ -125,5 +147,14 @@ export default function TabConexiones() {
         </div>
       </div>
     </div>
+  );
+}
+
+function Interruptor({ encendido, onClick, disabled, etiqueta }: { encendido: boolean; onClick: () => void; disabled: boolean; etiqueta: string }) {
+  return (
+    <button onClick={onClick} disabled={disabled} role="switch" aria-checked={encendido} aria-labelledby={etiqueta}
+      className={`relative w-12 h-7 rounded-full transition-colors shrink-0 disabled:opacity-50 ${encendido ? 'bg-primary' : 'bg-gray-200'}`}>
+      <span className={`absolute top-1 w-5 h-5 bg-white rounded-full shadow transition-all ${encendido ? 'left-6' : 'left-1'}`} />
+    </button>
   );
 }

@@ -34,9 +34,10 @@ import { cerrarTurnosOlvidados } from './utils/cierreTurnos';
 import { avisarContratosDeTodas } from './routes/contratos';
 import { avisarPausasSinRegreso } from './utils/cierreAlmuerzo';
 import { mantenerVentana } from './utils/materializarDias';
-import { programarDiario } from './utils/programarDiario';
+import { programarDiario, correrRonda } from './utils/programarDiario';
 import { avisarSuscripcionesDeTodas } from './utils/avisosDeSuscripcion';
 import { enviarResumenesSemanales } from './utils/envioResumenSemanal';
+import { avisarNoHanLlegado } from './utils/avisoNoHaLlegado';
 import { HORA_DEL_RESUMEN } from './utils/resumenSemanal';
 import { opcionesDeLog } from './utils/opcionesDeLog';
 import { decidirAccesoEmpresa } from './utils/accesoEmpresa';
@@ -307,6 +308,11 @@ const start = async () => {
     // demás y solo hace algo el lunes desde las 7: lo decide `semanaDelResumen`. A la misma hora
     // que los avisos de cobro, por lo mismo: es para que lo lea una persona al empezar el día.
     programarDiario('resumen-semanal', HORA_DEL_RESUMEN, () => enviarResumenesSemanales(app.log), app.log);
+    // «No ha llegado» por Telegram (11 de octubre de 2026): cada 5 minutos, porque el aviso es a la
+    // hora de entrada de cada persona más su tolerancia y 15 minutos. Solo trabaja en las empresas
+    // que lo encendieron, y deja rastro en cada pasada (§8.3).
+    void correrRonda('no-ha-llegado', () => avisarNoHanLlegado(app.log), app.log);
+    setInterval(() => void correrRonda('no-ha-llegado', () => avisarNoHanLlegado(app.log), app.log), 5 * 60 * 1000);
     // Registra el webhook del bot de Telegram (si hay URL configurada)
     if (process.env.TELEGRAM_WEBHOOK_URL) configurarWebhook(process.env.TELEGRAM_WEBHOOK_URL);
   } catch (err) {

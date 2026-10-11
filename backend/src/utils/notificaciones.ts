@@ -23,7 +23,10 @@ export type TipoNotif =
   | 'KIOSCO_POR_PAUSARSE'
   // El resumen semanal por correo, que deja su copia en la campana. La escribe
   // envioResumenSemanal.ts y además le sirve de marca de «ya se mandó» (11 de octubre de 2026).
-  | 'RESUMEN_SEMANAL';
+  | 'RESUMEN_SEMANAL'
+  // Alguien tenía turno, pasó su tolerancia más 15 minutos y no marcó. Lo escribe el barrido de
+  // avisoNoHaLlegado.ts junto con el mensaje de Telegram (11 de octubre de 2026).
+  | 'NO_HA_LLEGADO';
 
 type NuevaNotif = {
   tipo: TipoNotif;
