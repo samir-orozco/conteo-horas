@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { format } from 'date-fns';
 import { toZonedTime } from 'date-fns-tz';
 import { es } from 'date-fns/locale';
-import { Plus, Edit2, Trash2, X, Info, ChevronLeft, ChevronRight, AlertTriangle, UtensilsCrossed, Coffee, Eye, ArrowRight, Clock, User, FileDown, type LucideIcon } from 'lucide-react';
+import { Plus, Edit2, Trash2, X, Info, ChevronLeft, ChevronRight, AlertTriangle, UtensilsCrossed, Coffee, Eye, ArrowRight, Clock, MapPin, User, FileDown, type LucideIcon } from 'lucide-react';
 import api from '../lib/api';
 import ConfirmDialog from '../components/ConfirmDialog';
 import ModalJornada, { type RegistroEditable, type ResumenDePausa } from './registros/ModalJornada';
@@ -64,6 +64,9 @@ type Registro = {
   // abrió en una sede probada (decisión del dueño del 12 de septiembre de 2026).
   // Opcional por la misma ventana del despliegue.
   sedeAtribuida?: SedeCorta | null;
+  // Alguna marca de la jornada se hizo fuera de la geocerca, dentro del margen que permite la
+  // sede (11 de octubre de 2026). Solo la señal, sin metros. Opcional por la ventana del despliegue.
+  fueraDeGeocerca?: boolean;
   // null = sin horario asignado o día que no aplica; 0 = a tiempo; >0 = minutos tarde
   minutosTarde: number | null;
   // Lo que contó esta jornada, con sus pausas ya descontadas.
@@ -235,6 +238,21 @@ function EtiquetaDeIngreso({ ingreso, nombre }: { ingreso?: Ingreso; nombre: str
 // La flecha solo cuando se conocen las dos sedes y son distintas: es lo que se
 // quiere encontrar de un vistazo.
 function CeldaSede({ r }: { r: Registro }) {
+  if (!r.fueraDeGeocerca) return <NombreDeSede r={r} />;
+  // La alerta va JUNTO a la sede y no en lugar de ella: el dato de dónde contó sigue siendo ese.
+  return (
+    <span className="inline-flex flex-col gap-0.5">
+      <NombreDeSede r={r} />
+      <span className="inline-flex items-center gap-1 whitespace-nowrap text-xs font-medium text-amber-700"
+        title="Marcó fuera de la geocerca de la sede, dentro del margen que la sede permite.">
+        <MapPin size={12} aria-hidden="true" />
+        Fuera de la geocerca
+      </span>
+    </span>
+  );
+}
+
+function NombreDeSede({ r }: { r: Registro }) {
   const s = sedeDeLaJornada(r);
   switch (s.clase) {
     case 'cruce':

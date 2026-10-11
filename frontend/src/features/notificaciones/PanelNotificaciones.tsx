@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { CheckCheck, AlarmClock, Clock, CalendarOff, Bell, X } from 'lucide-react';
+import { CheckCheck, AlarmClock, Clock, CalendarOff, Bell, MapPin, X } from 'lucide-react';
 import { rutaDeNotificacion } from './ruta';
 import { posicionAlLado } from '../../lib/posicionDePanel';
 import type { Notificacion } from './types';
@@ -15,6 +15,9 @@ const ICONO: Record<string, typeof Bell> = {
   NO_MARCO_SALIDA: AlarmClock,
   LLEGADA_TARDE: Clock,
   NOVEDAD_PENDIENTE: CalendarOff,
+  RESUMEN_SEMANAL: BarChart3,
+  // Un presencial marcó fuera de la geocerca, dentro del margen de la sede (11 de octubre de 2026).
+  MARCO_FUERA_DE_GEOCERCA: MapPin,
 };
 
 // Dropdown compacto anclado al botón de la campana (emerge desde él).

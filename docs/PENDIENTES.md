@@ -340,9 +340,18 @@ Marcar fuera de la geocerca con alerta, configurado POR SEDE al crearla o editar
 - **Corrección (11 de octubre):** `registros.distanciaEntrada` / `distanciaSalida` son la distancia del RECONOCIMIENTO
   FACIAL (qué tan parecido dio el rostro), no metros. El kiosco calcula los metros a la sede para decidir y los tira.
   Mostrar «a 320 m» exige guardar algo nuevo por marcación (columnas en `registros`, además de las dos de `sedes`), y
-  guardar metros es un dato derivado de la ubicación: lo que la política 1.2 promete no guardar. **Sin decidir:** (a)
-  guardar solo la marca «fuera de la geocerca de [sede]», sin metros (recomendado, no toca la política); o (b) con
-  metros, pasando antes por el abogado y una política 1.3.
+  guardar metros es un dato derivado de la ubicación: lo que la política 1.2 promete no guardar. **Decidido (a)**:
+  solo la marca «fuera de la geocerca», sin metros. La alerta dice la sede y no la distancia.
+
+**Avance (11 de octubre de 2026), sin commit de despliegue todavía:**
+1. Hecho: la regla pura (`sedeEnMargen` en `utils/sedes.ts`, `decidirUbicacionDeMarca` en `utils/modalidad.ts`).
+2. Hecho: el kiosco y la alerta. Esquema: `sedes.margenFuera` (entero, 0 = no se permite; los dos ajustes de la
+   pantalla, sí/no y distancia, se guardan en ese único número) y `registros.fueraGeocercaEntrada/Salida`. SQL en
+   `sql/margen-fuera-de-geocerca.sql`, probado en MariaDB 12.3 desechable: dos corridas sin copiar la tabla y el
+   deshacer limpio. Campana con `MARCO_FUERA_DE_GEOCERCA` (`utils/avisoFueraDeGeocerca.ts`) y aviso «Fuera de la
+   geocerca» junto a la sede en Registros. **Toca `schema.prisma`: el despliegue son cuatro ramas (CLAUDE.md §11).**
+3. Falta: la pantalla de la sede para fijar el margen. Hasta entonces todas quedan en 0 y nada cambia.
+4. Falta: los textos de la celda sin sede («Remoto», «Fuera de sede», «Sin ubicación de sede») y el Excel.
 - La celda de Registros sin sede de marcación pasa a decir el caso: «Remoto», «Fuera de sede» o «Sin ubicación de sede»
   (nº 38, opción 3 elegida por el dueño, junto con que las empresas carguen las coordenadas de sus sedes).
 

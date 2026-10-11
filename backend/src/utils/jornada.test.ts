@@ -965,7 +965,7 @@ describe('salidasTrasEditar', () => {
   // `descansoVentana` (12 de septiembre de 2026). Es de la salida, igual que la foto.
   type Opc = {
     salidaAlmuerzo?: boolean; salidaDescanso?: boolean; fotoEntrada?: string; sede?: string; foto?: string;
-    metodo?: 'ROSTRO' | 'CEDULA'; distancia?: number; estimada?: boolean; ventana?: string;
+    metodo?: 'ROSTRO' | 'CEDULA'; distancia?: number; estimada?: boolean; ventana?: string; fuera?: boolean;
   };
   const m = (id: string, entrada: Date | null, salida: Date | null, o: Opc = {}) => ({
     ...reg(entrada, salida, { salidaAlmuerzo: o.salidaAlmuerzo }),
@@ -978,6 +978,7 @@ describe('salidasTrasEditar', () => {
     metodoSalida: o.metodo ?? null,
     distanciaSalida: o.distancia ?? null,
     salidaEstimada: o.estimada ?? false,
+    fueraGeocercaSalida: o.fuera ?? false,
   });
   type Fin = 'ALMUERZO' | 'DESCANSO' | 'SALIDA' | null;
   const fila = (entrada: Date, salida: Date | null, fin: Fin) => ({ entrada, salida, fin });
@@ -999,11 +1000,11 @@ describe('salidasTrasEditar', () => {
     m('b', bog(13), bog(17), { fotoEntrada: 'F13', sede: 'P', foto: 'F17', metodo: 'ROSTRO', distancia: 0.42 }),
   ];
   const soloCierre = [m('a', bog(8), bog(17), { fotoEntrada: 'F08', sede: 'P', foto: 'F17', metodo: 'ROSTRO', distancia: 0.42 })];
-  const DEL_ALMUERZO = { sedeSalidaId: 'L', fotoSalida: 'F12', metodoSalida: 'ROSTRO', distanciaSalida: 0.31, salidaEstimada: false, descansoVentana: null };
-  const DEL_CIERRE = { sedeSalidaId: 'P', fotoSalida: 'F17', metodoSalida: 'ROSTRO', distanciaSalida: 0.42, salidaEstimada: false, descansoVentana: null };
+  const DEL_ALMUERZO = { sedeSalidaId: 'L', fotoSalida: 'F12', metodoSalida: 'ROSTRO', distanciaSalida: 0.31, salidaEstimada: false, fueraGeocercaSalida: false, descansoVentana: null };
+  const DEL_CIERRE = { sedeSalidaId: 'P', fotoSalida: 'F17', metodoSalida: 'ROSTRO', distanciaSalida: 0.42, salidaEstimada: false, fueraGeocercaSalida: false, descansoVentana: null };
   // La escribió el administrador: nadie la marcó en ningún kiosco.
-  const A_MANO = { sedeSalidaId: null, fotoSalida: null, metodoSalida: 'MANUAL', distanciaSalida: null, salidaEstimada: false, descansoVentana: null };
-  const SIN_SALIDA = { sedeSalidaId: null, fotoSalida: null, metodoSalida: null, distanciaSalida: null, salidaEstimada: false, descansoVentana: null };
+  const A_MANO = { sedeSalidaId: null, fotoSalida: null, metodoSalida: 'MANUAL', distanciaSalida: null, salidaEstimada: false, fueraGeocercaSalida: false, descansoVentana: null };
+  const SIN_SALIDA = { sedeSalidaId: null, fotoSalida: null, metodoSalida: null, distanciaSalida: null, salidaEstimada: false, fueraGeocercaSalida: false, descansoVentana: null };
 
   describe('lo de cada salida va con ella', () => {
     it('quitar el almuerzo: la que queda cierra con todo lo de la salida del día', () => {
@@ -1031,6 +1032,19 @@ describe('salidasTrasEditar', () => {
       expect(salidas(salidasTrasEditar([m('a', bog(8), null)], horas(null, null, bog(17))))).toEqual([A_MANO]);
     });
 
+    // Marcó la salida fuera de la geocerca, dentro del margen de la sede (11 de octubre de 2026).
+    // Es de la salida, como la sede: quitar el almuerzo no puede borrar la alerta del cierre.
+    it('una salida marcada fuera de la geocerca sigue señalada en la fila que la hereda', () => {
+      const fueraAlCerrar = [conAlmuerzo[0], m('b', bog(13), bog(17), { fotoEntrada: 'F13', sede: 'P', foto: 'F17', metodo: 'ROSTRO', distancia: 0.42, fuera: true })];
+      expect(salidas(salidasTrasEditar(fueraAlCerrar, horas(null, null, bog(17))))).toEqual([{ ...DEL_CIERRE, fueraGeocercaSalida: true }]);
+    });
+
+    it('la salida que escribe el administrador no hereda la alerta de la que se marcó fuera', () => {
+      const fueraAlCerrar = [m('a', bog(8), bog(17), { sede: 'P', foto: 'F17', metodo: 'ROSTRO', distancia: 0.42, fuera: true })];
+      expect(salidas(salidasTrasEditar(fueraAlCerrar, horas(bog(12), bog(13), bog(17)))))
+        .toEqual([A_MANO, { ...DEL_CIERRE, fueraGeocercaSalida: true }]);
+    });
+
     it('si el barrido lo marcó sin poder ponerle hora, sigue diciendo que nadie marcó esa salida', () => {
       expect(salidas(salidasTrasEditar([m('a', bog(8), null, { estimada: true })], horas(null, null, bog(17)))))
         .toEqual([{ ...A_MANO, salidaEstimada: true }]);
@@ -1040,6 +1054,11 @@ describe('salidasTrasEditar', () => {
   describe('sin salida no queda nada de ella', () => {
     it('reabrir el turno vacía sede, foto, método y distancia', () => {
       expect(salidas(salidasTrasEditar(soloCierre, horas(null, null, null)))).toEqual([SIN_SALIDA]);
+    });
+
+    it('reabrir un turno cuya salida se marcó fuera de la geocerca quita la alerta: ya no hay salida', () => {
+      const fueraAlCerrar = [m('a', bog(8), bog(17), { sede: 'P', foto: 'F17', metodo: 'ROSTRO', distancia: 0.42, fuera: true })];
+      expect(salidas(salidasTrasEditar(fueraAlCerrar, horas(null, null, null)))).toEqual([SIN_SALIDA]);
     });
 
     it('reabrir un turno que cerró el sistema lo deja marcado, para que el barrido no lo vuelva a cerrar', () => {
@@ -1115,7 +1134,7 @@ describe('salidasTrasEditar', () => {
       // pertenece a ninguno (12 de septiembre de 2026).
       const alDescanso = [m('a', bog(8), bog(9), { salidaDescanso: true, ventana: '09:00-09:15', sede: 'D', foto: 'F09', metodo: 'ROSTRO', distancia: 0.2 })];
       expect(salidas(salidasTrasEditar(alDescanso, horas(null, null, bog(9)))))
-        .toEqual([{ sedeSalidaId: 'D', fotoSalida: 'F09', metodoSalida: 'ROSTRO', distanciaSalida: 0.2, salidaEstimada: false, descansoVentana: null }]);
+        .toEqual([{ sedeSalidaId: 'D', fotoSalida: 'F09', metodoSalida: 'ROSTRO', distanciaSalida: 0.2, salidaEstimada: false, fueraGeocercaSalida: false, descansoVentana: null }]);
     });
   });
 
@@ -1208,7 +1227,7 @@ describe('salidasTrasEditar', () => {
       m('b', bog(9, 15), bog(12), { salidaAlmuerzo: true, fotoEntrada: 'F0915', sede: 'L', foto: 'F12', metodo: 'ROSTRO', distancia: 0.31 }),
       m('c', bog(13), bog(17), { fotoEntrada: 'F13', sede: 'P', foto: 'F17', metodo: 'ROSTRO', distancia: 0.42 }),
     ];
-    const DEL_DESCANSO = { sedeSalidaId: 'D', fotoSalida: 'F09', metodoSalida: 'ROSTRO', distanciaSalida: 0.2, salidaEstimada: false, descansoVentana: null };
+    const DEL_DESCANSO = { sedeSalidaId: 'D', fotoSalida: 'F09', metodoSalida: 'ROSTRO', distanciaSalida: 0.2, salidaEstimada: false, fueraGeocercaSalida: false, descansoVentana: null };
     const tres = [fila(bog(8), bog(9), 'DESCANSO'), fila(bog(9, 15), bog(12), 'ALMUERZO'), fila(bog(13), bog(17), 'SALIDA')];
 
     it('sin tocar las pausas, cada fila y cada salida quedan como estaban', () => {
@@ -1269,9 +1288,9 @@ describe('salidasTrasEditar', () => {
       m('c', bog(13), bog(15), { salidaDescanso: true, ventana: '15:00-15:10', fotoEntrada: 'F13', sede: 'D2', foto: 'F1500', metodo: 'ROSTRO', distancia: 0.2 }),
       m('d', bog(15, 10), bog(16), { fotoEntrada: 'F1510', sede: 'P', foto: 'F16', metodo: 'ROSTRO', distancia: 0.42 }),
     ];
-    const DE_LAS_9 = { sedeSalidaId: 'D1', fotoSalida: 'F0900', metodoSalida: 'ROSTRO', distanciaSalida: 0.1, salidaEstimada: false, descansoVentana: '09:00-09:15' };
-    const DE_LAS_15 = { sedeSalidaId: 'D2', fotoSalida: 'F1500', metodoSalida: 'ROSTRO', distanciaSalida: 0.2, salidaEstimada: false, descansoVentana: '15:00-15:10' };
-    const DEL_CIERRE_16 = { sedeSalidaId: 'P', fotoSalida: 'F16', metodoSalida: 'ROSTRO', distanciaSalida: 0.42, salidaEstimada: false, descansoVentana: null };
+    const DE_LAS_9 = { sedeSalidaId: 'D1', fotoSalida: 'F0900', metodoSalida: 'ROSTRO', distanciaSalida: 0.1, salidaEstimada: false, fueraGeocercaSalida: false, descansoVentana: '09:00-09:15' };
+    const DE_LAS_15 = { sedeSalidaId: 'D2', fotoSalida: 'F1500', metodoSalida: 'ROSTRO', distanciaSalida: 0.2, salidaEstimada: false, fueraGeocercaSalida: false, descansoVentana: '15:00-15:10' };
+    const DEL_CIERRE_16 = { sedeSalidaId: 'P', fotoSalida: 'F16', metodoSalida: 'ROSTRO', distanciaSalida: 0.42, salidaEstimada: false, fueraGeocercaSalida: false, descansoVentana: null };
     const sinMover = [fila(bog(7), bog(9), 'DESCANSO'), fila(bog(9, 15), bog(12), 'ALMUERZO'), fila(bog(13), bog(15), 'DESCANSO'), fila(bog(15, 10), bog(16), 'SALIDA')];
     // Sin el descanso de las 09:00; se puede mover la salida al de la tarde y su regreso.
     const sinElPrimero = (salidaAlDescanso = bog(15), regreso = bog(15, 10)) =>

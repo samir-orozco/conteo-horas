@@ -58,17 +58,18 @@ export async function geocercoConfig(empresaId: string): Promise<GeoCfg | null> 
 // El respaldo es el mismo patrón del historial de horarios: si el colaborador no
 // tiene sedes, rige la geocerca de la empresa, que es como funcionó siempre. Así
 // nada se rompe antes de migrar, y la migración puede ir a su ritmo.
-export type SedeGeo = { id: string; nombre: string; lat: number; lng: number; radio: number };
+// `margen`: metros más allá del radio en los que un presencial marca con alerta (11 de octubre de 2026).
+export type SedeGeo = { id: string; nombre: string; lat: number; lng: number; radio: number; margen: number };
 
 export async function sedesConGeocercaDe(colaboradorId: string): Promise<SedeGeo[]> {
   const filas = await prisma.colaboradorSede.findMany({
     where: { colaboradorId, sede: { activa: true } },
-    select: { sede: { select: { id: true, nombre: true, lat: true, lng: true, radio: true } } },
+    select: { sede: { select: { id: true, nombre: true, lat: true, lng: true, radio: true, margenFuera: true } } },
   });
   return filas
     .map(f => f.sede)
-    .filter((s): s is SedeGeo => s.lat !== null && s.lng !== null)
-    .map(s => ({ id: s.id, nombre: s.nombre, lat: s.lat, lng: s.lng, radio: s.radio }));
+    .filter((s): s is typeof s & { lat: number; lng: number } => s.lat !== null && s.lng !== null)
+    .map(s => ({ id: s.id, nombre: s.nombre, lat: s.lat, lng: s.lng, radio: s.radio, margen: s.margenFuera }));
 }
 
 // ¿La empresa tiene alguna sede con ubicación fijada? El kiosco lo consulta

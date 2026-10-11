@@ -92,3 +92,26 @@ describe('Registros · la sede asignada y la sede donde marcó', () => {
     expect((await celda('Colaborador')).textContent).not.toContain('Sede asignada');
   });
 });
+
+// MARCÓ FUERA DE LA GEOCERCA (11 de octubre de 2026, PENDIENTES nº 11). Un presencial que marcó
+// fuera del radio pero dentro del margen de la sede pasa, y la jornada lleva la alerta junto a la
+// sede. Sin metros: solo que fue fuera.
+describe('Registros · la alerta de marcar fuera de la geocerca', () => {
+  it('la jornada marcada fuera lo dice en la columna de sede, junto al nombre', async () => {
+    montar([jornada({ sede: NORTE, sedeSalida: NORTE, fueraDeGeocerca: true })]);
+    const sede = await celda('Sede');
+    expect(sede.textContent).toContain('Norte');
+    expect(sede.textContent).toContain('Fuera de la geocerca');
+  });
+
+  it('una jornada sin la señal no la dice', async () => {
+    montar([jornada({ sede: NORTE, sedeSalida: NORTE, fueraDeGeocerca: false })]);
+    expect((await celda('Sede')).textContent).not.toContain('Fuera de la geocerca');
+  });
+
+  // Un servidor anterior no manda el campo: la fila se pinta igual, sin alerta.
+  it('sin el campo, tampoco', async () => {
+    montar([jornada({ sede: NORTE, sedeSalida: NORTE })]);
+    expect((await celda('Sede')).textContent?.trim()).toBe('Norte');
+  });
+});

@@ -18,6 +18,7 @@ import {
 import { diferenciasDeRegistro, type EstadoRegistro } from '../utils/cambiosRegistro';
 import { leerDescansos, ventanasEnOrden, completarVentanasDeDescanso, MAX_MARCACIONES_POR_JORNADA } from '../utils/descansos';
 import { resumirAlmuerzoDelDia, resumirDescansosDelDia, minutosContadosDelDia, partirDiaEnJornadas, tramoQueChoca, marcacionQueCierra, laCerroElSistema, agruparEnJornadas, instantesDeJornada, tramosDeLaJornada, momentosDelDia, jornadaDeCadaMarcacion, sedesDeLaJornada, salidasTrasEditar, leerPausaDelCuerpo, leerDescansosDelCuerpo } from '../utils/jornada';
+import { jornadaFueraDeGeocerca } from '../utils/avisoFueraDeGeocerca';
 
 const TZ = 'America/Bogota';
 const TIPOS_REGISTRO = new Set(['NORMAL', 'PERMISO', 'FESTIVO']);
@@ -465,6 +466,9 @@ export default async function registroRoutes(app: FastifyInstance) {
           // en una sede probada, con `porDefecto` para que la tabla lo diga. Null si
           // `sede` la probó la ubicación, o para un híbrido o un remoto.
           sedeAtribuida: sedeAtribuidaDe(primera.id),
+          // Alguna marca de la jornada se hizo fuera de la geocerca, dentro del margen de la
+          // sede (11 de octubre de 2026). Solo la señal, sin metros.
+          fueraDeGeocerca: jornadaFueraDeGeocerca(marcaciones),
           minutosTarde,
           // Lo que ese bloque de trabajo contó, con el almuerzo ya descontado.
           // Antes la columna restaba salida menos entrada de un tramo suelto, así

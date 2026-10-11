@@ -17,6 +17,9 @@ export type TipoNotif =
   // Suscripción vencida, y el kiosco a tres días de pausarse. Los escribe la pasada
   // diaria de avisosDeSuscripcion.ts, que además manda el correo (4 de octubre de 2026).
   | 'SUSCRIPCION_VENCIDA'
+  // Un presencial marcó fuera de la geocerca, dentro del margen de su sede. Lo arma
+  // avisoFueraDeGeocerca.ts (11 de octubre de 2026).
+  | 'MARCO_FUERA_DE_GEOCERCA'
   | 'KIOSCO_POR_PAUSARSE';
 
 type NuevaNotif = {

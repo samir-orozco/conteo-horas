@@ -590,6 +590,9 @@ export type DatosDeSalida = {
   metodoSalida: MetodoMarcacion | null;
   distanciaSalida: number | null;
   salidaEstimada: boolean;
+  // La salida se marcó fuera de la geocerca, dentro del margen de la sede (11 de octubre de 2026).
+  // Es de la salida como la sede: viaja con ella y se va con ella.
+  fueraGeocercaSalida: boolean;
   // A cuál descanso salió (12 de septiembre de 2026). Solo se hereda con la salida que
   // queda en el mismo minuto: movida, se vuelve a decidir por la hora.
   descansoVentana: string | null;
@@ -609,7 +612,7 @@ type Papel = PausaDeJornada | 'CIERRE';
 // marcación de antes hereda lo suyo. La posición en la lista es la fila.
 type Hueco<T> = { papel: Papel; hora: Date | null; fuente: T | null };
 
-const SIN_SALIDA = { sedeSalidaId: null, fotoSalida: null, metodoSalida: null, distanciaSalida: null, descansoVentana: null };
+const SIN_SALIDA = { sedeSalidaId: null, fotoSalida: null, metodoSalida: null, distanciaSalida: null, fueraGeocercaSalida: false, descansoVentana: null };
 
 const mismoMinuto = (a: Date, b: Date) => Math.floor(a.getTime() / MS_MIN) === Math.floor(b.getTime() / MS_MIN);
 
@@ -760,11 +763,11 @@ function datosDelHueco<T extends MarcacionEditable>({ papel, hora, fuente }: Hue
   const salidaEstimada = fuente?.salidaEstimada ?? false;
   if (!hora) return { ...SIN_SALIDA, salidaEstimada };
   if (!fuente?.salida) return { ...SIN_SALIDA, metodoSalida: 'MANUAL', salidaEstimada };
-  const { sedeSalidaId, fotoSalida, metodoSalida, distanciaSalida } = fuente;
+  const { sedeSalidaId, fotoSalida, metodoSalida, distanciaSalida, fueraGeocercaSalida } = fuente;
   // A cuál descanso salió solo viaja con la salida al descanso que no se movió de
   // minuto: movida, se vuelve a decidir por la hora (12 de septiembre de 2026).
   const descansoVentana = papel === 'DESCANSO' && mismoMinuto(fuente.salida, hora) ? fuente.descansoVentana ?? null : null;
-  return { sedeSalidaId, fotoSalida, metodoSalida, distanciaSalida, salidaEstimada, descansoVentana };
+  return { sedeSalidaId, fotoSalida, metodoSalida, distanciaSalida, fueraGeocercaSalida, salidaEstimada, descansoVentana };
 }
 
 // Las fotos que no quedan en ninguna fila: las de las salidas que nadie heredó

@@ -7,6 +7,7 @@ import { esDescriptorValido, identificarRostro, esParecidoDudoso, continuidadCon
 import { camposDeAutenticacion } from '../utils/metodoMarcacion';
 import { enviarTelegram } from '../utils/telegram';
 import { notificar } from '../utils/notificaciones';
+import { avisoFueraDeGeocerca, type Momento } from '../utils/avisoFueraDeGeocerca';
 import { kioscoPausado, mensajeKioscoPausado } from '../utils/suscripcion';
 import { rangoDiaBogota } from '../utils/fechas';
 import { exigeDispositivo, permiteCedula, geocercoConfig, dispositivoValido, sedesConGeocercaDe, empresaUsaSedes, exigeRetoDePose } from '../utils/kioscoConfig';
@@ -715,6 +716,14 @@ export default async function workerRoutes(app: FastifyInstance) {
         });
       }
       const sedeDeLaMarca: string | null = decision.sedeId;
+      // Un PRESENCIAL que marcó fuera de la geocerca, dentro del margen de la sede (11 de octubre de
+      // 2026). Queda en el registro y avisa en la campana; el híbrido nunca llega aquí con la señal.
+      const fueraDeGeocerca = decision.fueraDeGeocerca === true;
+      const avisarFueraDeGeocerca = (momento: Momento, registroId: string) => {
+        if (!fueraDeGeocerca) return;
+        const sede = sedesDelTrabajador.find(s => s.id === sedeDeLaMarca)?.nombre ?? 'su sede';
+        notificar(col.empresaId, { ...avisoFueraDeGeocerca(col, momento, sede), entidad: 'registro', entidadId: registroId });
+      };
 
       const ahora = new Date();
       const { ahoraBog, inicioDia, finDia } = rangoDiaBogota(ahora);
@@ -852,10 +861,15 @@ export default async function workerRoutes(app: FastifyInstance) {
             // saltarse el null dejaba viva la sede de una salida anterior en un
             // turno que un administrador había reabierto.
             sedeSalidaId: sedeDeLaMarca,
+            // Va SIEMPRE, como la sede: un turno reabierto no puede quedarse con la alerta de una
+            // salida anterior.
+            fueraGeocercaSalida: fueraDeGeocerca,
             ...(fotoDeLaSalida ? { fotoSalida: fotoDeLaSalida } : {}),
             ...camposDeAutenticacion(payload, 'salida'),
           },
         });
+
+        avisarFueraDeGeocerca('SALIDA', updated.id);
 
         // La novedad viaja con la marca, no en una llamada aparte: si esa segunda
         // llamada fallaba, la salida quedaba registrada y el motivo se perdía.
@@ -976,6 +990,7 @@ export default async function workerRoutes(app: FastifyInstance) {
             // Queda guardado DÓNDE marcó, no dónde debía: el filtro por sede de
             // los reportes tiene que reflejar la realidad.
             ...(sedeDeLaMarca ? { sedeId: sedeDeLaMarca } : {}),
+            ...(fueraDeGeocerca ? { fueraGeocercaEntrada: true } : {}),
             ...(fotoDeLaEntrada ? { fotoEntrada: fotoDeLaEntrada } : {}),
             ...camposDeAutenticacion(payload, 'entrada'),
           },
@@ -994,6 +1009,8 @@ export default async function workerRoutes(app: FastifyInstance) {
           await crearNovedad(payload.id, tipoNovedad, descripcionNovedad, nuevo.id, ventanaDeLlegadaTarde(ahoraBog, tardanza.franja))
             .catch(err => app.log.error(err, 'No se pudo guardar la novedad de la llegada tarde'));
         }
+
+        avisarFueraDeGeocerca('ENTRADA', nuevo.id);
 
         // Alerta de llegada tarde por Telegram y en la campana.
         if (tardanza && col) {
