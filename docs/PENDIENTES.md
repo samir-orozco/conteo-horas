@@ -337,8 +337,12 @@ Marcar fuera de la geocerca con alerta, configurado POR SEDE al crearla o editar
 - **Híbridos (decidido el 11 de octubre): NUNCA alerta ni campana.** Dentro del rango de una sede (geocerca o margen
   extra) Registros muestra esa sede; fuera, marcan normal y la celda dice «Fuera de sede». La alerta y la campana son
   solo para presenciales que marcan fuera de la geocerca pero dentro del margen.
-- Se apoya en `registros.distanciaEntrada` / `distanciaSalida`, que ya existen: no guarda la coordenada, así que no
-  choca con la política 1.2. Cambio de esquema (dos columnas en `sedes`): SQL y `prisma-build`.
+- **Corrección (11 de octubre):** `registros.distanciaEntrada` / `distanciaSalida` son la distancia del RECONOCIMIENTO
+  FACIAL (qué tan parecido dio el rostro), no metros. El kiosco calcula los metros a la sede para decidir y los tira.
+  Mostrar «a 320 m» exige guardar algo nuevo por marcación (columnas en `registros`, además de las dos de `sedes`), y
+  guardar metros es un dato derivado de la ubicación: lo que la política 1.2 promete no guardar. **Sin decidir:** (a)
+  guardar solo la marca «fuera de la geocerca de [sede]», sin metros (recomendado, no toca la política); o (b) con
+  metros, pasando antes por el abogado y una política 1.3.
 - La celda de Registros sin sede de marcación pasa a decir el caso: «Remoto», «Fuera de sede» o «Sin ubicación de sede»
   (nº 38, opción 3 elegida por el dueño, junto con que las empresas carguen las coordenadas de sus sedes).
 
