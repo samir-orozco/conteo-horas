@@ -1,6 +1,6 @@
 import { rangoDiaBogota } from './fechas';
 import type { TipoAlerta } from './contratos';
-import { plantillaCorreo, escapar, parrafo } from './correo';
+import { escapar } from './correo';
 
 // EL RESUMEN SEMANAL POR CORREO (11 de octubre de 2026).
 //
@@ -42,7 +42,11 @@ export function semanaDelResumen(ahora: Date): (Semana & { anterior: Semana }) |
 // ── Lo que dice el resumen ────────────────────────────────────────────────────
 
 // Una persona en una semana, como la devuelven liquidarEmpresa y tardanzasDeEmpresa.
-export type FilaHoras = { nombre: string; apellido: string; minutosOrdinarios: number; minutosExtra: number; totalAdicional: number };
+export type FilaHoras = {
+  nombre: string; apellido: string; minutosOrdinarios: number; minutosExtra: number; totalAdicional: number;
+  // Lo trabajado de cada día, "YYYY-MM-DD" → minutos, como lo da el motor (liquidarRegistros).
+  minutosPorDia?: Record<string, number>;
+};
 export type FilaTarde = { nombre: string; apellido: string; diasTarde: number; totalMinutos: number };
 export type Periodo = { horas: FilaHoras[]; tardanzas: FilaTarde[] };
 export type AlertaDeContrato = { nombre: string; tipo: TipoAlerta; dias: number | null };
@@ -70,6 +74,9 @@ export type Resumen = {
   atencion: string[];
   turnosCerradosSolos: number;
   masTarde: { nombre: string; veces: number; minutos: number }[];
+  // Las horas de cada día de la semana, de lunes a domingo, para las barras. Salen del motor, así
+  // que suman exactamente las horas trabajadas.
+  porDia: { dia: string; fecha: string; horas: number }[];
   // Sin marcaciones ni pendientes no hay nada que contar, y no se manda: un correo semanal
   // que llega vacío enseña a no abrirlo.
   hayAlgo: boolean;
@@ -137,6 +144,16 @@ export function armarResumen(e: EntradaDelResumen): Resumen {
   const llegadasTarde = (p: Periodo) => sumar(p.tardanzas, t => t.diasTarde);
   const huboActividad = (p: Periodo) => horasDe(p) > 0 || llegadasTarde(p) > 0;
 
+  const dias = Array.from({ length: 7 }, (_, i) => {
+    const [a, m, d] = e.semana.desde.split('-').map(Number);
+    return new Date(Date.UTC(a, m - 1, d + i)).toISOString().slice(0, 10);
+  });
+  const porDia = dias.map(fecha => ({
+    dia: diaCorto(fecha).split(' ')[0],
+    fecha,
+    horas: sumar(e.actual.horas, h => h.minutosPorDia?.[fecha] ?? 0) / 60,
+  }));
+
   return {
     semana: e.semana,
     horasTrabajadas: cifra(horasDe),
@@ -146,6 +163,7 @@ export function armarResumen(e: EntradaDelResumen): Resumen {
     atencion,
     turnosCerradosSolos: cerrados.length,
     masTarde,
+    porDia,
     hayAlgo: huboActividad(e.actual) || atencion.length > 0,
     huboActividad: huboActividad(e.actual),
     comparable: huboActividad(e.anterior),
@@ -165,10 +183,29 @@ export function nombreDeSemana(s: Semana): string {
   return `${d1} – ${d2} ${MESES[m2 - 1]}`;
 }
 
+// Qué tan buena noticia es una diferencia, según qué se mide. Más llegadas tarde es malo; más extras
+// y recargos es más costo, que no es «malo» pero hay que verlo; más horas no es ni lo uno ni lo otro.
+export type CifraDelResumen = 'horasTrabajadas' | 'horasExtra' | 'recargosYExtras' | 'llegadasTarde';
+export type Tono = 'bueno' | 'malo' | 'costo' | 'neutro';
+
+export function tonoDelCambio(cifra: CifraDelResumen, diferencia: number): Tono {
+  if (diferencia === 0) return 'neutro';
+  // Un caso por valor y un default explícito (§9.4).
+  switch (cifra) {
+    case 'llegadasTarde': return diferencia > 0 ? 'malo' : 'bueno';
+    case 'horasExtra':
+    case 'recargosYExtras': return diferencia > 0 ? 'costo' : 'bueno';
+    case 'horasTrabajadas': return 'neutro';
+    default: return 'neutro';
+  }
+}
+
 // La comparación se hace sobre lo que se muestra, redondeado: si no, «1.864 h» contra «1.866 h»
 // podría decir «▼ 1 h» y el lector no cuadraría la resta.
+const diferencia = (c: Cifra) => Math.round(c.actual) - Math.round(c.anterior);
+
 function cambio(c: Cifra, formato: (n: number) => string): string {
-  const d = Math.round(c.actual) - Math.round(c.anterior);
+  const d = diferencia(c);
   if (d === 0) return 'igual';
   return `${d > 0 ? '▲' : '▼'} ${formato(Math.abs(d))}`;
 }
@@ -177,35 +214,107 @@ const horas = (n: number) => `${entero.format(n)} h`;
 const pesos = (n: number) => `$ ${entero.format(n)}`;
 const veces = (n: number) => entero.format(n);
 
-export function correoDelResumen(r: Resumen, empresa: string, enlace: string): { asunto: string; html: string } {
-  const semana = nombreDeSemana(r.semana);
-  const celda = 'padding:8px 0;border-bottom:1px solid #eeeeec;font-size:14px;color:#303030';
-  const fila = (etiqueta: string, c: Cifra, formato: (n: number) => string) =>
-    `<tr><td style="${celda}">${etiqueta}</td>`
-    + `<td style="${celda};text-align:right;font-weight:700">${formato(Math.round(c.actual))}</td>`
-    + `<td style="${celda};text-align:right;color:#898989;padding-left:12px">${r.comparable ? cambio(c, formato) : ''}</td></tr>`;
-  const titulo = (t: string) => `<p style="font-size:12px;font-weight:700;color:#898989;letter-spacing:.04em;margin:24px 0 8px">${t}</p>`;
-  const lista = (items: string[]) =>
-    `<ul style="margin:0 0 12px;padding-left:18px">${items.map(i => `<li style="font-size:14px;color:#303030;line-height:1.5;margin:0 0 6px">${i}</li>`).join('')}</ul>`;
+// La paleta de HoraPro (amarillo y grafito) y el color de cada tono.
+const C = {
+  tinta: '#303030', gris: '#898989', fondo: '#f6f6f4', tarjeta: '#f6f6f4', linea: '#ececea',
+  amarillo: '#FFD85E', atencion: '#FFF7DB', bordeAtencion: '#FBE3A0', vacio: '#e4e4e1',
+};
+const COLOR_DEL_TONO: Record<Tono, string> = { bueno: '#1E8E5A', malo: '#C0392B', costo: '#B7791F', neutro: C.gris };
 
-  const html = plantillaCorreo(`Resumen de la semana ${semana}`,
-    (r.huboActividad
-      ? parrafo(`Así le fue a <b>${escapar(empresa)}</b> la semana pasada${r.comparable ? ', comparada con la anterior' : ''}.`)
-        + titulo('LA SEMANA EN NÚMEROS')
-        + '<table style="width:100%;border-collapse:collapse">'
-        + fila('Horas trabajadas', r.horasTrabajadas, horas)
-        + fila('Horas extra', r.horasExtra, horas)
-        + fila('Recargos y extras', r.recargosYExtras, pesos)
-        + fila('Llegadas tarde', r.llegadasTarde, veces)
-        + '</table>'
-      : parrafo(`No hubo marcaciones esta semana. Esto es lo que tiene pendiente <b>${escapar(empresa)}</b>.`))
-    + (r.atencion.length ? titulo('NECESITA TU ATENCIÓN') + lista(r.atencion.map(escapar)) : '')
-    + (r.masTarde.length
-      ? titulo(r.masTarde.length === 1 ? 'QUIÉN LLEGÓ TARDE' : `LAS ${r.masTarde.length} PERSONAS QUE MÁS LLEGARON TARDE`)
-        + lista(r.masTarde.map(t => `${escapar(t.nombre)} — ${t.veces} ${plural(t.veces, 'vez', 'veces')}, ${entero.format(t.minutos)} min en total`))
-      : '')
-    + `<p style="margin:24px 0 0"><a href="${enlace}" style="display:inline-block;background:#FFD85E;color:#303030;font-weight:700;text-decoration:none;padding:12px 20px;border-radius:12px">Ver los reportes en HoraPro</a></p>`
-    + `<p style="font-size:12px;color:#898989;margin:16px 0 0">Te llega cada lunes porque eres administrador. Lo puedes apagar en Configuración.</p>`);
+const FUENTE = "font-family:-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif";
+const ALTO_BARRA = 72;
+
+// "Jorge Pérez" → "JP", para el círculo de cada persona.
+const iniciales = (nombre: string) =>
+  nombre.split(/\s+/).filter(Boolean).slice(0, 2).map(p => p[0]!.toUpperCase()).join('');
+
+// El correo se arma con tablas y estilos en cada elemento, que es lo único que Gmail, Outlook y los
+// clientes del celular pintan igual. Sin SVG (Gmail no lo muestra): el logo es un PNG publicado
+// con el frontend, y si el cliente no carga imágenes queda su texto alternativo.
+export function correoDelResumen(r: Resumen, empresa: string, origen: string): { asunto: string; html: string } {
+  const semana = nombreDeSemana(r.semana);
+  const enlace = `${origen}/app/reportes`;
+  const titulo = (t: string) =>
+    `<p style="${FUENTE};font-size:12px;font-weight:700;color:${C.gris};letter-spacing:.06em;margin:28px 0 12px">${t}</p>`;
+
+  const tarjeta = (etiqueta: string, cifra: CifraDelResumen, formato: (n: number) => string) => {
+    const c = r[cifra];
+    const tono = tonoDelCambio(cifra, diferencia(c));
+    return `<td class="col" width="50%" valign="top" style="padding:6px">`
+      + `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${C.tarjeta};border-radius:14px">`
+      + `<tr><td style="padding:16px 18px">`
+      + `<p style="${FUENTE};font-size:13px;color:${C.gris};margin:0 0 6px">${etiqueta}</p>`
+      + `<p style="${FUENTE};font-size:24px;font-weight:800;color:${C.tinta};margin:0">${formato(Math.round(c.actual))}</p>`
+      + (r.comparable ? `<p style="${FUENTE};font-size:13px;font-weight:600;color:${COLOR_DEL_TONO[tono]};margin:6px 0 0">${cambio(c, formato)}</p>` : '')
+      + `</td></tr></table></td>`;
+  };
+
+  const cifras = `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 -6px">`
+    + `<tr>${tarjeta('Horas trabajadas', 'horasTrabajadas', horas)}${tarjeta('Horas extra', 'horasExtra', horas)}</tr>`
+    + `<tr>${tarjeta('Recargos y extras', 'recargosYExtras', pesos)}${tarjeta('Llegadas tarde', 'llegadasTarde', veces)}</tr>`
+    + `</table>`;
+
+  // Una celda por día: arriba sus horas, al medio la barra (proporcional al día más largo) y abajo
+  // el día. La barra es una celda con fondo y alto, que Outlook sí respeta; un div con alto no.
+  const maximo = Math.max(...r.porDia.map(d => d.horas), 0);
+  const celda = (contenido: string, estilo = '') =>
+    `<td align="center" valign="bottom" width="14%" style="${FUENTE};${estilo}">${contenido}</td>`;
+  const barras = `<table role="presentation" width="100%" cellpadding="0" cellspacing="0">`
+    + `<tr>${r.porDia.map(d => celda(d.horas > 0 ? horas(Math.round(d.horas)) : '', `font-size:12px;color:${C.gris};padding-bottom:6px`)).join('')}</tr>`
+    + `<tr>${r.porDia.map(d => {
+      const alto = d.horas > 0 && maximo > 0 ? Math.max(4, Math.round((d.horas / maximo) * ALTO_BARRA)) : 3;
+      const color = d.horas > 0 ? C.amarillo : C.vacio;
+      return celda(`<table role="presentation" cellpadding="0" cellspacing="0" width="28"><tr><td height="${alto}" style="height:${alto}px;background:${color};border-radius:6px 6px 2px 2px;font-size:0;line-height:0">&nbsp;</td></tr></table>`, `height:${ALTO_BARRA}px`);
+    }).join('')}</tr>`
+    + `<tr>${r.porDia.map(d => celda(d.dia, `font-size:12px;color:${C.tinta};font-weight:600;padding-top:8px`)).join('')}</tr>`
+    + `</table>`;
+
+  const boton = `<table role="presentation" cellpadding="0" cellspacing="0"><tr><td style="background:${C.amarillo};border-radius:12px">`
+    + `<a href="${enlace}" style="${FUENTE};display:inline-block;padding:13px 22px;font-size:14px;font-weight:700;color:${C.tinta};text-decoration:none">${r.atencion.length ? 'Revisar en HoraPro' : 'Ver los reportes en HoraPro'}</a>`
+    + `</td></tr></table>`;
+
+  const atencion = r.atencion.length
+    ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:28px;background:${C.atencion};border:1px solid ${C.bordeAtencion};border-radius:14px">`
+      + `<tr><td style="padding:20px 22px">`
+      + `<p style="${FUENTE};font-size:16px;font-weight:800;color:${C.tinta};margin:0 0 12px">Necesita tu atención `
+      + `<span style="display:inline-block;background:${C.tinta};color:#ffffff;font-size:12px;font-weight:700;border-radius:10px;padding:2px 8px;vertical-align:2px">${r.atencion.length}</span></p>`
+      + r.atencion.map(a => `<p style="${FUENTE};font-size:14px;line-height:1.5;color:${C.tinta};margin:0 0 8px;padding-left:14px;border-left:3px solid ${C.amarillo}">${escapar(a)}</p>`).join('')
+      + `<div style="height:8px;line-height:8px;font-size:0">&nbsp;</div>${boton}`
+      + `</td></tr></table>`
+    : `<div style="height:28px;line-height:28px;font-size:0">&nbsp;</div>${boton}`;
+
+  const tarde = r.masTarde.length
+    ? titulo(r.masTarde.length === 1 ? 'QUIÉN LLEGÓ TARDE' : `QUIÉNES MÁS LLEGARON TARDE`)
+      + `<table role="presentation" width="100%" cellpadding="0" cellspacing="0">`
+      + r.masTarde.map(t => `<tr>`
+        + `<td width="44" style="padding:8px 0;border-bottom:1px solid ${C.linea}"><table role="presentation" cellpadding="0" cellspacing="0"><tr><td align="center" width="34" height="34" style="${FUENTE};width:34px;height:34px;border-radius:17px;background:${C.tinta};color:#ffffff;font-size:12px;font-weight:700">${escapar(iniciales(t.nombre))}</td></tr></table></td>`
+        + `<td style="${FUENTE};padding:8px 0;border-bottom:1px solid ${C.linea};font-size:14px;font-weight:600;color:${C.tinta}">${escapar(t.nombre)}</td>`
+        + `<td align="right" style="${FUENTE};padding:8px 0;border-bottom:1px solid ${C.linea};font-size:13px;color:${C.gris};white-space:nowrap">${t.veces} ${plural(t.veces, 'vez', 'veces')} · ${entero.format(t.minutos)} min en total</td>`
+        + `</tr>`).join('')
+      + `</table>`
+    : '';
+
+  const cuerpo = r.huboActividad
+    ? (r.comparable ? `<p style="${FUENTE};font-size:14px;color:${C.gris};margin:0 0 16px">Comparada con la semana anterior.</p>` : '')
+      + cifras + titulo('HORAS POR DÍA') + barras
+    : `<p style="${FUENTE};font-size:15px;line-height:1.5;color:${C.tinta};margin:0">No hubo marcaciones esta semana. Esto es lo que tiene pendiente <b>${escapar(empresa)}</b>.</p>`;
+
+  const html = `<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">`
+    + `<meta name="color-scheme" content="light"><meta name="supported-color-schemes" content="light">`
+    + `<style>@media (max-width:520px){.col{display:block!important;width:100%!important}.caja{padding:24px 18px!important}}</style></head>`
+    + `<body style="margin:0;padding:0;background:${C.fondo}">`
+    + `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${C.fondo}"><tr><td align="center" style="padding:32px 12px">`
+    + `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;background:#ffffff;border-radius:20px">`
+    + `<tr><td class="caja" style="padding:36px 36px 28px">`
+    + `<img src="${origen}/logo-correo.png" width="140" height="30" alt="HoraPro" style="display:block;border:0;width:140px;height:30px;${FUENTE};font-size:22px;font-weight:800;color:${C.tinta}">`
+    + `<p style="${FUENTE};font-size:13px;font-weight:600;color:${C.gris};margin:32px 0 6px">Resumen semanal · ${semana}</p>`
+    + `<h1 style="${FUENTE};font-size:24px;line-height:1.25;font-weight:800;color:${C.tinta};margin:0 0 8px">Tu semana en ${escapar(empresa)}</h1>`
+    + cuerpo + atencion + tarde
+    + `</td></tr>`
+    + `<tr><td style="padding:20px 36px 32px;border-top:1px solid ${C.linea}">`
+    + `<p style="${FUENTE};font-size:12px;line-height:1.5;color:${C.gris};margin:0">Te llega cada lunes porque eres administrador. Lo puedes apagar en Configuración → Cuenta.</p>`
+    + `<p style="${FUENTE};font-size:12px;color:${C.gris};margin:8px 0 0">HoraPro · Control de horas laborales para Colombia</p>`
+    + `</td></tr></table></td></tr></table></body></html>`;
 
   return { asunto: `Resumen semanal · ${empresa} · ${semana}`, html };
 }

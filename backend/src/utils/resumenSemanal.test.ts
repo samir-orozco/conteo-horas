@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
-  semanaDelResumen, armarResumen, correoDelResumen, avisoDelResumen, nombreDeSemana,
+  semanaDelResumen, armarResumen, correoDelResumen, avisoDelResumen, nombreDeSemana, tonoDelCambio,
   type FilaHoras, type FilaTarde, type Periodo, type EntradaDelResumen,
 } from './resumenSemanal';
 
@@ -158,6 +158,28 @@ describe('armarResumen', () => {
     ]);
   });
 
+  it('las horas de cada día, de lunes a domingo, sumadas entre personas y con cero el día sin marcas', () => {
+    const r = armarResumen(entrada({
+      actual: {
+        horas: [
+          persona('Ana', { minutosOrdinarios: 600, minutosPorDia: { '2026-09-28': 480, '2026-10-01': 120 } }),
+          persona('Luis', { minutosOrdinarios: 300, minutosExtra: 60, minutosPorDia: { '2026-09-28': 360 } }),
+        ],
+        tardanzas: [],
+      },
+    }));
+    expect(r.porDia).toEqual([
+      { dia: 'lun', fecha: '2026-09-28', horas: 14 },
+      { dia: 'mar', fecha: '2026-09-29', horas: 0 },
+      { dia: 'mié', fecha: '2026-09-30', horas: 0 },
+      { dia: 'jue', fecha: '2026-10-01', horas: 2 },
+      { dia: 'vie', fecha: '2026-10-02', horas: 0 },
+      { dia: 'sáb', fecha: '2026-10-03', horas: 0 },
+      { dia: 'dom', fecha: '2026-10-04', horas: 0 },
+    ]);
+    expect(r.porDia.reduce((s, d) => s + d.horas, 0)).toBe(r.horasTrabajadas.actual);
+  });
+
   it('una semana sin marcaciones ni pendientes no tiene nada que contar', () => {
     expect(armarResumen(entrada()).hayAlgo).toBe(false);
     expect(armarResumen(entrada({ novedadesPorAprobar: 1 })).hayAlgo).toBe(true);
@@ -179,7 +201,7 @@ describe('el correo y el aviso de la campana', () => {
   }));
 
   it('el asunto lleva la empresa y la semana, y la semana se lee aunque cruce de mes', () => {
-    expect(correoDelResumen(resumen, 'Grupo MSM', 'https://horapro.co/app/reportes').asunto)
+    expect(correoDelResumen(resumen, 'Grupo MSM', 'https://horapro.co').asunto)
       .toBe('Resumen semanal · Grupo MSM · 28 sep – 4 oct');
   });
 
@@ -189,14 +211,26 @@ describe('el correo y el aviso de la campana', () => {
   });
 
   it('el correo trae las cifras con miles en pesos colombianos y la comparación con la semana anterior', () => {
-    const { html } = correoDelResumen(resumen, 'Grupo MSM', 'https://horapro.co/app/reportes');
+    const { html } = correoDelResumen(resumen, 'Grupo MSM', 'https://horapro.co');
     const texto = html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ');
     expect(texto).toContain('Horas trabajadas 1.864 h ▼ 2 h');
     expect(texto).toContain('Horas extra 64 h ▲ 18 h');
     expect(texto).toContain('Recargos y extras $ 1.230.001 ▲ $ 310.001');
     expect(texto).toContain('Llegadas tarde 4 ▼ 2');
-    expect(texto).toContain('Jorge Pérez — 4 veces, 52 min en total');
+    expect(texto).toContain('JP Jorge Pérez 4 veces · 52 min en total');
     expect(html).toContain('href="https://horapro.co/app/reportes"');
+    expect(html).toContain('src="https://horapro.co/logo-correo.png"');
+    expect(html).toContain('alt="HoraPro"');
+  });
+
+  it('el correo dibuja una barra por día, con el día y sus horas', () => {
+    const r = armarResumen(entrada({
+      actual: { horas: [persona('Ana', { minutosOrdinarios: 600, minutosPorDia: { '2026-09-28': 480, '2026-10-01': 120 } })], tardanzas: [] },
+    }));
+    // El &nbsp; de las celdas de las barras no se ve: Outlook lo necesita para respetar el alto.
+    const texto = correoDelResumen(r, 'X', 'https://x').html.replace(/<[^>]+>/g, ' ').replace(/&nbsp;/g, ' ').replace(/\s+/g, ' ');
+    expect(texto).toContain('HORAS POR DÍA');
+    expect(texto).toContain('8 h 2 h lun mar mié jue vie sáb dom');
   });
 
   it('una empresa nueva, sin semana anterior, no muestra comparación', () => {
@@ -209,7 +243,7 @@ describe('el correo y el aviso de la campana', () => {
   it('un nombre con HTML no se vuelve HTML en el correo', () => {
     const r = armarResumen(entrada({ turnosCerradosSolos: [{ nombre: '<img src=x>', fecha: '2026-09-29' }] }));
     const { html } = correoDelResumen(r, '<b>Empresa</b>', 'https://x');
-    expect(html).not.toContain('<img');
+    expect(html).not.toContain('<img src=x>');
     expect(html).not.toContain('<b>Empresa</b>');
     expect(html).toContain('&lt;img src=x&gt;');
   });
@@ -231,5 +265,26 @@ describe('el correo y el aviso de la campana', () => {
       titulo: 'Resumen de la semana 28 sep – 4 oct',
       cuerpo: '1.864 h trabajadas · 64 h extra · 1 turno cerrado solo. También te llegó por correo.',
     });
+  });
+});
+
+// El color de cada diferencia dice si es buena o mala noticia, y depende de qué se mide: más
+// llegadas tarde es malo, más extras es más costo, y más horas no es ni lo uno ni lo otro.
+describe('tonoDelCambio', () => {
+  it('llegadas tarde: subir es malo y bajar es bueno', () => {
+    expect(tonoDelCambio('llegadasTarde', 2)).toBe('malo');
+    expect(tonoDelCambio('llegadasTarde', -2)).toBe('bueno');
+  });
+  it('extras y recargos: subir es costo, bajar es bueno', () => {
+    expect(tonoDelCambio('horasExtra', 18)).toBe('costo');
+    expect(tonoDelCambio('recargosYExtras', 1)).toBe('costo');
+    expect(tonoDelCambio('horasExtra', -3)).toBe('bueno');
+  });
+  it('horas trabajadas: nunca es buena ni mala por sí sola', () => {
+    expect(tonoDelCambio('horasTrabajadas', 84)).toBe('neutro');
+    expect(tonoDelCambio('horasTrabajadas', -84)).toBe('neutro');
+  });
+  it('sin cambio, neutro', () => {
+    expect(tonoDelCambio('llegadasTarde', 0)).toBe('neutro');
   });
 });

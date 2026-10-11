@@ -247,3 +247,30 @@ describe('liquidarRegistros: minutos extra', () => {
     expect(liquidar([fila('x', [7, 0], [16, 0])], [DIA]).minutosExtra).toBe(0);
   });
 });
+
+// LAS HORAS DE CADA DÍA (11 de octubre de 2026). El correo semanal dibuja una barra por día, y la
+// suma de las barras tiene que dar el total que el mismo correo muestra: por eso sale del motor,
+// con las pausas ya cobradas, y no de restar entrada y salida.
+describe('liquidarRegistros: los minutos de cada día', () => {
+  const martes = (h: number, min = 0) => new Date(Date.UTC(2026, 8, 8, h + 5, min, 0));
+  const MARTES = martes(0);
+  const DIA_MARTES: DiaEsperadoCalculado = { ...DIA, fecha: MARTES };
+
+  it('dos filas del mismo día suman en un solo día, con las pausas descontadas', () => {
+    const r = liquidar([fila('corta', [6, 50], [7, 0]), fila('larga', [7, 0], [16, 0])], [DIA]);
+    expect(r.minutosPorDia).toEqual({ '2026-09-07': 465 });
+  });
+
+  it('cada día en su clave, y la suma da lo trabajado del período', () => {
+    const tarde = { id: 'mar', fecha: MARTES, entrada: martes(7), salida: martes(19) };
+    const r = liquidar([fila('lun', [7, 0], [16, 0]), tarde], [DIA, DIA_MARTES]);
+    expect(Object.keys(r.minutosPorDia)).toEqual(['2026-09-07', '2026-09-08']);
+    const suma = Object.values(r.minutosPorDia).reduce((s, m) => s + m, 0);
+    expect(suma).toBe(r.minutosOrdinarios + r.minutosExtra);
+  });
+
+  it('una fila abierta no suma a ningún día', () => {
+    const abierta = { id: 'a', fecha: LUNES, entrada: lunes(7), salida: null };
+    expect(liquidar([abierta as never], [DIA]).minutosPorDia).toEqual({});
+  });
+});

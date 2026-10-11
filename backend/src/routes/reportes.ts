@@ -181,7 +181,7 @@ export default async function reporteRoutes(app: FastifyInstance) {
     // Las consultas y el armado viven en utils/reportesDeEmpresa.ts, que comparte con el correo
     // semanal. Los minutos son para el correo: la ruta no los devuelve.
     const { filas, sedes } = await liquidarEmpresa(request.empresaId!, desde, hasta);
-    const resultado = filas.map(({ minutosOrdinarios: _o, minutosExtra: _e, ...fila }) => fila);
+    const resultado = filas.map(({ minutosOrdinarios: _o, minutosExtra: _e, minutosPorDia: _d, ...fila }) => fila);
     return { desde, hasta, ...responderPorSede(resultado, ['totalRecargos', 'totalExtra', 'totalAdicional'] as const, sedes, sedeId) };
   });
 

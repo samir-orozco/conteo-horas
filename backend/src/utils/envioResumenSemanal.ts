@@ -93,7 +93,8 @@ export async function enviarResumenesSemanales(log?: Log, ahora = new Date()): P
       configuracion: { where: { clave: CLAVE_RESUMEN_SEMANAL }, select: { valor: true } },
     },
   });
-  const enlace = `${process.env.FRONTEND_ORIGIN?.split(',')[0] ?? 'http://localhost:5173'}/app/reportes`;
+  // De aquí salen el enlace a Reportes y el logo, que se publica con el frontend.
+  const origen = process.env.FRONTEND_ORIGIN?.split(',')[0] ?? 'http://localhost:5173';
 
   let enviados = 0, apagadas = 0, sinNada = 0, yaEstaban = 0, fallidas = 0;
   for (const e of empresas) {
@@ -108,7 +109,7 @@ export async function enviarResumenesSemanales(log?: Log, ahora = new Date()): P
       const resumen = armarResumen(await entradaDe(e.id, semana, ahora));
       if (!resumen.hayAlgo) { sinNada++; continue; }
 
-      const correo = correoDelResumen(resumen, e.nombre, enlace);
+      const correo = correoDelResumen(resumen, e.nombre, origen);
       for (const para of destinatarios(e)) {
         await enviarCorreo({ para, asunto: correo.asunto, html: correo.html });
       }

@@ -58,8 +58,8 @@ export function filasParaLugares(empresaId: string, desdeF: Date, finExclusivo: 
 // salario y vive en /liquidacion, donde el salario está a la vista. Dejarlo
 // fuera evita además traer los permisos de toda la empresa en cada consulta.
 //
-// Cada fila trae además los minutos ordinarios y extra, que la ruta no devuelve y el
-// correo semanal sí usa (las horas trabajadas de la semana).
+// Cada fila trae además los minutos ordinarios y extra, y los de cada día, que la ruta no
+// devuelve y el correo semanal sí usa (las horas de la semana y sus barras).
 export async function liquidarEmpresa(empresaId: string, desde: string, hasta: string) {
   const { desdeF, finExclusivo } = rangoReporte(desde, hasta);
   const hastaF = new Date(hasta); // solo para resolver la jornada vigente al cierre
@@ -146,7 +146,7 @@ export async function liquidarEmpresa(empresaId: string, desde: string, hasta: s
       colaboradorId: col.id, nombre: col.nombre, apellido: col.apellido,
       totalRecargos: r.totalRecargos, totalExtra: r.totalExtra, totalAdicional: r.totalAdicional,
       ...lugaresConAtribucion(porColLugares.get(col.id) ?? [], { modalidad: col.modalidad, sedePorDefecto: defectoDe(col.id) }),
-      minutosOrdinarios: r.minutosOrdinarios, minutosExtra: r.minutosExtra,
+      minutosOrdinarios: r.minutosOrdinarios, minutosExtra: r.minutosExtra, minutosPorDia: r.minutosPorDia,
     };
   });
 

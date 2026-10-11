@@ -10,6 +10,9 @@ import { ajustarAJornada } from './ajusteJornada';
 import { minutosAlmuerzoADescontar, minutosEnLaVentana, ventanaDeAlmuerzo } from './almuerzo';
 import { minutosDescansoADescontar, minutosEnLasVentanas, leerDescansos } from './descansos';
 import { cobroPorJornada, cobrarHastaDondeAlcance } from './jornada';
+// La clave "YYYY-MM-DD" de los minutos por día. No es la `claveDiaBogota` local de abajo, que tiene
+// otro formato y es solo de uso interno.
+import { claveDiaBogota as fechaBogota } from './fechas';
 
 // El núcleo de la liquidación, que vivía dentro de routes/reportes.ts. Salió de ahí
 // el 12 de septiembre de 2026 para poder probarlo sin base de datos: es lo que
@@ -189,6 +192,9 @@ export function liquidarRegistros(
   const cobrarAlmuerzo = cobroDePausas();
   const cobrarDescanso = cobroDePausas();
   const detalleRegistros: DetalleRegistro[] = [];
+  // Lo trabajado de cada día, con las pausas ya cobradas: la suma es minutosOrdinarios + minutosExtra.
+  // Lo usa el correo semanal para sus barras (11 de octubre de 2026). No cambia ningún otro número.
+  const minutosPorDia: Record<string, number> = {};
 
   for (const [, regsDeUnaSemana] of porSemana) {
     const jornadaSemanal = jornadaVigente(regsDeUnaSemana[0].fecha, jornadas);
@@ -237,6 +243,8 @@ export function liquidarRegistros(
         if (!acumulado[p.codigo]) acumulado[p.codigo] = { ...p };
         else acumulado[p.codigo].minutos += p.minutos;
       }
+      const dia = fechaBogota(registro.fecha);
+      minutosPorDia[dia] = (minutosPorDia[dia] ?? 0) + resultado.reduce((s, p) => s + p.minutos, 0);
     }
   }
 
@@ -273,5 +281,5 @@ export function liquidarRegistros(
   // con 0 cerradas y 2 días trabajados. Un día sin hora de entrada no es una marcación.
   const diasCont = new Set(registros.filter(r => r.entrada).map(r => claveDiaBogota(r.fecha))).size;
 
-  return { liquidacion, totalRecargos, totalExtra, totalAdicional, registrosCont, diasCont, detalleRegistros, minutosOrdinarios, minutosExtra };
+  return { liquidacion, totalRecargos, totalExtra, totalAdicional, registrosCont, diasCont, detalleRegistros, minutosOrdinarios, minutosExtra, minutosPorDia };
 }
