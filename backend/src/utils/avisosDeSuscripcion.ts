@@ -1,6 +1,6 @@
 import type { PrismaClient, Suscripcion } from '@prisma/client';
 import { prisma } from '../prisma';
-import { enviarCorreo, plantillaCorreo } from './correo';
+import { enviarCorreo, plantillaCorreo, escapar, parrafo, destinatarios } from './correo';
 import { DIAS_GRACIA_MORA, pausaDelKiosco } from './suscripcion';
 
 // Los correos al administrador cuando la suscripción vence (4 de octubre de 2026). El único
@@ -45,9 +45,6 @@ const fecha = (d: Date) =>
   d.toLocaleDateString('es-CO', { timeZone: 'America/Bogota', day: 'numeric', month: 'long', year: 'numeric' });
 // El último día que cubre algo que vence a medianoche: el día anterior.
 const ultimoDia = (d: Date) => fecha(new Date(d.getTime() - 1));
-const escapar = (s: string) =>
-  s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-const parrafo = (html: string) => `<p style="font-size:14px;color:#303030;line-height:1.5;margin:0 0 12px">${html}</p>`;
 
 function correoDelAviso(a: AvisoSuscripcion, empresa: string, enlace: string) {
   const nombre = `<b>${escapar(empresa)}</b>`;
@@ -77,13 +74,6 @@ function correoDelAviso(a: AvisoSuscripcion, empresa: string, enlace: string) {
       parrafo(`Desde el <b>${fecha(a.pausa)}</b>, tus colaboradores no podrán marcar en el kiosco de ${nombre} hasta que se registre el pago de la suscripción. Lo que ya marcaron se conserva.`)
       + boton),
   };
-}
-
-// A quién se le escribe: a los administradores activos, que son los que pueden pagar desde
-// el panel. Si no queda ninguno, al correo con el que se registró la empresa.
-function destinatarios(e: { email: string; usuarios: { email: string }[] }): string[] {
-  const admins = [...new Set(e.usuarios.map(u => u.email.trim().toLowerCase()).filter(Boolean))];
-  return admins.length ? admins : [e.email];
 }
 
 type Log = { info: (msg: string) => void; error: (obj: unknown, msg?: string) => void };

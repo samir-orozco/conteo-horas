@@ -45,3 +45,17 @@ export function plantillaCorreo(titulo: string, cuerpoHtml: string): string {
     </div>
   </div>`;
 }
+
+// Texto de la base dentro de un correo: un nombre con «<» no puede volverse HTML. Estaba solo en
+// avisosDeSuscripcion.ts y salió de ahí cuando el resumen semanal la necesitó (11 de octubre de 2026).
+export const escapar = (s: string) =>
+  s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
+export const parrafo = (html: string) => `<p style="font-size:14px;color:#303030;line-height:1.5;margin:0 0 12px">${html}</p>`;
+
+// A quién se le escribe: a los administradores activos, que son los que pueden pagar desde
+// el panel. Si no queda ninguno, al correo con el que se registró la empresa.
+export function destinatarios(e: { email: string; usuarios: { email: string }[] }): string[] {
+  const admins = [...new Set(e.usuarios.map(u => u.email.trim().toLowerCase()).filter(Boolean))];
+  return admins.length ? admins : [e.email];
+}

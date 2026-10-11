@@ -20,7 +20,10 @@ export type TipoNotif =
   // Un presencial marcó fuera de la geocerca, dentro del margen de su sede. Lo arma
   // avisoFueraDeGeocerca.ts (11 de octubre de 2026).
   | 'MARCO_FUERA_DE_GEOCERCA'
-  | 'KIOSCO_POR_PAUSARSE';
+  | 'KIOSCO_POR_PAUSARSE'
+  // El resumen semanal por correo, que deja su copia en la campana. La escribe
+  // envioResumenSemanal.ts y además le sirve de marca de «ya se mandó» (11 de octubre de 2026).
+  | 'RESUMEN_SEMANAL';
 
 type NuevaNotif = {
   tipo: TipoNotif;

@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { CheckCheck, AlarmClock, Clock, CalendarOff, Bell, MapPin, X } from 'lucide-react';
+import { CheckCheck, AlarmClock, Clock, CalendarOff, Bell, MapPin, X, BarChart3 } from 'lucide-react';
 import { rutaDeNotificacion } from './ruta';
 import { posicionAlLado } from '../../lib/posicionDePanel';
 import type { Notificacion } from './types';

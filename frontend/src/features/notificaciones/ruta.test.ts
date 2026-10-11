@@ -28,6 +28,11 @@ describe('a dónde lleva cada notificación', () => {
     }
   });
 
+  it('el resumen semanal lleva a reportes (11 de octubre de 2026)', () => {
+    expect(rutaDeNotificacion(n({ tipo: 'RESUMEN_SEMANAL', entidad: 'resumen', entidadId: '2026-10-05' })))
+      .toBe('/app/reportes');
+  });
+
   it('un aviso de marcación lleva a registros', () => {
     expect(rutaDeNotificacion(n({ tipo: 'NO_MARCO_SALIDA', entidad: 'registro', entidadId: 'r1' })))
       .toBe('/app/registros');

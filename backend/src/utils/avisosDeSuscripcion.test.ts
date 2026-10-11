@@ -7,7 +7,10 @@ import type { PrismaClient, Suscripcion } from '@prisma/client';
 // de que el kiosco se pause.
 
 const { enviarCorreo } = vi.hoisted(() => ({ enviarCorreo: vi.fn() }));
-vi.mock('./correo', () => ({
+// Las ayudas de texto (escapar, parrafo, destinatarios) son las reales: viven en correo.ts desde
+// que el resumen semanal las compartió, y lo que se prueba aquí es justo lo que escriben.
+vi.mock('./correo', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('./correo')>()),
   enviarCorreo: (...a: unknown[]) => enviarCorreo(...a),
   plantillaCorreo: (titulo: string, cuerpo: string) => `<h1>${titulo}</h1>${cuerpo}`,
 }));

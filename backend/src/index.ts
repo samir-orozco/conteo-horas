@@ -36,6 +36,8 @@ import { avisarPausasSinRegreso } from './utils/cierreAlmuerzo';
 import { mantenerVentana } from './utils/materializarDias';
 import { programarDiario } from './utils/programarDiario';
 import { avisarSuscripcionesDeTodas } from './utils/avisosDeSuscripcion';
+import { enviarResumenesSemanales } from './utils/envioResumenSemanal';
+import { HORA_DEL_RESUMEN } from './utils/resumenSemanal';
 import { opcionesDeLog } from './utils/opcionesDeLog';
 import { decidirAccesoEmpresa } from './utils/accesoEmpresa';
 import { esErrorInesperado, manejarError } from './utils/respuestaDeError';
@@ -301,6 +303,10 @@ const start = async () => {
     // Los correos de suscripción vencida y de kiosco por pausarse (4 de octubre de 2026). A las 7 y
     // no a la hora de los barridos: son para que los lea una persona.
     programarDiario('avisos-de-suscripcion', 7, () => avisarSuscripcionesDeTodas(app.log), app.log);
+    // El resumen semanal para los administradores (11 de octubre de 2026). Corre a diario como los
+    // demás y solo hace algo el lunes desde las 7: lo decide `semanaDelResumen`. A la misma hora
+    // que los avisos de cobro, por lo mismo: es para que lo lea una persona al empezar el día.
+    programarDiario('resumen-semanal', HORA_DEL_RESUMEN, () => enviarResumenesSemanales(app.log), app.log);
     // Registra el webhook del bot de Telegram (si hay URL configurada)
     if (process.env.TELEGRAM_WEBHOOK_URL) configurarWebhook(process.env.TELEGRAM_WEBHOOK_URL);
   } catch (err) {

@@ -4,7 +4,7 @@ export type Notificacion = {
   tipo: 'NO_MARCO_SALIDA' | 'LLEGADA_TARDE' | 'NOVEDAD_PENDIENTE' | string;
   titulo: string;
   cuerpo: string | null;
-  entidad: 'registro' | 'colaborador' | 'permiso' | 'suscripcion' | null;
+  entidad: 'registro' | 'colaborador' | 'permiso' | 'suscripcion' | 'resumen' | null;
   entidadId: string | null;
   leida: boolean;
   creadoEn: string;

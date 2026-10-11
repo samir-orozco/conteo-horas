@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Save, Building2, User, Lock } from 'lucide-react';
 import api from '../../lib/api';
 import { useAuth } from '../../context/AuthContext';
+import ResumenSemanalCorreo from './ResumenSemanalCorreo';
 
 type Empresa = { nombre: string; nit: string; email: string; telefono: string | null };
 
@@ -147,6 +148,8 @@ export default function TabCuenta() {
       </form>
 
       {/* Cambiar contraseña */}
+      {esAdmin && <ResumenSemanalCorreo />}
+
       <form onSubmit={guardarClave} className="bg-white rounded-card border border-gray-200 p-6">
         <h3 className="font-semibold text-ink mb-4 flex items-center gap-2"><Lock size={17} /> Cambiar contraseña</h3>
         <div className="grid md:grid-cols-3 gap-4">

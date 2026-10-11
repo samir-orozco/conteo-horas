@@ -9,6 +9,7 @@ import type { Notificacion } from './types';
 export function rutaDeNotificacion(n: Notificacion): string | null {
   if (n.entidad === 'registro') return '/app/registros';
   if (n.entidad === 'suscripcion') return '/app/suscripcion';
+  if (n.entidad === 'resumen') return '/app/reportes';
   if (n.entidad !== 'colaborador' || !n.entidadId) return null;
 
   const ficha = `/app/colaboradores/${n.entidadId}`;
