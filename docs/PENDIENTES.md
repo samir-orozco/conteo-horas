@@ -355,7 +355,12 @@ Marcar fuera de la geocerca con alerta, configurado POR SEDE al crearla o editar
    abrirlo agranda la geocerca. Un PUT sin el campo lo deja como estaba (un frontend viejo no lo apaga). La costura
    del kiosco se comprueba con `backend/prisma/probar-margen-kiosco.ts` contra el servidor local, y se vio fallar
    quitando a propósito la línea que guarda la marca.
-4. Falta: los textos de la celda sin sede («Remoto», «Fuera de sede», «Sin ubicación de sede») y el Excel.
+4. Hecho: sin sede de marcación, la celda dice el motivo y no la sede atribuida: «Remoto», «Fuera de sede» (híbrido
+   con sedes ubicadas), «Sin ubicación de sede» (ninguna de sus sedes tiene coordenadas) o «No quedó registrada»
+   (presencial con sedes ubicadas: jornada vieja o cargada a mano). Lo decide `utils/motivoSinSede.ts` con la
+   modalidad y las sedes de HOY: quien cambió de modalidad verá sus jornadas viejas con el motivo nuevo. Dónde
+   cuenta para los reportes queda en el título de la celda. El Excel dice lo mismo en «Marcó en» y suma la
+   columna «Fuera de la geocerca» (Sí/No).
 - La celda de Registros sin sede de marcación pasa a decir el caso: «Remoto», «Fuera de sede» o «Sin ubicación de sede»
   (nº 38, opción 3 elegida por el dueño, junto con que las empresas carguen las coordenadas de sus sedes).
 
@@ -777,7 +782,8 @@ cruces (7 en una, 1 en otra).
    GPS y el kiosco no coinciden. Cambio de esquema: se habla antes (CLAUDE.md §4).
 3. Que las empresas carguen las coordenadas de sus sedes. Sin código, y solo vale hacia adelante.
 
-Recomendación: 1 y 2 juntas. **Esperando la decisión del dueño.**
+Recomendación: 1 y 2 juntas. **Decidido por el dueño (11 de octubre): opción 3**, más que la celda diga el motivo
+en vez de la sede atribuida. Hecho en el paso 4 del nº 11. La opción 2 (sede por kiosco) queda sin hacer.
 
 **El Excel de Registros ya separa las dos cosas** (`5dfc0af`, 9 de octubre, sin desplegar): «Sede» es la de la
 persona y «Marcó en» la de la jornada. La TABLA de la pantalla sigue como estaba; esa es la que decide esta

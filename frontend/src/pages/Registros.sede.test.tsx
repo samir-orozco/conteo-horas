@@ -115,3 +115,29 @@ describe('Registros · la alerta de marcar fuera de la geocerca', () => {
     expect((await celda('Sede')).textContent?.trim()).toBe('Norte');
   });
 });
+
+// SIN SEDE DE MARCACIÓN, LA CELDA DICE POR QUÉ (11 de octubre de 2026, PENDIENTES nº 38, opción 3).
+// Antes decía «— · cuenta en Norte», y el dueño lo leía como la sede de la persona. Dónde cuenta
+// para los reportes sigue a la mano, en el texto que aparece al pasar el mouse.
+describe('Registros · el motivo cuando la jornada no tiene sede', () => {
+  it.each([
+    ['REMOTO', 'Remoto'],
+    ['FUERA_DE_SEDE', 'Fuera de sede'],
+    ['SIN_UBICACION_DE_SEDE', 'Sin ubicación de sede'],
+    ['NO_REGISTRADA', 'No quedó registrada'],
+  ])('%s se lee «%s», sin el nombre de la sede atribuida', async (motivo, texto) => {
+    montar([jornada({ sinSede: motivo, sedeAtribuida: NORTE })]);
+    const sede = await celda('Sede');
+    expect(sede.textContent?.trim()).toBe(texto);
+  });
+
+  it('dónde cuenta para los reportes queda en el título', async () => {
+    montar([jornada({ sinSede: 'SIN_UBICACION_DE_SEDE', sedeAtribuida: NORTE })]);
+    expect((await celda('Sede')).querySelector('[title]')?.getAttribute('title')).toContain('cuenta en Norte');
+  });
+
+  it('con la alerta de geocerca y sin sede no se pisan: la jornada con sede lleva la alerta', async () => {
+    montar([jornada({ sede: NORTE, sedeSalida: NORTE, fueraDeGeocerca: true, sinSede: null })]);
+    expect((await celda('Sede')).textContent).toContain('Fuera de la geocerca');
+  });
+});

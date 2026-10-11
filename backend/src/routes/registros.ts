@@ -19,6 +19,7 @@ import { diferenciasDeRegistro, type EstadoRegistro } from '../utils/cambiosRegi
 import { leerDescansos, ventanasEnOrden, completarVentanasDeDescanso, MAX_MARCACIONES_POR_JORNADA } from '../utils/descansos';
 import { resumirAlmuerzoDelDia, resumirDescansosDelDia, minutosContadosDelDia, partirDiaEnJornadas, tramoQueChoca, marcacionQueCierra, laCerroElSistema, agruparEnJornadas, instantesDeJornada, tramosDeLaJornada, momentosDelDia, jornadaDeCadaMarcacion, sedesDeLaJornada, salidasTrasEditar, leerPausaDelCuerpo, leerDescansosDelCuerpo } from '../utils/jornada';
 import { jornadaFueraDeGeocerca } from '../utils/avisoFueraDeGeocerca';
+import { motivoSinSede } from '../utils/motivoSinSede';
 
 const TZ = 'America/Bogota';
 const TIPOS_REGISTRO = new Set(['NORMAL', 'PERMISO', 'FESTIVO']);
@@ -302,6 +303,20 @@ export default async function registroRoutes(app: FastifyInstance) {
       fecha: r.fecha, entrada: r.entrada, sedeId: r.sedeId, sedeSalidaId: r.sedeSalidaId,
     })), typeof colaboradorId === 'string' ? colaboradorId : undefined);
 
+    // Cuántas sedes activas CON coordenadas tiene cada persona del listado, para decir por qué una
+    // jornada no quedó con sede (11 de octubre de 2026, ver utils/motivoSinSede.ts). Por la llave
+    // primaria de colaboradores_sedes, que empieza por colaboradorId.
+    const conUbicacion = await prisma.colaboradorSede.findMany({
+      where: {
+        colaboradorId: { in: [...new Set(registros.map(r => r.colaboradorId))] },
+        sede: { activa: true, lat: { not: null }, lng: { not: null } },
+      },
+      select: { colaboradorId: true },
+    });
+    const sedesConUbicacion = new Map<string, number>();
+    for (const c of conUbicacion) sedesConUbicacion.set(c.colaboradorId, (sedesConUbicacion.get(c.colaboradorId) ?? 0) + 1);
+    const sedesConUbicacionDe = (colaboradorId: string) => sedesConUbicacion.get(colaboradorId) ?? 0;
+
     // La tardanza solo se evalúa en la PRIMERA entrada del día de cada colaborador
     // (un reingreso después del almuerzo no es una llegada tarde).
     const primeraEntradaDia = new Map<string, string>(); // colaboradorId|día -> registro.id
@@ -469,6 +484,10 @@ export default async function registroRoutes(app: FastifyInstance) {
           // Alguna marca de la jornada se hizo fuera de la geocerca, dentro del margen de la
           // sede (11 de octubre de 2026). Solo la señal, sin metros.
           fueraDeGeocerca: jornadaFueraDeGeocerca(marcaciones),
+          // Por qué la jornada no tiene sede de marcación, o null si la tiene (abrió o cerró en una).
+          sinSede: primera.sede || cierra?.sedeSalida
+            ? null
+            : motivoSinSede({ modalidad: primera.colaborador.modalidad, sedesConUbicacion: sedesConUbicacionDe(primera.colaboradorId) }),
           minutosTarde,
           // Lo que ese bloque de trabajo contó, con el almuerzo ya descontado.
           // Antes la columna restaba salida menos entrada de un tramo suelto, así

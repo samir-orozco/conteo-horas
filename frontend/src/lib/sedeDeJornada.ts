@@ -6,7 +6,12 @@ export type SedeCorta = { id: string; nombre: string };
 // leer»): la sede que el servidor le atribuye a la jornada de un presencial que no
 // abrió en una sede probada. Sirve para mostrarla, con su nombre, y para el
 // filtro de sede; nunca para decir que cruzó de sede, porque no la probó la ubicación.
-export type ConSedes = { sede?: SedeCorta | null; sedeSalida?: SedeCorta | null; sedeAtribuida?: SedeCorta | null };
+// `sinSede` (11 de octubre de 2026): por qué la jornada no quedó con sede de marcación, decidido en el servidor
+// (utils/motivoSinSede.ts). Null si la tiene. Opcional: un servidor anterior no lo manda.
+export type MotivoSinSede = 'REMOTO' | 'SIN_UBICACION_DE_SEDE' | 'FUERA_DE_SEDE' | 'NO_REGISTRADA';
+export type ConSedes = {
+  sede?: SedeCorta | null; sedeSalida?: SedeCorta | null; sedeAtribuida?: SedeCorta | null; sinSede?: MotivoSinSede | null;
+};
 
 export const CRUCE_DISTINTAS = 'DISTINTAS';
 
@@ -94,6 +99,8 @@ export type SedeDeJornada =
   | { clase: 'probada'; nombre: string }
   | { clase: 'soloCierre'; nombre: string }
   | { clase: 'atribuida'; nombre: string }
+  // El motivo de no tener sede, y aparte dónde cuenta para los reportes (la atribuida), si cuenta en alguna.
+  | { clase: 'sinSede'; motivo: MotivoSinSede; cuentaEn: string | null }
   | { clase: 'ninguna' };
 
 export function sedeDeLaJornada(r: ConSedes): SedeDeJornada {
@@ -102,6 +109,18 @@ export function sedeDeLaJornada(r: ConSedes): SedeDeJornada {
   // Abrió sin sede pero cerró en una: se dice que es el CIERRE, para no dejar
   // creer que toda la jornada fue ahí.
   if (r.sedeSalida) return { clase: 'soloCierre', nombre: r.sedeSalida.nombre };
+  if (r.sinSede) return { clase: 'sinSede', motivo: r.sinSede, cuentaEn: r.sedeAtribuida?.nombre ?? null };
   if (r.sedeAtribuida) return { clase: 'atribuida', nombre: r.sedeAtribuida.nombre };
   return { clase: 'ninguna' };
+}
+
+/** Lo que dice la celda cuando la jornada no tiene sede de marcación. Un caso por motivo (§9.4). */
+export function textoSinSede(motivo: MotivoSinSede): string {
+  switch (motivo) {
+    case 'REMOTO': return 'Remoto';
+    case 'FUERA_DE_SEDE': return 'Fuera de sede';
+    case 'SIN_UBICACION_DE_SEDE': return 'Sin ubicación de sede';
+    // NO_REGISTRADA, y un motivo que este bundle no conozca: no se inventa otro.
+    default: return 'No quedó registrada';
+  }
 }

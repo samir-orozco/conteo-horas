@@ -12,7 +12,7 @@ import { MAX_DESCANSOS_POR_FRANJA, MAX_MARCACIONES_POR_JORNADA } from '../lib/de
 import SelectorRangoFechas from '../components/SelectorRangoFechas';
 import MenuFiltros from '../components/MenuFiltros';
 import MenuAcciones from '../components/MenuAcciones';
-import { sedeDeLaJornada, cumpleSede, cumpleCruce, opcionesDeSede, muestraColumnaSede, CRUCE_DISTINTAS, type SedeCorta } from '../lib/sedeDeJornada';
+import { sedeDeLaJornada, textoSinSede, cumpleSede, cumpleCruce, opcionesDeSede, muestraColumnaSede, CRUCE_DISTINTAS, type SedeCorta, type MotivoSinSede } from '../lib/sedeDeJornada';
 import SelectorColaborador from '../components/SelectorColaborador';
 import ActividadRegistro from '../features/registros/ActividadRegistro';
 import { ingresosDelDia, type Ingreso } from '../features/registros/ingresosDelDia';
@@ -67,6 +67,9 @@ type Registro = {
   // Alguna marca de la jornada se hizo fuera de la geocerca, dentro del margen que permite la
   // sede (11 de octubre de 2026). Solo la señal, sin metros. Opcional por la ventana del despliegue.
   fueraDeGeocerca?: boolean;
+  // Por qué la jornada no tiene sede de marcación, o null si la tiene (11 de octubre de 2026). Opcional
+  // por la misma ventana del despliegue: sin él, la celda se pinta como antes.
+  sinSede?: MotivoSinSede | null;
   // null = sin horario asignado o día que no aplica; 0 = a tiempo; >0 = minutos tarde
   minutosTarde: number | null;
   // Lo que contó esta jornada, con sus pausas ya descontadas.
@@ -278,6 +281,15 @@ function NombreDeSede({ r }: { r: Registro }) {
         <span className="whitespace-nowrap text-gray-400"
           title={`No quedó registrada la sede de esta jornada. Para los reportes cuenta en ${s.nombre}, que es su sede asignada.`}>
           {'— · cuenta en '}{s.nombre}
+        </span>
+      );
+    // Sin sede de marcación, el MOTIVO (11 de octubre de 2026, PENDIENTES nº 38, opción 3 del dueño). La
+    // sede donde cuenta para los reportes no va en la celda, que la hacía pasar por la de la persona.
+    case 'sinSede':
+      return (
+        <span className="whitespace-nowrap text-gray-500"
+          title={s.cuentaEn ? `No quedó registrada una sede en esta jornada. Para los reportes cuenta en ${s.cuentaEn}.` : 'No quedó registrada una sede en esta jornada.'}>
+          {textoSinSede(s.motivo)}
         </span>
       );
     // 'ninguna' y lo que venga: un guion. Explícito a propósito.

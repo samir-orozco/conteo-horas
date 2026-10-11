@@ -45,7 +45,7 @@ const celda = (nombre: string, jornadas: ReturnType<typeof jornada>[] = [jornada
 describe('las columnas del Excel de registros', () => {
   it('son las de la tabla, y los minutos dicen que son minutos', () => {
     expect(COLUMNAS_REGISTROS).toEqual([
-      'Colaborador', 'Cédula', 'Fecha', 'Sede', 'Marcó en', 'Entrada', 'Salida', 'Salida estimada',
+      'Colaborador', 'Cédula', 'Fecha', 'Sede', 'Marcó en', 'Fuera de la geocerca', 'Entrada', 'Salida', 'Salida estimada',
       'Almuerzo (min)', 'Descansos (min)', 'Duración (min)', 'Llegada tarde (min)',
       'Tipo', 'Jornada del día', 'Observación',
     ]);
@@ -65,7 +65,7 @@ describe('las columnas del Excel de registros', () => {
 describe('filasDeRegistros', () => {
   it('una jornada normal se escribe entera', () => {
     expect(fila([jornada()])).toEqual([
-      'Ana María Gómez', '1020304050', '2026-09-01', 'Norte', 'Norte', '08:00', '17:00', 'No',
+      'Ana María Gómez', '1020304050', '2026-09-01', 'Norte', 'Norte', 'No', '08:00', '17:00', 'No',
       60, 15, 480, 0, 'NORMAL', 1, '',
     ]);
   });
@@ -148,6 +148,14 @@ describe('filasDeRegistros', () => {
     it('si no quedó registrada, queda vacía y no repite la sede de la persona', () => {
       expect(celda('Marcó en', [jornada({ sede: null, sedeSalida: null })])).toBe('');
       expect(celda('Marcó en', [jornada({ sede: null, sedeSalida: null, sedeAtribuida: NORTE })])).toBe('');
+    });
+
+    // Con el motivo del servidor (11 de octubre de 2026, PENDIENTES nº 38), la celda dice POR QUÉ no hay
+    // sede, con las mismas palabras que la tabla. Sigue sin repetir la sede de la persona.
+    it('sin sede, con el motivo, dice el motivo y no la sede de la persona', () => {
+      expect(celda('Marcó en', [jornada({ sede: null, sedeSalida: null, sinSede: 'REMOTO', sedeAtribuida: NORTE })])).toBe('Remoto');
+      expect(celda('Marcó en', [jornada({ sede: null, sedeSalida: null, sinSede: 'SIN_UBICACION_DE_SEDE' })])).toBe('Sin ubicación de sede');
+      expect(celda('Marcó en', [jornada({ sede: null, sedeSalida: null, sinSede: 'FUERA_DE_SEDE' })])).toBe('Fuera de sede');
     });
 
     it('dos sedes que se llaman igual pero son distintas se siguen viendo como cruce', () => {
@@ -311,5 +319,19 @@ describe('matrizDeEntradas', () => {
 
   it('sin jornadas ni personas, solo trae los encabezados', () => {
     expect(matriz([])).toEqual({ columnas: ['Colaborador', '2026-09-01', '2026-09-02', '2026-09-03'], filas: [] });
+  });
+});
+
+// LA ALERTA DE GEOCERCA EN EL EXCEL (11 de octubre de 2026, PENDIENTES nº 11). Sí o No, como «Salida estimada»:
+// así se filtra. Un servidor anterior no manda el campo, y eso es No.
+describe('«Fuera de la geocerca»', () => {
+  it('va justo a la derecha de «Marcó en»', () => {
+    expect(COLUMNAS_REGISTROS.indexOf('Fuera de la geocerca')).toBe(COLUMNAS_REGISTROS.indexOf('Marcó en') + 1);
+  });
+
+  it('Sí cuando alguna marca de la jornada lo fue, No cuando no o cuando el campo no viene', () => {
+    expect(celda('Fuera de la geocerca', [jornada({ sede: SUR, fueraDeGeocerca: true })])).toBe('Sí');
+    expect(celda('Fuera de la geocerca', [jornada({ sede: SUR, fueraDeGeocerca: false })])).toBe('No');
+    expect(celda('Fuera de la geocerca', [jornada({ sede: SUR })])).toBe('No');
   });
 });

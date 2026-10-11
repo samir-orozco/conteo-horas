@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { cruzoDeSede, cumpleSede, cumpleCruce, opcionesDeSede, muestraColumnaSede, sedeDeLaJornada, CRUCE_DISTINTAS } from './sedeDeJornada';
+import { cruzoDeSede, cumpleSede, cumpleCruce, opcionesDeSede, muestraColumnaSede, sedeDeLaJornada, textoSinSede, CRUCE_DISTINTAS } from './sedeDeJornada';
 
 const POBLADO = { id: 's1', nombre: 'El Poblado' };
 const LAURELES = { id: 's2', nombre: 'Laureles' };
@@ -178,5 +178,43 @@ describe('sedeDeLaJornada', () => {
   it('sin ninguna sede, ninguna', () => {
     expect(sedeDeLaJornada({})).toEqual({ clase: 'ninguna' });
     expect(sedeDeLaJornada({ sede: null, sedeSalida: null, sedeAtribuida: null })).toEqual({ clase: 'ninguna' });
+  });
+});
+
+// SIN SEDE DE MARCACIÓN, EL MOTIVO (11 de octubre de 2026, PENDIENTES nº 11 y nº 38, opción 3 del dueño).
+// El servidor manda `sinSede` con el porqué; la celda lo dice en vez de «— · cuenta en [sede]», que se
+// leía como la sede de la persona. Dónde cuenta para los reportes queda aparte, en `cuentaEn`.
+describe('sedeDeLaJornada con el motivo de no tener sede', () => {
+  it('con motivo, dice el motivo y aparte dónde cuenta', () => {
+    expect(sedeDeLaJornada({ sinSede: 'SIN_UBICACION_DE_SEDE', sedeAtribuida: PRINCIPAL }))
+      .toEqual({ clase: 'sinSede', motivo: 'SIN_UBICACION_DE_SEDE', cuentaEn: 'Sede principal' });
+  });
+
+  it('sin sede atribuida, no cuenta en ninguna', () => {
+    expect(sedeDeLaJornada({ sinSede: 'REMOTO' })).toEqual({ clase: 'sinSede', motivo: 'REMOTO', cuentaEn: null });
+  });
+
+  it('una sede probada manda sobre el motivo', () => {
+    expect(sedeDeLaJornada({ sede: POBLADO, sinSede: 'FUERA_DE_SEDE' })).toEqual({ clase: 'probada', nombre: 'El Poblado' });
+    expect(sedeDeLaJornada({ sedeSalida: LAURELES, sinSede: 'FUERA_DE_SEDE' })).toEqual({ clase: 'soloCierre', nombre: 'Laureles' });
+  });
+
+  // Un servidor anterior no manda `sinSede`: se pinta como antes.
+  it('sin el campo, la atribuida se dice como antes', () => {
+    expect(sedeDeLaJornada({ sedeAtribuida: PRINCIPAL })).toEqual({ clase: 'atribuida', nombre: 'Sede principal' });
+  });
+});
+
+describe('textoSinSede', () => {
+  it('un texto por motivo', () => {
+    expect(textoSinSede('REMOTO')).toBe('Remoto');
+    expect(textoSinSede('FUERA_DE_SEDE')).toBe('Fuera de sede');
+    expect(textoSinSede('SIN_UBICACION_DE_SEDE')).toBe('Sin ubicación de sede');
+    expect(textoSinSede('NO_REGISTRADA')).toBe('No quedó registrada');
+  });
+
+  // Un servidor más nuevo puede mandar un motivo que este bundle no conoce: no se rompe ni se inventa.
+  it('un motivo desconocido dice que no quedó registrada', () => {
+    expect(textoSinSede('OTRO' as never)).toBe('No quedó registrada');
   });
 });

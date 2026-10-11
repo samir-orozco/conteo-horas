@@ -1,7 +1,7 @@
 import { format } from 'date-fns';
 import { toZonedTime } from 'date-fns-tz';
 import { TZ } from '../../lib/fechas';
-import { sedeDeLaJornada, type ConSedes } from '../../lib/sedeDeJornada';
+import { sedeDeLaJornada, textoSinSede, type ConSedes } from '../../lib/sedeDeJornada';
 import { ingresosDelDia } from './ingresosDelDia';
 
 // EL EXCEL DE LOS REGISTROS (4 de octubre de 2026, peticiones 7, 19 y 32 del dueño).
@@ -30,10 +30,12 @@ export type JornadaExportable = ConSedes & {
   minutosAlmuerzoAqui: number;
   minutosDescansoAqui?: number;
   salidaEstimada?: boolean;
+  // Alguna marca de la jornada se hizo fuera de la geocerca, dentro del margen (11 de octubre de 2026).
+  fueraDeGeocerca?: boolean;
 };
 
 export const COLUMNAS_REGISTROS = [
-  'Colaborador', 'Cédula', 'Fecha', 'Sede', 'Marcó en', 'Entrada', 'Salida', 'Salida estimada',
+  'Colaborador', 'Cédula', 'Fecha', 'Sede', 'Marcó en', 'Fuera de la geocerca', 'Entrada', 'Salida', 'Salida estimada',
   'Almuerzo (min)', 'Descansos (min)', 'Duración (min)', 'Llegada tarde (min)',
   'Tipo', 'Jornada del día', 'Observación',
 ];
@@ -71,6 +73,8 @@ function dondeMarco(j: JornadaExportable): string {
     // La atribuida NO es dónde marcó: es a cuál cuenta en los reportes, y eso lo dice «Sede». Una celda
     // vacía dice «no quedó registrada», que es lo único cierto.
     case 'atribuida': return '';
+    // Con el motivo del servidor (11 de octubre de 2026), POR QUÉ no hay sede, con las palabras de la tabla.
+    case 'sinSede': return textoSinSede(s.motivo);
     default: return '';
   }
 }
@@ -90,6 +94,7 @@ export function filasDeRegistros(
     dia(j.fecha),
     sedeDeLaPersona(j, sedesAsignadasDe),
     dondeMarco(j),
+    j.fueraDeGeocerca ? 'Sí' : 'No',
     hora(j.entrada),
     hora(j.salida),
     j.salidaEstimada ? 'Sí' : 'No',
