@@ -10,7 +10,9 @@ import { distanciaMetros } from './geo';
 // decirle a la persona "estás a 800 m de El Poblado" en vez de un "fuera de
 // ubicación" que no le sirve para nada.
 
-export type SedeGeocerca = { id: string; nombre: string; lat: number; lng: number; radio: number };
+// `margen`: metros más allá de la geocerca en los que la sede deja marcar igual (PENDIENTES nº 11). 0 o ausente:
+// no deja. Lo decide `sedeEnMargen`; `resolverSedeDeMarcacion` no lo mira, y así su respuesta no cambió.
+export type SedeGeocerca = { id: string; nombre: string; lat: number; lng: number; radio: number; margen?: number };
 
 export type ResultadoSede = {
   dentro: boolean;
@@ -44,4 +46,22 @@ export function resolverSedeDeMarcacion(
   // tiene delante.
   const dentro = menorDistancia <= masCercana.radio;
   return { dentro, sede: masCercana, distancia: Math.round(menorDistancia) };
+}
+
+// Fuera de toda geocerca: ¿alguna de sus sedes deja marcar hasta aquí con su margen? Si varias, la más cercana.
+// No se cuenta solo la más cercana de todas, como hace `resolverSedeDeMarcacion`: esa puede no tener margen
+// mientras otra de sus sedes sí lo cubre.
+export function sedeEnMargen(sedes: SedeGeocerca[], lat: number, lng: number): SedeGeocerca | null {
+  let elegida: SedeGeocerca | null = null;
+  let menor = Infinity;
+  for (const sede of sedes) {
+    const margen = sede.margen ?? 0;
+    if (margen <= 0) continue;
+    const d = distanciaMetros(lat, lng, sede.lat, sede.lng);
+    if (d <= sede.radio + margen && d < menor) {
+      menor = d;
+      elegida = sede;
+    }
+  }
+  return elegida;
 }

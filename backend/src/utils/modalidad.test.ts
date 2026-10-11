@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { normalizarModalidad, decidirUbicacionDeMarca, puedeCerrarAqui, normalizarPermisoOtraSede } from './modalidad';
+import { distanciaMetros } from './geo';
 
 // Quién puede marcar desde dónde. Es la regla que antes era de la EMPRESA (si
 // había geocerca, aplicaba a todos por igual) y ahora es de la PERSONA.
@@ -129,6 +130,92 @@ describe('decidirUbicacionDeMarca · HIBRIDO (nunca bloquea, pero anota dónde e
 
   it('la geocerca de la empresa tampoco lo bloquea', () => {
     const d = decidirUbicacionDeMarca(ctx({ modalidad: 'HIBRIDO', geocercaEmpresa: GEOCERCA_EMPRESA, coords: LEJOS }));
+    expect(d).toEqual({ accion: 'PASA', sedeId: null });
+  });
+});
+
+// MARCAR FUERA DE LA GEOCERCA, CON MARGEN POR SEDE (11 de octubre de 2026, decisión del dueño; PENDIENTES nº 11).
+// Cada sede puede permitir marcar hasta `margen` metros más allá de su geocerca. Un PRESENCIAL ahí marca, pero
+// la marcación queda señalada (`fueraDeGeocerca`) para la alerta. Un HIBRIDO ahí queda con la sede y SIN señal:
+// marcar lejos es lo normal para él. Más allá del margen, todo sigue como antes. Sin metros: solo la marca.
+//
+// Puntos al norte de El Poblado a distancias conocidas (un grado de latitud son ~111 320 m).
+const alNorteDePoblado = (metros: number) => ({ lat: POBLADO.lat + metros / 111320, lng: POBLADO.lng });
+const A_300 = alNorteDePoblado(300);
+const A_600 = alNorteDePoblado(600);
+const POBLADO_CON_MARGEN = { ...POBLADO, margen: 300 }; // geocerca 150 m, se acepta hasta 450 m
+
+describe('decidirUbicacionDeMarca · margen fuera de la geocerca', () => {
+  it('los puntos de prueba están donde dicen', () => {
+    expect(Math.round(distanciaMetros(A_300.lat, A_300.lng, POBLADO.lat, POBLADO.lng))).toBeGreaterThanOrEqual(295);
+    expect(Math.round(distanciaMetros(A_300.lat, A_300.lng, POBLADO.lat, POBLADO.lng))).toBeLessThanOrEqual(305);
+    expect(Math.round(distanciaMetros(A_600.lat, A_600.lng, POBLADO.lat, POBLADO.lng))).toBeGreaterThan(450);
+  });
+
+  describe('PRESENCIAL', () => {
+    it('fuera de la geocerca pero dentro del margen: marca en esa sede, señalada como fuera', () => {
+      const d = decidirUbicacionDeMarca(ctx({ sedes: [POBLADO_CON_MARGEN], coords: A_300 }));
+      expect(d).toEqual({ accion: 'PASA', sedeId: 's1', fueraDeGeocerca: true });
+    });
+
+    it('dentro de la geocerca de una sede con margen: marca normal, SIN la señal', () => {
+      const d = decidirUbicacionDeMarca(ctx({ sedes: [POBLADO_CON_MARGEN], coords: EN_POBLADO }));
+      expect(d).toEqual({ accion: 'PASA', sedeId: 's1' });
+    });
+
+    it('más lejos que el margen: rechaza igual que siempre, con el mismo mensaje', () => {
+      const d = decidirUbicacionDeMarca(ctx({ sedes: [POBLADO_CON_MARGEN], coords: A_600 }));
+      expect(d.accion).toBe('RECHAZAR');
+      if (d.accion !== 'RECHAZAR') return;
+      expect(d.mensaje).toBe(`Estás a ${d.distancia} m de El Poblado. Debes marcar desde una de tus sedes.`);
+      expect(d.radio).toBe(150);
+    });
+
+    it('una sede SIN margen no deja marcar fuera de su geocerca', () => {
+      const d = decidirUbicacionDeMarca(ctx({ sedes: [{ ...POBLADO, margen: 0 }], coords: A_300 }));
+      expect(d.accion).toBe('RECHAZAR');
+      const sinCampo = decidirUbicacionDeMarca(ctx({ sedes: [POBLADO], coords: A_300 }));
+      expect(sinCampo.accion).toBe('RECHAZAR');
+    });
+
+    it('el borde exacto del margen todavía cuenta', () => {
+      const borde = Math.round(distanciaMetros(A_300.lat, A_300.lng, POBLADO.lat, POBLADO.lng)) - POBLADO.radio;
+      const d = decidirUbicacionDeMarca(ctx({ sedes: [{ ...POBLADO, margen: borde + 1 }], coords: A_300 }));
+      expect(d).toEqual({ accion: 'PASA', sedeId: 's1', fueraDeGeocerca: true });
+    });
+
+    // La más cercana no tiene margen, pero otra de sus sedes sí lo cubre: marca en esa otra.
+    it('si la sede más cercana no tiene margen, vale el margen de otra de sus sedes', () => {
+      const cercaSinMargen = { id: 's3', nombre: 'Cerca', lat: A_300.lat + 200 / 111320, lng: A_300.lng, radio: 50 };
+      const d = decidirUbicacionDeMarca(ctx({ sedes: [cercaSinMargen, POBLADO_CON_MARGEN], coords: A_300 }));
+      expect(d).toEqual({ accion: 'PASA', sedeId: 's1', fueraDeGeocerca: true });
+    });
+
+    it('si dos sedes con margen lo cubren, gana la más cercana', () => {
+      const otra = { id: 's4', nombre: 'Otra', lat: POBLADO.lat + 700 / 111320, lng: POBLADO.lng, radio: 150, margen: 500 };
+      // A_300 está a ~300 m de Poblado y a ~400 m de Otra: las dos lo cubren.
+      const d = decidirUbicacionDeMarca(ctx({ sedes: [otra, POBLADO_CON_MARGEN], coords: A_300 }));
+      expect(d).toEqual({ accion: 'PASA', sedeId: 's1', fueraDeGeocerca: true });
+      // En los dos órdenes: «la última que lo cubre» no debe pasar por «la más cercana».
+      const alReves = decidirUbicacionDeMarca(ctx({ sedes: [POBLADO_CON_MARGEN, otra], coords: A_300 }));
+      expect(alReves).toEqual({ accion: 'PASA', sedeId: 's1', fueraDeGeocerca: true });
+    });
+  });
+
+  describe('HIBRIDO (nunca alerta)', () => {
+    it('dentro del margen: queda con la sede y SIN la señal', () => {
+      const d = decidirUbicacionDeMarca(ctx({ modalidad: 'HIBRIDO', sedes: [POBLADO_CON_MARGEN], coords: A_300 }));
+      expect(d).toEqual({ accion: 'PASA', sedeId: 's1' });
+    });
+
+    it('más lejos que el margen: marca sin sede, como siempre', () => {
+      const d = decidirUbicacionDeMarca(ctx({ modalidad: 'HIBRIDO', sedes: [POBLADO_CON_MARGEN], coords: A_600 }));
+      expect(d).toEqual({ accion: 'PASA', sedeId: null });
+    });
+  });
+
+  it('REMOTO no cambia: no se le mira la ubicación', () => {
+    const d = decidirUbicacionDeMarca(ctx({ modalidad: 'REMOTO', sedes: [POBLADO_CON_MARGEN], coords: A_300 }));
     expect(d).toEqual({ accion: 'PASA', sedeId: null });
   });
 });

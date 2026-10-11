@@ -1,5 +1,5 @@
 import { distanciaMetros } from './geo';
-import { resolverSedeDeMarcacion, type SedeGeocerca } from './sedes';
+import { resolverSedeDeMarcacion, sedeEnMargen, type SedeGeocerca } from './sedes';
 
 // Cómo trabaja una persona, y qué implica eso para su ubicación al marcar.
 //
@@ -44,7 +44,9 @@ export type ContextoMarca = {
 export type DecisionUbicacion =
   | { accion: 'EXIGIR_COORDENADAS' }
   | { accion: 'RECHAZAR'; mensaje: string; distancia: number; radio: number }
-  | { accion: 'PASA'; sedeId: string | null };
+  // `fueraDeGeocerca`: un PRESENCIAL marcó fuera de la geocerca pero dentro del margen de la sede. Va solo
+  // cuando es verdad; la marcación queda señalada para la alerta (Registros y campana). Sin metros: solo la marca.
+  | { accion: 'PASA'; sedeId: string | null; fueraDeGeocerca?: true };
 
 const PASA_SIN_SEDE: DecisionUbicacion = { accion: 'PASA', sedeId: null };
 
@@ -61,7 +63,9 @@ export function decidirUbicacionDeMarca(ctx: ContextoMarca): DecisionUbicacion {
     // ese día trabajó desde fuera.
     if (!coords || sedes.length === 0) return PASA_SIN_SEDE;
     const r = resolverSedeDeMarcacion(sedes, coords.lat, coords.lng);
-    return { accion: 'PASA', sedeId: r.dentro ? (r.sede?.id ?? null) : null };
+    if (r.dentro) return { accion: 'PASA', sedeId: r.sede?.id ?? null };
+    // Dentro del margen de una sede queda con ella, SIN señal: para un híbrido marcar lejos es lo normal.
+    return { accion: 'PASA', sedeId: sedeEnMargen(sedes, coords.lat, coords.lng)?.id ?? null };
   }
 
   // PRESENCIAL: igual que siempre.
@@ -73,6 +77,8 @@ export function decidirUbicacionDeMarca(ctx: ContextoMarca): DecisionUbicacion {
     if (!coords) return { accion: 'EXIGIR_COORDENADAS' };
     const r = resolverSedeDeMarcacion(sedes, coords.lat, coords.lng);
     if (!r.dentro) {
+      const tolerada = sedeEnMargen(sedes, coords.lat, coords.lng);
+      if (tolerada) return { accion: 'PASA', sedeId: tolerada.id, fueraDeGeocerca: true };
       // Se nombra la sede más cercana y la distancia: "fuera de ubicación" a
       // secas no le dice a la persona qué hacer.
       return {

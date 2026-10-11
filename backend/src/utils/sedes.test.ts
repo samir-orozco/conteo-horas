@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { resolverSedeDeMarcacion } from './sedes';
+import { resolverSedeDeMarcacion, sedeEnMargen } from './sedes';
+import { distanciaMetros } from './geo';
 
 // ¿Desde qué sede está marcando? De esto dependen dos cosas: si la marcación se
 // acepta, y qué sede queda guardada en el registro para el filtro de reportes.
@@ -62,5 +63,25 @@ describe('resolverSedeDeMarcacion', () => {
     const lat = 6.2087 + 0.0036;
     expect(resolverSedeDeMarcacion([POBLADO], lat, -75.5674).dentro).toBe(false);
     expect(resolverSedeDeMarcacion([amplia], lat, -75.5674).dentro).toBe(true);
+  });
+});
+
+// El margen (PENDIENTES nº 11): el borde EXACTO cuenta. Se arma con la distancia real, en decimales, porque con
+// metros enteros nunca se cae justo en el borde y `<` y `<=` darían lo mismo.
+describe('sedeEnMargen', () => {
+  const SEDE = { id: 'b', nombre: 'Borde', lat: 6.2087, lng: -75.5674, radio: 150 };
+  const PUNTO = { lat: 6.2087 + 300 / 111320, lng: -75.5674 };
+  const d = distanciaMetros(PUNTO.lat, PUNTO.lng, SEDE.lat, SEDE.lng);
+
+  it('justo en el borde del margen, la sede lo cubre', () => {
+    expect(sedeEnMargen([{ ...SEDE, margen: d - SEDE.radio }], PUNTO.lat, PUNTO.lng)?.id).toBe('b');
+  });
+
+  it('un centímetro más allá, ya no', () => {
+    expect(sedeEnMargen([{ ...SEDE, margen: d - SEDE.radio - 0.01 }], PUNTO.lat, PUNTO.lng)).toBeNull();
+  });
+
+  it('sin margen, ninguna', () => {
+    expect(sedeEnMargen([SEDE, { ...SEDE, id: 'c', margen: 0 }], PUNTO.lat, PUNTO.lng)).toBeNull();
   });
 });
