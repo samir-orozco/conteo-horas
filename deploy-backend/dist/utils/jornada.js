@@ -404,7 +404,7 @@ function sedesDeLaJornada(registros, id) {
         return { abrio: null, cerro: null };
     return { abrio: jornada[0].sede, cerro: marcacionQueCierra(jornada)?.sedeSalida ?? null };
 }
-const SIN_SALIDA = { sedeSalidaId: null, fotoSalida: null, metodoSalida: null, distanciaSalida: null, descansoVentana: null };
+const SIN_SALIDA = { sedeSalidaId: null, fotoSalida: null, metodoSalida: null, distanciaSalida: null, fueraGeocercaSalida: false, descansoVentana: null };
 const mismoMinuto = (a, b) => Math.floor(a.getTime() / MS_MIN) === Math.floor(b.getTime() / MS_MIN);
 // Una fila termina en una pausa si no termina en la salida del día ni sigue
 // abierta. Así una pausa nueva cuenta como pausa sin tocar esto, y los `Record`
@@ -546,11 +546,11 @@ function datosDelHueco({ papel, hora, fuente }) {
         return { ...SIN_SALIDA, salidaEstimada };
     if (!fuente?.salida)
         return { ...SIN_SALIDA, metodoSalida: 'MANUAL', salidaEstimada };
-    const { sedeSalidaId, fotoSalida, metodoSalida, distanciaSalida } = fuente;
+    const { sedeSalidaId, fotoSalida, metodoSalida, distanciaSalida, fueraGeocercaSalida } = fuente;
     // A cuál descanso salió solo viaja con la salida al descanso que no se movió de
     // minuto: movida, se vuelve a decidir por la hora (12 de septiembre de 2026).
     const descansoVentana = papel === 'DESCANSO' && mismoMinuto(fuente.salida, hora) ? fuente.descansoVentana ?? null : null;
-    return { sedeSalidaId, fotoSalida, metodoSalida, distanciaSalida, salidaEstimada, descansoVentana };
+    return { sedeSalidaId, fotoSalida, metodoSalida, distanciaSalida, fueraGeocercaSalida, salidaEstimada, descansoVentana };
 }
 // Las fotos que no quedan en ninguna fila: las de las salidas que nadie heredó
 // con hora, y la de la entrada de una marcación que se borra.

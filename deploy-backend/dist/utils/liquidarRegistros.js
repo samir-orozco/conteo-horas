@@ -13,6 +13,9 @@ const ajusteJornada_1 = require("./ajusteJornada");
 const almuerzo_1 = require("./almuerzo");
 const descansos_1 = require("./descansos");
 const jornada_1 = require("./jornada");
+// La clave "YYYY-MM-DD" de los minutos por día. No es la `claveDiaBogota` local de abajo, que tiene
+// otro formato y es solo de uso interno.
+const fechas_1 = require("./fechas");
 // El núcleo de la liquidación, que vivía dentro de routes/reportes.ts. Salió de ahí
 // el 12 de septiembre de 2026 para poder probarlo sin base de datos: es lo que
 // calcula la plata de /liquidacion y de /extras-resumen (CLAUDE.md 8.2).
@@ -158,6 +161,9 @@ fuenteDelDescanso) {
     const cobrarAlmuerzo = cobroDePausas();
     const cobrarDescanso = cobroDePausas();
     const detalleRegistros = [];
+    // Lo trabajado de cada día, con las pausas ya cobradas: la suma es minutosOrdinarios + minutosExtra.
+    // Lo usa el correo semanal para sus barras (11 de octubre de 2026). No cambia ningún otro número.
+    const minutosPorDia = {};
     for (const [, regsDeUnaSemana] of porSemana) {
         const jornadaSemanal = (0, vigencias_1.jornadaVigente)(regsDeUnaSemana[0].fecha, jornadas);
         let minutosOrdSemana = 0;
@@ -201,6 +207,8 @@ fuenteDelDescanso) {
                 else
                     acumulado[p.codigo].minutos += p.minutos;
             }
+            const dia = (0, fechas_1.claveDiaBogota)(registro.fecha);
+            minutosPorDia[dia] = (minutosPorDia[dia] ?? 0) + resultado.reduce((s, p) => s + p.minutos, 0);
         }
     }
     const horasPorTipo = Object.values(acumulado);
@@ -231,5 +239,5 @@ fuenteDelDescanso) {
     // aunque haya trabajado. Medido contra la base del dueño: 11 cerradas en 5 días, y otra persona
     // con 0 cerradas y 2 días trabajados. Un día sin hora de entrada no es una marcación.
     const diasCont = new Set(registros.filter(r => r.entrada).map(r => claveDiaBogota(r.fecha))).size;
-    return { liquidacion, totalRecargos, totalExtra, totalAdicional, registrosCont, diasCont, detalleRegistros, minutosOrdinarios, minutosExtra };
+    return { liquidacion, totalRecargos, totalExtra, totalAdicional, registrosCont, diasCont, detalleRegistros, minutosOrdinarios, minutosExtra, minutosPorDia };
 }

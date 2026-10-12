@@ -19,6 +19,8 @@ const saldoTiempo_1 = require("../utils/saldoTiempo");
 const cambiosRegistro_1 = require("../utils/cambiosRegistro");
 const descansos_1 = require("../utils/descansos");
 const jornada_1 = require("../utils/jornada");
+const avisoFueraDeGeocerca_1 = require("../utils/avisoFueraDeGeocerca");
+const motivoSinSede_1 = require("../utils/motivoSinSede");
 const TZ = 'America/Bogota';
 const TIPOS_REGISTRO = new Set(['NORMAL', 'PERMISO', 'FESTIVO']);
 function leerCuerpoDeJornada(body) {
@@ -272,6 +274,20 @@ async function registroRoutes(app) {
             id: r.id, colaboradorId: r.colaboradorId, modalidad: r.colaborador.modalidad,
             fecha: r.fecha, entrada: r.entrada, sedeId: r.sedeId, sedeSalidaId: r.sedeSalidaId,
         })), typeof colaboradorId === 'string' ? colaboradorId : undefined);
+        // Cuántas sedes activas CON coordenadas tiene cada persona del listado, para decir por qué una
+        // jornada no quedó con sede (11 de octubre de 2026, ver utils/motivoSinSede.ts). Por la llave
+        // primaria de colaboradores_sedes, que empieza por colaboradorId.
+        const conUbicacion = await prisma_1.prisma.colaboradorSede.findMany({
+            where: {
+                colaboradorId: { in: [...new Set(registros.map(r => r.colaboradorId))] },
+                sede: { activa: true, lat: { not: null }, lng: { not: null } },
+            },
+            select: { colaboradorId: true },
+        });
+        const sedesConUbicacion = new Map();
+        for (const c of conUbicacion)
+            sedesConUbicacion.set(c.colaboradorId, (sedesConUbicacion.get(c.colaboradorId) ?? 0) + 1);
+        const sedesConUbicacionDe = (colaboradorId) => sedesConUbicacion.get(colaboradorId) ?? 0;
         // La tardanza solo se evalúa en la PRIMERA entrada del día de cada colaborador
         // (un reingreso después del almuerzo no es una llegada tarde).
         const primeraEntradaDia = new Map(); // colaboradorId|día -> registro.id
@@ -429,6 +445,13 @@ async function registroRoutes(app) {
                     // en una sede probada, con `porDefecto` para que la tabla lo diga. Null si
                     // `sede` la probó la ubicación, o para un híbrido o un remoto.
                     sedeAtribuida: sedeAtribuidaDe(primera.id),
+                    // Alguna marca de la jornada se hizo fuera de la geocerca, dentro del margen de la
+                    // sede (11 de octubre de 2026). Solo la señal, sin metros.
+                    fueraDeGeocerca: (0, avisoFueraDeGeocerca_1.jornadaFueraDeGeocerca)(marcaciones),
+                    // Por qué la jornada no tiene sede de marcación, o null si la tiene (abrió o cerró en una).
+                    sinSede: primera.sede || cierra?.sedeSalida
+                        ? null
+                        : (0, motivoSinSede_1.motivoSinSede)({ modalidad: primera.colaborador.modalidad, sedesConUbicacion: sedesConUbicacionDe(primera.colaboradorId) }),
                     minutosTarde,
                     // Lo que ese bloque de trabajo contó, con el almuerzo ya descontado.
                     // Antes la columna restaba salida menos entrada de un tramo suelto, así

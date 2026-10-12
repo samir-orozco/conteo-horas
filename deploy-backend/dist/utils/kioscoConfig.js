@@ -55,12 +55,12 @@ async function geocercoConfig(empresaId) {
 async function sedesConGeocercaDe(colaboradorId) {
     const filas = await prisma_1.prisma.colaboradorSede.findMany({
         where: { colaboradorId, sede: { activa: true } },
-        select: { sede: { select: { id: true, nombre: true, lat: true, lng: true, radio: true } } },
+        select: { sede: { select: { id: true, nombre: true, lat: true, lng: true, radio: true, margenFuera: true } } },
     });
     return filas
         .map(f => f.sede)
         .filter((s) => s.lat !== null && s.lng !== null)
-        .map(s => ({ id: s.id, nombre: s.nombre, lat: s.lat, lng: s.lng, radio: s.radio }));
+        .map(s => ({ id: s.id, nombre: s.nombre, lat: s.lat, lng: s.lng, radio: s.radio, margen: s.margenFuera }));
 }
 // ¿La empresa tiene alguna sede con ubicación fijada? El kiosco lo consulta
 // ANTES de saber quién va a marcar, para decidir si pide el GPS de entrada.

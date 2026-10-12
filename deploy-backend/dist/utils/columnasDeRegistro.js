@@ -15,5 +15,6 @@ exports.REGISTRO_SIN_FOTOS = {
     id: true, colaboradorId: true, sedeId: true, sedeSalidaId: true, fecha: true, entrada: true, salida: true,
     tipo: true, observacion: true, salidaEstimada: true, salidaAlmuerzo: true, salidaDescanso: true,
     descansoVentana: true, entradaEstimada: true, metodoEntrada: true, metodoSalida: true,
-    distanciaEntrada: true, distanciaSalida: true, editadoPor: true, editadoEn: true, creadoEn: true,
+    distanciaEntrada: true, distanciaSalida: true, fueraGeocercaEntrada: true, fueraGeocercaSalida: true,
+    editadoPor: true, editadoEn: true, creadoEn: true,
 };

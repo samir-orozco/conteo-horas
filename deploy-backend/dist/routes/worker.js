@@ -11,7 +11,10 @@ const registrarEvento_1 = require("../utils/registrarEvento");
 const rostro_1 = require("../utils/rostro");
 const metodoMarcacion_1 = require("../utils/metodoMarcacion");
 const telegram_1 = require("../utils/telegram");
+const avisoNoHaLlegado_1 = require("../utils/avisoNoHaLlegado");
+const telegramDelKiosco_1 = require("../utils/telegramDelKiosco");
 const notificaciones_1 = require("../utils/notificaciones");
+const avisoFueraDeGeocerca_1 = require("../utils/avisoFueraDeGeocerca");
 const suscripcion_1 = require("../utils/suscripcion");
 const fechas_1 = require("../utils/fechas");
 const kioscoConfig_1 = require("../utils/kioscoConfig");
@@ -206,8 +209,11 @@ async function pausaQueEsperaRegreso(colaboradorId, ultima, ahora) {
 // `ventana` también viene de la salida temprana: el tramo que la novedad excusa,
 // desde que se fue hasta el fin de su franja. Sin ella la novedad queda de día
 // completo, y al aprobarla el saldo excusaba también las horas que sí trabajó.
-async function crearNovedad(colaboradorId, tipo, descripcion, registroId, ventana) {
-    const { inicioDia } = (0, fechas_1.rangoDiaBogota)();
+//
+// `telegram`: si avisa al grupo por su cuenta. La llegada tarde lo apaga porque manda un solo mensaje
+// con las dos cosas (12 de octubre de 2026).
+async function crearNovedad(colaboradorId, tipo, descripcion, registroId, ventana, telegram = true) {
+    const { inicioDia, ahoraBog } = (0, fechas_1.rangoDiaBogota)();
     const permiso = await prisma_1.prisma.permiso.create({
         data: {
             colaboradorId,
@@ -231,21 +237,36 @@ async function crearNovedad(colaboradorId, tipo, descripcion, registroId, ventan
             cuerpo: `Reportó una novedad (${tipo}) pendiente de tu aprobación.`,
             entidad: 'colaborador', entidadId: colaboradorId,
         });
+        if (telegram) {
+            avisarPorTelegram(quien.empresaId, colaboradorId, `${quien.nombre} ${quien.apellido}`, ahoraBog, null, true)
+                .catch(() => { });
+        }
     }
     return permiso;
 }
-// Alerta de llegada tarde por Telegram (si la empresa lo activó). No bloquea la marca.
-async function alertarTardanzaTelegram(empresaId, nombre, ahoraBog, minutosTarde) {
+// Los avisos del kiosco por Telegram: llegada tarde y novedad por aprobar, cada uno con su
+// interruptor. Qué se manda lo decide `mensajesDelKiosco` (utils/telegramDelKiosco.ts, probada); esto
+// solo lee la configuración y envía. No bloquea la marca: quien llama no espera el resultado.
+//
+// `ahoraBog` es la hora ya zonificada (toZonedTime): sus getters locales dan la hora de Bogotá.
+async function avisarPorTelegram(empresaId, colaboradorId, nombre, ahoraBog, minutosTarde, dejoNovedad) {
     const cfgs = await prisma_1.prisma.configuracion.findMany({
-        where: { empresaId, clave: { in: ['TELEGRAM_ALERTAS_TARDE', 'TELEGRAM_CHAT_ID'] } },
+        where: { empresaId, clave: { in: ['TELEGRAM_ALERTAS_TARDE', telegramDelKiosco_1.CLAVE_NOVEDADES, 'TELEGRAM_CHAT_ID'] } },
     });
     const map = Object.fromEntries(cfgs.map(c => [c.clave, c.valor]));
-    if (map.TELEGRAM_ALERTAS_TARDE !== '1' || !map.TELEGRAM_CHAT_ID)
+    if (!map.TELEGRAM_CHAT_ID)
         return;
-    const h = ahoraBog.getHours();
-    const hora = `${h % 12 || 12}:${String(ahoraBog.getMinutes()).padStart(2, '0')} ${h >= 12 ? 'p.m.' : 'a.m.'}`;
-    const tardeTxt = minutosTarde >= 60 ? `${Math.floor(minutosTarde / 60)}h ${minutosTarde % 60}min` : `${minutosTarde} min`;
-    await (0, telegram_1.enviarTelegram)(map.TELEGRAM_CHAT_ID, `⚠️ <b>${nombre}</b> llegó tarde\n🕐 ${hora} · ${tardeTxt} tarde`);
+    const origen = process.env.FRONTEND_ORIGIN?.split(',')[0] ?? 'http://localhost:5173';
+    const mensajes = (0, telegramDelKiosco_1.mensajesDelKiosco)({
+        nombre,
+        hora: `${String(ahoraBog.getHours()).padStart(2, '0')}:${String(ahoraBog.getMinutes()).padStart(2, '0')}`,
+        minutosTarde, dejoNovedad,
+        alertasTarde: map.TELEGRAM_ALERTAS_TARDE === '1',
+        novedades: map[telegramDelKiosco_1.CLAVE_NOVEDADES] === '1',
+        enlace: `${origen}/app/colaboradores/${colaboradorId}?tab=novedades`,
+    });
+    for (const m of mensajes)
+        await (0, telegram_1.enviarTelegram)(map.TELEGRAM_CHAT_ID, m);
 }
 // Esquemas de body: rechazan tipos inesperados (p. ej. `cedula` como objeto de
 // filtro Prisma) ANTES del handler → cierran la inyección de operadores.
@@ -686,6 +707,15 @@ async function workerRoutes(app) {
                 });
             }
             const sedeDeLaMarca = decision.sedeId;
+            // Un PRESENCIAL que marcó fuera de la geocerca, dentro del margen de la sede (11 de octubre de
+            // 2026). Queda en el registro y avisa en la campana; el híbrido nunca llega aquí con la señal.
+            const fueraDeGeocerca = decision.fueraDeGeocerca === true;
+            const avisarFueraDeGeocerca = (momento, registroId) => {
+                if (!fueraDeGeocerca)
+                    return;
+                const sede = sedesDelTrabajador.find(s => s.id === sedeDeLaMarca)?.nombre ?? 'su sede';
+                (0, notificaciones_1.notificar)(col.empresaId, { ...(0, avisoFueraDeGeocerca_1.avisoFueraDeGeocerca)(col, momento, sede), entidad: 'registro', entidadId: registroId });
+            };
             const ahora = new Date();
             const { ahoraBog, inicioDia, finDia } = (0, fechas_1.rangoDiaBogota)(ahora);
             // Turno abierto en curso: se busca por ventana (no por día calendario), para
@@ -817,10 +847,14 @@ async function workerRoutes(app) {
                         // saltarse el null dejaba viva la sede de una salida anterior en un
                         // turno que un administrador había reabierto.
                         sedeSalidaId: sedeDeLaMarca,
+                        // Va SIEMPRE, como la sede: un turno reabierto no puede quedarse con la alerta de una
+                        // salida anterior.
+                        fueraGeocercaSalida: fueraDeGeocerca,
                         ...(fotoDeLaSalida ? { fotoSalida: fotoDeLaSalida } : {}),
                         ...(0, metodoMarcacion_1.camposDeAutenticacion)(payload, 'salida'),
                     },
                 });
+                avisarFueraDeGeocerca('SALIDA', updated.id);
                 // La novedad viaja con la marca, no en una llamada aparte: si esa segunda
                 // llamada fallaba, la salida quedaba registrada y el motivo se perdía.
                 if (tipoNovedad) {
@@ -932,6 +966,7 @@ async function workerRoutes(app) {
                         // Queda guardado DÓNDE marcó, no dónde debía: el filtro por sede de
                         // los reportes tiene que reflejar la realidad.
                         ...(sedeDeLaMarca ? { sedeId: sedeDeLaMarca } : {}),
+                        ...(fueraDeGeocerca ? { fueraGeocercaEntrada: true } : {}),
                         ...(fotoDeLaEntrada ? { fotoEntrada: fotoDeLaEntrada } : {}),
                         ...(0, metodoMarcacion_1.camposDeAutenticacion)(payload, 'entrada'),
                     },
@@ -944,14 +979,18 @@ async function workerRoutes(app) {
                 // La novedad de la llegada tarde viaja con la marca, igual que la de la
                 // salida temprana: en una llamada aparte, un fallo dejaba la entrada
                 // escrita y el motivo perdido.
+                let dejoNovedad = false;
                 if (tardanza && tipoNovedad) {
-                    await crearNovedad(payload.id, tipoNovedad, descripcionNovedad, nuevo.id, (0, tardanzas_1.ventanaDeLlegadaTarde)(ahoraBog, tardanza.franja))
-                        .catch(err => app.log.error(err, 'No se pudo guardar la novedad de la llegada tarde'));
+                    // Sin Telegram propio: el aviso de la llegada tarde lo dice en el mismo mensaje.
+                    dejoNovedad = await crearNovedad(payload.id, tipoNovedad, descripcionNovedad, nuevo.id, (0, tardanzas_1.ventanaDeLlegadaTarde)(ahoraBog, tardanza.franja), false)
+                        .then(() => true)
+                        .catch(err => { app.log.error(err, 'No se pudo guardar la novedad de la llegada tarde'); return false; });
                 }
+                avisarFueraDeGeocerca('ENTRADA', nuevo.id);
                 // Alerta de llegada tarde por Telegram y en la campana.
                 if (tardanza && col) {
                     const tarde = tardanza.minutos;
-                    alertarTardanzaTelegram(col.empresaId, `${col.nombre} ${col.apellido}`, ahoraBog, tarde).catch(() => { });
+                    avisarPorTelegram(col.empresaId, col.id, `${col.nombre} ${col.apellido}`, ahoraBog, tarde, dejoNovedad).catch(() => { });
                     const tardeTxt = tarde >= 60 ? `${Math.floor(tarde / 60)}h ${tarde % 60}min` : `${tarde} min`;
                     (0, notificaciones_1.notificar)(col.empresaId, {
                         tipo: 'LLEGADA_TARDE',
@@ -959,6 +998,12 @@ async function workerRoutes(app) {
                         cuerpo: `Marcó entrada con ${tardeTxt} de retraso.`,
                         entidad: 'colaborador', entidadId: col.id,
                     });
+                }
+                // Si el barrido avisó hoy que esta persona no había llegado, se cierra el tema en el grupo y en
+                // la campana. Volver de una pausa no es llegar (11 de octubre de 2026).
+                if (col && !volviendoDePausa) {
+                    (0, avisoNoHaLlegado_1.avisarSiYaLlego)(col.empresaId, col.id, `${col.nombre} ${col.apellido}`, entradaReal)
+                        .catch(err => app.log.error(err, 'No se pudo avisar que ya llegó'));
                 }
                 return { accion: 'ENTRADA', registro: nuevo, hora: entradaReal, regresoEstimado: esRegresoEstimado };
             }

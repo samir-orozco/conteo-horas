@@ -3,9 +3,10 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.correoConfigurado = void 0;
+exports.parrafo = exports.escapar = exports.correoConfigurado = void 0;
 exports.enviarCorreo = enviarCorreo;
 exports.plantillaCorreo = plantillaCorreo;
+exports.destinatarios = destinatarios;
 const nodemailer_1 = __importDefault(require("nodemailer"));
 // Envío de correos vía SMTP (en Banahosting: crear un buzón tipo
 // no-responder@horapro.co en cPanel → Email Accounts y usar sus credenciales).
@@ -46,4 +47,16 @@ function plantillaCorreo(titulo, cuerpoHtml) {
       <p style="font-size:12px;color:#898989;margin-top:24px">HoraPro · Control de horas laborales para Colombia</p>
     </div>
   </div>`;
+}
+// Texto de la base dentro de un correo: un nombre con «<» no puede volverse HTML. Estaba solo en
+// avisosDeSuscripcion.ts y salió de ahí cuando el resumen semanal la necesitó (11 de octubre de 2026).
+const escapar = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+exports.escapar = escapar;
+const parrafo = (html) => `<p style="font-size:14px;color:#303030;line-height:1.5;margin:0 0 12px">${html}</p>`;
+exports.parrafo = parrafo;
+// A quién se le escribe: a los administradores activos, que son los que pueden pagar desde
+// el panel. Si no queda ninguno, al correo con el que se registró la empresa.
+function destinatarios(e) {
+    const admins = [...new Set(e.usuarios.map(u => u.email.trim().toLowerCase()).filter(Boolean))];
+    return admins.length ? admins : [e.email];
 }

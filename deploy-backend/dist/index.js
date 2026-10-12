@@ -75,6 +75,9 @@ const cierreAlmuerzo_1 = require("./utils/cierreAlmuerzo");
 const materializarDias_1 = require("./utils/materializarDias");
 const programarDiario_1 = require("./utils/programarDiario");
 const avisosDeSuscripcion_1 = require("./utils/avisosDeSuscripcion");
+const envioResumenSemanal_1 = require("./utils/envioResumenSemanal");
+const avisoNoHaLlegado_1 = require("./utils/avisoNoHaLlegado");
+const resumenSemanal_1 = require("./utils/resumenSemanal");
 const opcionesDeLog_1 = require("./utils/opcionesDeLog");
 const accesoEmpresa_1 = require("./utils/accesoEmpresa");
 const respuestaDeError_1 = require("./utils/respuestaDeError");
@@ -317,6 +320,15 @@ const start = async () => {
         // Los correos de suscripción vencida y de kiosco por pausarse (4 de octubre de 2026). A las 7 y
         // no a la hora de los barridos: son para que los lea una persona.
         (0, programarDiario_1.programarDiario)('avisos-de-suscripcion', 7, () => (0, avisosDeSuscripcion_1.avisarSuscripcionesDeTodas)(app.log), app.log);
+        // El resumen semanal para los administradores (11 de octubre de 2026). Corre a diario como los
+        // demás y solo hace algo el lunes desde las 7: lo decide `semanaDelResumen`. A la misma hora
+        // que los avisos de cobro, por lo mismo: es para que lo lea una persona al empezar el día.
+        (0, programarDiario_1.programarDiario)('resumen-semanal', resumenSemanal_1.HORA_DEL_RESUMEN, () => (0, envioResumenSemanal_1.enviarResumenesSemanales)(app.log), app.log);
+        // «No ha llegado» por Telegram (11 de octubre de 2026): cada 5 minutos, porque el aviso es a la
+        // hora de entrada de cada persona más su tolerancia y 15 minutos. Solo trabaja en las empresas
+        // que lo encendieron, y deja rastro en cada pasada (§8.3).
+        void (0, programarDiario_1.correrRonda)('no-ha-llegado', () => (0, avisoNoHaLlegado_1.avisarNoHanLlegado)(app.log), app.log);
+        setInterval(() => void (0, programarDiario_1.correrRonda)('no-ha-llegado', () => (0, avisoNoHaLlegado_1.avisarNoHanLlegado)(app.log), app.log), 5 * 60 * 1000);
         // Registra el webhook del bot de Telegram (si hay URL configurada)
         if (process.env.TELEGRAM_WEBHOOK_URL)
             (0, telegram_2.configurarWebhook)(process.env.TELEGRAM_WEBHOOK_URL);

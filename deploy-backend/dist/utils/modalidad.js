@@ -39,7 +39,10 @@ function decidirUbicacionDeMarca(ctx) {
         if (!coords || sedes.length === 0)
             return PASA_SIN_SEDE;
         const r = (0, sedes_1.resolverSedeDeMarcacion)(sedes, coords.lat, coords.lng);
-        return { accion: 'PASA', sedeId: r.dentro ? (r.sede?.id ?? null) : null };
+        if (r.dentro)
+            return { accion: 'PASA', sedeId: r.sede?.id ?? null };
+        // Dentro del margen de una sede queda con ella, SIN señal: para un híbrido marcar lejos es lo normal.
+        return { accion: 'PASA', sedeId: (0, sedes_1.sedeEnMargen)(sedes, coords.lat, coords.lng)?.id ?? null };
     }
     // PRESENCIAL: igual que siempre.
     //
@@ -51,6 +54,9 @@ function decidirUbicacionDeMarca(ctx) {
             return { accion: 'EXIGIR_COORDENADAS' };
         const r = (0, sedes_1.resolverSedeDeMarcacion)(sedes, coords.lat, coords.lng);
         if (!r.dentro) {
+            const tolerada = (0, sedes_1.sedeEnMargen)(sedes, coords.lat, coords.lng);
+            if (tolerada)
+                return { accion: 'PASA', sedeId: tolerada.id, fueraDeGeocerca: true };
             // Se nombra la sede más cercana y la distancia: "fuera de ubicación" a
             // secas no le dice a la persona qué hacer.
             return {

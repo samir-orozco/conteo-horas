@@ -26,6 +26,9 @@ function camposSede(body) {
         radio,
     };
 }
+const MARGEN_INVALIDO = {
+    error: `El margen para marcar fuera de la geocerca tiene que ser un número de metros entre 0 y ${ubicacionDeSede_1.MARGEN_FUERA_MAXIMO}.`,
+};
 async function sedeRoutes(app) {
     const auth = { preHandler: [app.requireEmpresa] };
     // `principal` le dice a la pantalla cuál es la Sede principal: la que se le
@@ -52,7 +55,10 @@ async function sedeRoutes(app) {
         const nombre = body.nombre?.trim();
         if (!nombre)
             return reply.status(400).send({ error: 'El nombre de la sede es obligatorio' });
-        const campos = camposSede(body);
+        const margenFuera = (0, ubicacionDeSede_1.leerMargenFuera)(body.margenFuera);
+        if (margenFuera === null)
+            return reply.status(400).send(MARGEN_INVALIDO);
+        const campos = { ...camposSede(body), margenFuera: margenFuera ?? 0 };
         const existentes = await prisma_1.prisma.sede.count({ where: { empresaId: request.empresaId, activa: true } });
         const conGeocerca = (0, ubicacionDeSede_1.cambiaLaGeocerca)(null, campos);
         if (existentes >= 1 || conGeocerca) {
@@ -80,7 +86,11 @@ async function sedeRoutes(app) {
         const nombre = body.nombre?.trim();
         if (!nombre)
             return reply.status(400).send({ error: 'El nombre de la sede es obligatorio' });
-        const campos = camposSede(body);
+        // Ausente, el margen se queda como estaba (ver leerMargenFuera).
+        const margenFuera = (0, ubicacionDeSede_1.leerMargenFuera)(body.margenFuera);
+        if (margenFuera === null)
+            return reply.status(400).send(MARGEN_INVALIDO);
+        const campos = { ...camposSede(body), margenFuera: margenFuera ?? existente.margenFuera };
         if ((0, ubicacionDeSede_1.cambiaLaGeocerca)(existente, campos) && !(await (0, capacidades_1.capacidadesEmpresa)(request.empresaId)).features.gps) {
             return reply.status(403).send(SIN_GPS);
         }

@@ -11,6 +11,7 @@ const salarioSospechoso_1 = require("../utils/salarioSospechoso");
 const revisionPendiente_1 = require("../utils/revisionPendiente");
 const vigencias_1 = require("../utils/vigencias");
 const telegram_1 = require("../utils/telegram");
+const resumenSemanal_1 = require("../utils/resumenSemanal");
 const capacidades_1 = require("../utils/capacidades");
 const climaDelKiosco_1 = require("../utils/climaDelKiosco");
 const saldoTiempo_1 = require("../utils/saldoTiempo");
@@ -76,6 +77,16 @@ async function configuracionRoutes(app) {
         }
         if (tocaTelegram && !cap.features.telegram) {
             return reply.status(403).send({ error: 'Las alertas por Telegram están disponibles en el plan Profesional.', codigo: 'FUNCION_PLAN', funcion: 'telegram' });
+        }
+        // El resumen semanal de los lunes es de toda la empresa y les llega a los administradores: lo
+        // cambia un administrador, y solo a encendido o apagado (11 de octubre de 2026).
+        if (resumenSemanal_1.CLAVE_RESUMEN_SEMANAL in data) {
+            if (request.user?.rol !== 'ADMIN') {
+                return reply.status(403).send({ error: 'Solo el administrador cambia el resumen semanal por correo' });
+            }
+            if (data[resumenSemanal_1.CLAVE_RESUMEN_SEMANAL] !== '0' && data[resumenSemanal_1.CLAVE_RESUMEN_SEMANAL] !== '1') {
+                return reply.status(400).send({ error: 'El resumen semanal solo se enciende o se apaga' });
+            }
         }
         // La política de permisos remunerados decide descuentos de nómina: solo el
         // ADMIN la toca, y solo sobre los tipos que la ley deja a criterio de la
