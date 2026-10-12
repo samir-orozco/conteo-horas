@@ -302,6 +302,7 @@ exports.Prisma.SedeScalarFieldEnum = {
   lat: 'lat',
   lng: 'lng',
   radio: 'radio',
+  margenFuera: 'margenFuera',
   activa: 'activa',
   creadoEn: 'creadoEn',
   actualizadoEn: 'actualizadoEn'
@@ -358,6 +359,8 @@ exports.Prisma.RegistroScalarFieldEnum = {
   metodoSalida: 'metodoSalida',
   distanciaEntrada: 'distanciaEntrada',
   distanciaSalida: 'distanciaSalida',
+  fueraGeocercaEntrada: 'fueraGeocercaEntrada',
+  fueraGeocercaSalida: 'fueraGeocercaSalida',
   editadoPor: 'editadoPor',
   editadoEn: 'editadoEn',
   creadoEn: 'creadoEn'

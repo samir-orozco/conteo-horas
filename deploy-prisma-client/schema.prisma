@@ -450,6 +450,10 @@ model Sede {
   lat           Float?
   lng           Float?
   radio         Int      @default(150)
+  // Metros MÁS ALLÁ del radio en los que un presencial todavía puede marcar, con alerta
+  // (11 de octubre de 2026). 0 = no se permite: fuera del radio se rechaza, como siempre.
+  // Sin lat/lng no aplica, igual que el radio.
+  margenFuera   Int      @default(0)
   activa        Boolean  @default(true)
   creadoEn      DateTime @default(now())
   actualizadoEn DateTime @updatedAt
@@ -647,15 +651,20 @@ model Registro {
   // repetida al milímetro entre marcaciones es la huella de un descriptor
   // copiado y reenviado, cosa imposible en capturas vivas; y una foto de foto
   // tiende a dar distancias más altas que un rostro presente.
-  distanciaEntrada Float?
-  distanciaSalida  Float?
+  distanciaEntrada     Float?
+  distanciaSalida      Float?
+  // Un PRESENCIAL marcó fuera de la geocerca de su sede, dentro del margen que la sede
+  // permite (`Sede.margenFuera`, 11 de octubre de 2026). Solo la marca, sin metros: guardar a
+  // cuánto estaba toca la política de datos. Los híbridos nunca la llevan.
+  fueraGeocercaEntrada Boolean   @default(false)
+  fueraGeocercaSalida  Boolean   @default(false)
   // Auditoría de correcciones manuales
-  editadoPor       String?
-  editadoEn        DateTime?
-  creadoEn         DateTime  @default(now())
+  editadoPor           String?
+  editadoEn            DateTime?
+  creadoEn             DateTime  @default(now())
   // Novedades que nacieron de ESTA marcación (salida temprana en el kiosco).
   // Se borran con ella: son parte de la marcación, no registros independientes.
-  novedades        Permiso[]
+  novedades            Permiso[]
 
   // El barrido de turnos olvidados corre cada hora sobre esta tabla, que es la
   // que más crece del producto. Sin este índice el plan es un `Table scan` sobre

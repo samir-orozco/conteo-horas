@@ -17161,12 +17161,14 @@ export namespace Prisma {
     lat: number | null
     lng: number | null
     radio: number | null
+    margenFuera: number | null
   }
 
   export type SedeSumAggregateOutputType = {
     lat: number | null
     lng: number | null
     radio: number | null
+    margenFuera: number | null
   }
 
   export type SedeMinAggregateOutputType = {
@@ -17177,6 +17179,7 @@ export namespace Prisma {
     lat: number | null
     lng: number | null
     radio: number | null
+    margenFuera: number | null
     activa: boolean | null
     creadoEn: Date | null
     actualizadoEn: Date | null
@@ -17190,6 +17193,7 @@ export namespace Prisma {
     lat: number | null
     lng: number | null
     radio: number | null
+    margenFuera: number | null
     activa: boolean | null
     creadoEn: Date | null
     actualizadoEn: Date | null
@@ -17203,6 +17207,7 @@ export namespace Prisma {
     lat: number
     lng: number
     radio: number
+    margenFuera: number
     activa: number
     creadoEn: number
     actualizadoEn: number
@@ -17214,12 +17219,14 @@ export namespace Prisma {
     lat?: true
     lng?: true
     radio?: true
+    margenFuera?: true
   }
 
   export type SedeSumAggregateInputType = {
     lat?: true
     lng?: true
     radio?: true
+    margenFuera?: true
   }
 
   export type SedeMinAggregateInputType = {
@@ -17230,6 +17237,7 @@ export namespace Prisma {
     lat?: true
     lng?: true
     radio?: true
+    margenFuera?: true
     activa?: true
     creadoEn?: true
     actualizadoEn?: true
@@ -17243,6 +17251,7 @@ export namespace Prisma {
     lat?: true
     lng?: true
     radio?: true
+    margenFuera?: true
     activa?: true
     creadoEn?: true
     actualizadoEn?: true
@@ -17256,6 +17265,7 @@ export namespace Prisma {
     lat?: true
     lng?: true
     radio?: true
+    margenFuera?: true
     activa?: true
     creadoEn?: true
     actualizadoEn?: true
@@ -17356,6 +17366,7 @@ export namespace Prisma {
     lat: number | null
     lng: number | null
     radio: number
+    margenFuera: number
     activa: boolean
     creadoEn: Date
     actualizadoEn: Date
@@ -17388,6 +17399,7 @@ export namespace Prisma {
     lat?: boolean
     lng?: boolean
     radio?: boolean
+    margenFuera?: boolean
     activa?: boolean
     creadoEn?: boolean
     actualizadoEn?: boolean
@@ -17408,6 +17420,7 @@ export namespace Prisma {
     lat?: boolean
     lng?: boolean
     radio?: boolean
+    margenFuera?: boolean
     activa?: boolean
     creadoEn?: boolean
     actualizadoEn?: boolean
@@ -17439,6 +17452,7 @@ export namespace Prisma {
       lat: number | null
       lng: number | null
       radio: number
+      margenFuera: number
       activa: boolean
       creadoEn: Date
       actualizadoEn: Date
@@ -17823,6 +17837,7 @@ export namespace Prisma {
     readonly lat: FieldRef<"Sede", 'Float'>
     readonly lng: FieldRef<"Sede", 'Float'>
     readonly radio: FieldRef<"Sede", 'Int'>
+    readonly margenFuera: FieldRef<"Sede", 'Int'>
     readonly activa: FieldRef<"Sede", 'Boolean'>
     readonly creadoEn: FieldRef<"Sede", 'DateTime'>
     readonly actualizadoEn: FieldRef<"Sede", 'DateTime'>
@@ -20243,6 +20258,8 @@ export namespace Prisma {
     metodoSalida: $Enums.MetodoMarcacion | null
     distanciaEntrada: number | null
     distanciaSalida: number | null
+    fueraGeocercaEntrada: boolean | null
+    fueraGeocercaSalida: boolean | null
     editadoPor: string | null
     editadoEn: Date | null
     creadoEn: Date | null
@@ -20269,6 +20286,8 @@ export namespace Prisma {
     metodoSalida: $Enums.MetodoMarcacion | null
     distanciaEntrada: number | null
     distanciaSalida: number | null
+    fueraGeocercaEntrada: boolean | null
+    fueraGeocercaSalida: boolean | null
     editadoPor: string | null
     editadoEn: Date | null
     creadoEn: Date | null
@@ -20295,6 +20314,8 @@ export namespace Prisma {
     metodoSalida: number
     distanciaEntrada: number
     distanciaSalida: number
+    fueraGeocercaEntrada: number
+    fueraGeocercaSalida: number
     editadoPor: number
     editadoEn: number
     creadoEn: number
@@ -20333,6 +20354,8 @@ export namespace Prisma {
     metodoSalida?: true
     distanciaEntrada?: true
     distanciaSalida?: true
+    fueraGeocercaEntrada?: true
+    fueraGeocercaSalida?: true
     editadoPor?: true
     editadoEn?: true
     creadoEn?: true
@@ -20359,6 +20382,8 @@ export namespace Prisma {
     metodoSalida?: true
     distanciaEntrada?: true
     distanciaSalida?: true
+    fueraGeocercaEntrada?: true
+    fueraGeocercaSalida?: true
     editadoPor?: true
     editadoEn?: true
     creadoEn?: true
@@ -20385,6 +20410,8 @@ export namespace Prisma {
     metodoSalida?: true
     distanciaEntrada?: true
     distanciaSalida?: true
+    fueraGeocercaEntrada?: true
+    fueraGeocercaSalida?: true
     editadoPor?: true
     editadoEn?: true
     creadoEn?: true
@@ -20498,6 +20525,8 @@ export namespace Prisma {
     metodoSalida: $Enums.MetodoMarcacion | null
     distanciaEntrada: number | null
     distanciaSalida: number | null
+    fueraGeocercaEntrada: boolean
+    fueraGeocercaSalida: boolean
     editadoPor: string | null
     editadoEn: Date | null
     creadoEn: Date
@@ -20543,6 +20572,8 @@ export namespace Prisma {
     metodoSalida?: boolean
     distanciaEntrada?: boolean
     distanciaSalida?: boolean
+    fueraGeocercaEntrada?: boolean
+    fueraGeocercaSalida?: boolean
     editadoPor?: boolean
     editadoEn?: boolean
     creadoEn?: boolean
@@ -20576,6 +20607,8 @@ export namespace Prisma {
     metodoSalida?: boolean
     distanciaEntrada?: boolean
     distanciaSalida?: boolean
+    fueraGeocercaEntrada?: boolean
+    fueraGeocercaSalida?: boolean
     editadoPor?: boolean
     editadoEn?: boolean
     creadoEn?: boolean
@@ -20620,6 +20653,8 @@ export namespace Prisma {
       metodoSalida: $Enums.MetodoMarcacion | null
       distanciaEntrada: number | null
       distanciaSalida: number | null
+      fueraGeocercaEntrada: boolean
+      fueraGeocercaSalida: boolean
       editadoPor: string | null
       editadoEn: Date | null
       creadoEn: Date
@@ -21017,6 +21052,8 @@ export namespace Prisma {
     readonly metodoSalida: FieldRef<"Registro", 'MetodoMarcacion'>
     readonly distanciaEntrada: FieldRef<"Registro", 'Float'>
     readonly distanciaSalida: FieldRef<"Registro", 'Float'>
+    readonly fueraGeocercaEntrada: FieldRef<"Registro", 'Boolean'>
+    readonly fueraGeocercaSalida: FieldRef<"Registro", 'Boolean'>
     readonly editadoPor: FieldRef<"Registro", 'String'>
     readonly editadoEn: FieldRef<"Registro", 'DateTime'>
     readonly creadoEn: FieldRef<"Registro", 'DateTime'>
@@ -42791,6 +42828,7 @@ export namespace Prisma {
     lat: 'lat',
     lng: 'lng',
     radio: 'radio',
+    margenFuera: 'margenFuera',
     activa: 'activa',
     creadoEn: 'creadoEn',
     actualizadoEn: 'actualizadoEn'
@@ -42856,6 +42894,8 @@ export namespace Prisma {
     metodoSalida: 'metodoSalida',
     distanciaEntrada: 'distanciaEntrada',
     distanciaSalida: 'distanciaSalida',
+    fueraGeocercaEntrada: 'fueraGeocercaEntrada',
+    fueraGeocercaSalida: 'fueraGeocercaSalida',
     editadoPor: 'editadoPor',
     editadoEn: 'editadoEn',
     creadoEn: 'creadoEn'
@@ -44644,6 +44684,7 @@ export namespace Prisma {
     lat?: FloatNullableFilter<"Sede"> | number | null
     lng?: FloatNullableFilter<"Sede"> | number | null
     radio?: IntFilter<"Sede"> | number
+    margenFuera?: IntFilter<"Sede"> | number
     activa?: BoolFilter<"Sede"> | boolean
     creadoEn?: DateTimeFilter<"Sede"> | Date | string
     actualizadoEn?: DateTimeFilter<"Sede"> | Date | string
@@ -44662,6 +44703,7 @@ export namespace Prisma {
     lat?: SortOrderInput | SortOrder
     lng?: SortOrderInput | SortOrder
     radio?: SortOrder
+    margenFuera?: SortOrder
     activa?: SortOrder
     creadoEn?: SortOrder
     actualizadoEn?: SortOrder
@@ -44683,6 +44725,7 @@ export namespace Prisma {
     lat?: FloatNullableFilter<"Sede"> | number | null
     lng?: FloatNullableFilter<"Sede"> | number | null
     radio?: IntFilter<"Sede"> | number
+    margenFuera?: IntFilter<"Sede"> | number
     activa?: BoolFilter<"Sede"> | boolean
     creadoEn?: DateTimeFilter<"Sede"> | Date | string
     actualizadoEn?: DateTimeFilter<"Sede"> | Date | string
@@ -44701,6 +44744,7 @@ export namespace Prisma {
     lat?: SortOrderInput | SortOrder
     lng?: SortOrderInput | SortOrder
     radio?: SortOrder
+    margenFuera?: SortOrder
     activa?: SortOrder
     creadoEn?: SortOrder
     actualizadoEn?: SortOrder
@@ -44722,6 +44766,7 @@ export namespace Prisma {
     lat?: FloatNullableWithAggregatesFilter<"Sede"> | number | null
     lng?: FloatNullableWithAggregatesFilter<"Sede"> | number | null
     radio?: IntWithAggregatesFilter<"Sede"> | number
+    margenFuera?: IntWithAggregatesFilter<"Sede"> | number
     activa?: BoolWithAggregatesFilter<"Sede"> | boolean
     creadoEn?: DateTimeWithAggregatesFilter<"Sede"> | Date | string
     actualizadoEn?: DateTimeWithAggregatesFilter<"Sede"> | Date | string
@@ -44941,6 +44986,8 @@ export namespace Prisma {
     metodoSalida?: EnumMetodoMarcacionNullableFilter<"Registro"> | $Enums.MetodoMarcacion | null
     distanciaEntrada?: FloatNullableFilter<"Registro"> | number | null
     distanciaSalida?: FloatNullableFilter<"Registro"> | number | null
+    fueraGeocercaEntrada?: BoolFilter<"Registro"> | boolean
+    fueraGeocercaSalida?: BoolFilter<"Registro"> | boolean
     editadoPor?: StringNullableFilter<"Registro"> | string | null
     editadoEn?: DateTimeNullableFilter<"Registro"> | Date | string | null
     creadoEn?: DateTimeFilter<"Registro"> | Date | string
@@ -44972,6 +45019,8 @@ export namespace Prisma {
     metodoSalida?: SortOrderInput | SortOrder
     distanciaEntrada?: SortOrderInput | SortOrder
     distanciaSalida?: SortOrderInput | SortOrder
+    fueraGeocercaEntrada?: SortOrder
+    fueraGeocercaSalida?: SortOrder
     editadoPor?: SortOrderInput | SortOrder
     editadoEn?: SortOrderInput | SortOrder
     creadoEn?: SortOrder
@@ -45006,6 +45055,8 @@ export namespace Prisma {
     metodoSalida?: EnumMetodoMarcacionNullableFilter<"Registro"> | $Enums.MetodoMarcacion | null
     distanciaEntrada?: FloatNullableFilter<"Registro"> | number | null
     distanciaSalida?: FloatNullableFilter<"Registro"> | number | null
+    fueraGeocercaEntrada?: BoolFilter<"Registro"> | boolean
+    fueraGeocercaSalida?: BoolFilter<"Registro"> | boolean
     editadoPor?: StringNullableFilter<"Registro"> | string | null
     editadoEn?: DateTimeNullableFilter<"Registro"> | Date | string | null
     creadoEn?: DateTimeFilter<"Registro"> | Date | string
@@ -45037,6 +45088,8 @@ export namespace Prisma {
     metodoSalida?: SortOrderInput | SortOrder
     distanciaEntrada?: SortOrderInput | SortOrder
     distanciaSalida?: SortOrderInput | SortOrder
+    fueraGeocercaEntrada?: SortOrder
+    fueraGeocercaSalida?: SortOrder
     editadoPor?: SortOrderInput | SortOrder
     editadoEn?: SortOrderInput | SortOrder
     creadoEn?: SortOrder
@@ -45071,6 +45124,8 @@ export namespace Prisma {
     metodoSalida?: EnumMetodoMarcacionNullableWithAggregatesFilter<"Registro"> | $Enums.MetodoMarcacion | null
     distanciaEntrada?: FloatNullableWithAggregatesFilter<"Registro"> | number | null
     distanciaSalida?: FloatNullableWithAggregatesFilter<"Registro"> | number | null
+    fueraGeocercaEntrada?: BoolWithAggregatesFilter<"Registro"> | boolean
+    fueraGeocercaSalida?: BoolWithAggregatesFilter<"Registro"> | boolean
     editadoPor?: StringNullableWithAggregatesFilter<"Registro"> | string | null
     editadoEn?: DateTimeNullableWithAggregatesFilter<"Registro"> | Date | string | null
     creadoEn?: DateTimeWithAggregatesFilter<"Registro"> | Date | string
@@ -48273,6 +48328,7 @@ export namespace Prisma {
     lat?: number | null
     lng?: number | null
     radio?: number
+    margenFuera?: number
     activa?: boolean
     creadoEn?: Date | string
     actualizadoEn?: Date | string
@@ -48291,6 +48347,7 @@ export namespace Prisma {
     lat?: number | null
     lng?: number | null
     radio?: number
+    margenFuera?: number
     activa?: boolean
     creadoEn?: Date | string
     actualizadoEn?: Date | string
@@ -48307,6 +48364,7 @@ export namespace Prisma {
     lat?: NullableFloatFieldUpdateOperationsInput | number | null
     lng?: NullableFloatFieldUpdateOperationsInput | number | null
     radio?: IntFieldUpdateOperationsInput | number
+    margenFuera?: IntFieldUpdateOperationsInput | number
     activa?: BoolFieldUpdateOperationsInput | boolean
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -48325,6 +48383,7 @@ export namespace Prisma {
     lat?: NullableFloatFieldUpdateOperationsInput | number | null
     lng?: NullableFloatFieldUpdateOperationsInput | number | null
     radio?: IntFieldUpdateOperationsInput | number
+    margenFuera?: IntFieldUpdateOperationsInput | number
     activa?: BoolFieldUpdateOperationsInput | boolean
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -48342,6 +48401,7 @@ export namespace Prisma {
     lat?: number | null
     lng?: number | null
     radio?: number
+    margenFuera?: number
     activa?: boolean
     creadoEn?: Date | string
     actualizadoEn?: Date | string
@@ -48354,6 +48414,7 @@ export namespace Prisma {
     lat?: NullableFloatFieldUpdateOperationsInput | number | null
     lng?: NullableFloatFieldUpdateOperationsInput | number | null
     radio?: IntFieldUpdateOperationsInput | number
+    margenFuera?: IntFieldUpdateOperationsInput | number
     activa?: BoolFieldUpdateOperationsInput | boolean
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -48367,6 +48428,7 @@ export namespace Prisma {
     lat?: NullableFloatFieldUpdateOperationsInput | number | null
     lng?: NullableFloatFieldUpdateOperationsInput | number | null
     radio?: IntFieldUpdateOperationsInput | number
+    margenFuera?: IntFieldUpdateOperationsInput | number
     activa?: BoolFieldUpdateOperationsInput | boolean
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -48596,6 +48658,8 @@ export namespace Prisma {
     metodoSalida?: $Enums.MetodoMarcacion | null
     distanciaEntrada?: number | null
     distanciaSalida?: number | null
+    fueraGeocercaEntrada?: boolean
+    fueraGeocercaSalida?: boolean
     editadoPor?: string | null
     editadoEn?: Date | string | null
     creadoEn?: Date | string
@@ -48627,6 +48691,8 @@ export namespace Prisma {
     metodoSalida?: $Enums.MetodoMarcacion | null
     distanciaEntrada?: number | null
     distanciaSalida?: number | null
+    fueraGeocercaEntrada?: boolean
+    fueraGeocercaSalida?: boolean
     editadoPor?: string | null
     editadoEn?: Date | string | null
     creadoEn?: Date | string
@@ -48652,6 +48718,8 @@ export namespace Prisma {
     metodoSalida?: NullableEnumMetodoMarcacionFieldUpdateOperationsInput | $Enums.MetodoMarcacion | null
     distanciaEntrada?: NullableFloatFieldUpdateOperationsInput | number | null
     distanciaSalida?: NullableFloatFieldUpdateOperationsInput | number | null
+    fueraGeocercaEntrada?: BoolFieldUpdateOperationsInput | boolean
+    fueraGeocercaSalida?: BoolFieldUpdateOperationsInput | boolean
     editadoPor?: NullableStringFieldUpdateOperationsInput | string | null
     editadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -48683,6 +48751,8 @@ export namespace Prisma {
     metodoSalida?: NullableEnumMetodoMarcacionFieldUpdateOperationsInput | $Enums.MetodoMarcacion | null
     distanciaEntrada?: NullableFloatFieldUpdateOperationsInput | number | null
     distanciaSalida?: NullableFloatFieldUpdateOperationsInput | number | null
+    fueraGeocercaEntrada?: BoolFieldUpdateOperationsInput | boolean
+    fueraGeocercaSalida?: BoolFieldUpdateOperationsInput | boolean
     editadoPor?: NullableStringFieldUpdateOperationsInput | string | null
     editadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -48711,6 +48781,8 @@ export namespace Prisma {
     metodoSalida?: $Enums.MetodoMarcacion | null
     distanciaEntrada?: number | null
     distanciaSalida?: number | null
+    fueraGeocercaEntrada?: boolean
+    fueraGeocercaSalida?: boolean
     editadoPor?: string | null
     editadoEn?: Date | string | null
     creadoEn?: Date | string
@@ -48734,6 +48806,8 @@ export namespace Prisma {
     metodoSalida?: NullableEnumMetodoMarcacionFieldUpdateOperationsInput | $Enums.MetodoMarcacion | null
     distanciaEntrada?: NullableFloatFieldUpdateOperationsInput | number | null
     distanciaSalida?: NullableFloatFieldUpdateOperationsInput | number | null
+    fueraGeocercaEntrada?: BoolFieldUpdateOperationsInput | boolean
+    fueraGeocercaSalida?: BoolFieldUpdateOperationsInput | boolean
     editadoPor?: NullableStringFieldUpdateOperationsInput | string | null
     editadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -48760,6 +48834,8 @@ export namespace Prisma {
     metodoSalida?: NullableEnumMetodoMarcacionFieldUpdateOperationsInput | $Enums.MetodoMarcacion | null
     distanciaEntrada?: NullableFloatFieldUpdateOperationsInput | number | null
     distanciaSalida?: NullableFloatFieldUpdateOperationsInput | number | null
+    fueraGeocercaEntrada?: BoolFieldUpdateOperationsInput | boolean
+    fueraGeocercaSalida?: BoolFieldUpdateOperationsInput | boolean
     editadoPor?: NullableStringFieldUpdateOperationsInput | string | null
     editadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -52194,6 +52270,7 @@ export namespace Prisma {
     lat?: SortOrder
     lng?: SortOrder
     radio?: SortOrder
+    margenFuera?: SortOrder
     activa?: SortOrder
     creadoEn?: SortOrder
     actualizadoEn?: SortOrder
@@ -52203,6 +52280,7 @@ export namespace Prisma {
     lat?: SortOrder
     lng?: SortOrder
     radio?: SortOrder
+    margenFuera?: SortOrder
   }
 
   export type SedeMaxOrderByAggregateInput = {
@@ -52213,6 +52291,7 @@ export namespace Prisma {
     lat?: SortOrder
     lng?: SortOrder
     radio?: SortOrder
+    margenFuera?: SortOrder
     activa?: SortOrder
     creadoEn?: SortOrder
     actualizadoEn?: SortOrder
@@ -52226,6 +52305,7 @@ export namespace Prisma {
     lat?: SortOrder
     lng?: SortOrder
     radio?: SortOrder
+    margenFuera?: SortOrder
     activa?: SortOrder
     creadoEn?: SortOrder
     actualizadoEn?: SortOrder
@@ -52235,6 +52315,7 @@ export namespace Prisma {
     lat?: SortOrder
     lng?: SortOrder
     radio?: SortOrder
+    margenFuera?: SortOrder
   }
 
   export type ColaboradorRelationFilter = {
@@ -52411,6 +52492,8 @@ export namespace Prisma {
     metodoSalida?: SortOrder
     distanciaEntrada?: SortOrder
     distanciaSalida?: SortOrder
+    fueraGeocercaEntrada?: SortOrder
+    fueraGeocercaSalida?: SortOrder
     editadoPor?: SortOrder
     editadoEn?: SortOrder
     creadoEn?: SortOrder
@@ -52442,6 +52525,8 @@ export namespace Prisma {
     metodoSalida?: SortOrder
     distanciaEntrada?: SortOrder
     distanciaSalida?: SortOrder
+    fueraGeocercaEntrada?: SortOrder
+    fueraGeocercaSalida?: SortOrder
     editadoPor?: SortOrder
     editadoEn?: SortOrder
     creadoEn?: SortOrder
@@ -52468,6 +52553,8 @@ export namespace Prisma {
     metodoSalida?: SortOrder
     distanciaEntrada?: SortOrder
     distanciaSalida?: SortOrder
+    fueraGeocercaEntrada?: SortOrder
+    fueraGeocercaSalida?: SortOrder
     editadoPor?: SortOrder
     editadoEn?: SortOrder
     creadoEn?: SortOrder
@@ -57434,6 +57521,7 @@ export namespace Prisma {
     lat?: number | null
     lng?: number | null
     radio?: number
+    margenFuera?: number
     activa?: boolean
     creadoEn?: Date | string
     actualizadoEn?: Date | string
@@ -57450,6 +57538,7 @@ export namespace Prisma {
     lat?: number | null
     lng?: number | null
     radio?: number
+    margenFuera?: number
     activa?: boolean
     creadoEn?: Date | string
     actualizadoEn?: Date | string
@@ -58056,6 +58145,7 @@ export namespace Prisma {
     lat?: FloatNullableFilter<"Sede"> | number | null
     lng?: FloatNullableFilter<"Sede"> | number | null
     radio?: IntFilter<"Sede"> | number
+    margenFuera?: IntFilter<"Sede"> | number
     activa?: BoolFilter<"Sede"> | boolean
     creadoEn?: DateTimeFilter<"Sede"> | Date | string
     actualizadoEn?: DateTimeFilter<"Sede"> | Date | string
@@ -59226,6 +59316,7 @@ export namespace Prisma {
     lat?: number | null
     lng?: number | null
     radio?: number
+    margenFuera?: number
     activa?: boolean
     creadoEn?: Date | string
     actualizadoEn?: Date | string
@@ -59243,6 +59334,7 @@ export namespace Prisma {
     lat?: number | null
     lng?: number | null
     radio?: number
+    margenFuera?: number
     activa?: boolean
     creadoEn?: Date | string
     actualizadoEn?: Date | string
@@ -59403,6 +59495,7 @@ export namespace Prisma {
     lat?: NullableFloatFieldUpdateOperationsInput | number | null
     lng?: NullableFloatFieldUpdateOperationsInput | number | null
     radio?: IntFieldUpdateOperationsInput | number
+    margenFuera?: IntFieldUpdateOperationsInput | number
     activa?: BoolFieldUpdateOperationsInput | boolean
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -59420,6 +59513,7 @@ export namespace Prisma {
     lat?: NullableFloatFieldUpdateOperationsInput | number | null
     lng?: NullableFloatFieldUpdateOperationsInput | number | null
     radio?: IntFieldUpdateOperationsInput | number
+    margenFuera?: IntFieldUpdateOperationsInput | number
     activa?: BoolFieldUpdateOperationsInput | boolean
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -59769,6 +59863,8 @@ export namespace Prisma {
     metodoSalida?: $Enums.MetodoMarcacion | null
     distanciaEntrada?: number | null
     distanciaSalida?: number | null
+    fueraGeocercaEntrada?: boolean
+    fueraGeocercaSalida?: boolean
     editadoPor?: string | null
     editadoEn?: Date | string | null
     creadoEn?: Date | string
@@ -59798,6 +59894,8 @@ export namespace Prisma {
     metodoSalida?: $Enums.MetodoMarcacion | null
     distanciaEntrada?: number | null
     distanciaSalida?: number | null
+    fueraGeocercaEntrada?: boolean
+    fueraGeocercaSalida?: boolean
     editadoPor?: string | null
     editadoEn?: Date | string | null
     creadoEn?: Date | string
@@ -60329,6 +60427,8 @@ export namespace Prisma {
     metodoSalida?: EnumMetodoMarcacionNullableFilter<"Registro"> | $Enums.MetodoMarcacion | null
     distanciaEntrada?: FloatNullableFilter<"Registro"> | number | null
     distanciaSalida?: FloatNullableFilter<"Registro"> | number | null
+    fueraGeocercaEntrada?: BoolFilter<"Registro"> | boolean
+    fueraGeocercaSalida?: BoolFilter<"Registro"> | boolean
     editadoPor?: StringNullableFilter<"Registro"> | string | null
     editadoEn?: DateTimeNullableFilter<"Registro"> | Date | string | null
     creadoEn?: DateTimeFilter<"Registro"> | Date | string
@@ -60731,6 +60831,8 @@ export namespace Prisma {
     metodoSalida?: $Enums.MetodoMarcacion | null
     distanciaEntrada?: number | null
     distanciaSalida?: number | null
+    fueraGeocercaEntrada?: boolean
+    fueraGeocercaSalida?: boolean
     editadoPor?: string | null
     editadoEn?: Date | string | null
     creadoEn?: Date | string
@@ -60760,6 +60862,8 @@ export namespace Prisma {
     metodoSalida?: $Enums.MetodoMarcacion | null
     distanciaEntrada?: number | null
     distanciaSalida?: number | null
+    fueraGeocercaEntrada?: boolean
+    fueraGeocercaSalida?: boolean
     editadoPor?: string | null
     editadoEn?: Date | string | null
     creadoEn?: Date | string
@@ -60795,6 +60899,8 @@ export namespace Prisma {
     metodoSalida?: $Enums.MetodoMarcacion | null
     distanciaEntrada?: number | null
     distanciaSalida?: number | null
+    fueraGeocercaEntrada?: boolean
+    fueraGeocercaSalida?: boolean
     editadoPor?: string | null
     editadoEn?: Date | string | null
     creadoEn?: Date | string
@@ -60824,6 +60930,8 @@ export namespace Prisma {
     metodoSalida?: $Enums.MetodoMarcacion | null
     distanciaEntrada?: number | null
     distanciaSalida?: number | null
+    fueraGeocercaEntrada?: boolean
+    fueraGeocercaSalida?: boolean
     editadoPor?: string | null
     editadoEn?: Date | string | null
     creadoEn?: Date | string
@@ -61068,6 +61176,7 @@ export namespace Prisma {
     lat?: number | null
     lng?: number | null
     radio?: number
+    margenFuera?: number
     activa?: boolean
     creadoEn?: Date | string
     actualizadoEn?: Date | string
@@ -61085,6 +61194,7 @@ export namespace Prisma {
     lat?: number | null
     lng?: number | null
     radio?: number
+    margenFuera?: number
     activa?: boolean
     creadoEn?: Date | string
     actualizadoEn?: Date | string
@@ -61205,6 +61315,7 @@ export namespace Prisma {
     lat?: NullableFloatFieldUpdateOperationsInput | number | null
     lng?: NullableFloatFieldUpdateOperationsInput | number | null
     radio?: IntFieldUpdateOperationsInput | number
+    margenFuera?: IntFieldUpdateOperationsInput | number
     activa?: BoolFieldUpdateOperationsInput | boolean
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -61222,6 +61333,7 @@ export namespace Prisma {
     lat?: NullableFloatFieldUpdateOperationsInput | number | null
     lng?: NullableFloatFieldUpdateOperationsInput | number | null
     radio?: IntFieldUpdateOperationsInput | number
+    margenFuera?: IntFieldUpdateOperationsInput | number
     activa?: BoolFieldUpdateOperationsInput | boolean
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -61592,6 +61704,7 @@ export namespace Prisma {
     lat?: number | null
     lng?: number | null
     radio?: number
+    margenFuera?: number
     activa?: boolean
     creadoEn?: Date | string
     actualizadoEn?: Date | string
@@ -61609,6 +61722,7 @@ export namespace Prisma {
     lat?: number | null
     lng?: number | null
     radio?: number
+    margenFuera?: number
     activa?: boolean
     creadoEn?: Date | string
     actualizadoEn?: Date | string
@@ -61629,6 +61743,7 @@ export namespace Prisma {
     lat?: number | null
     lng?: number | null
     radio?: number
+    margenFuera?: number
     activa?: boolean
     creadoEn?: Date | string
     actualizadoEn?: Date | string
@@ -61646,6 +61761,7 @@ export namespace Prisma {
     lat?: number | null
     lng?: number | null
     radio?: number
+    margenFuera?: number
     activa?: boolean
     creadoEn?: Date | string
     actualizadoEn?: Date | string
@@ -61838,6 +61954,7 @@ export namespace Prisma {
     lat?: NullableFloatFieldUpdateOperationsInput | number | null
     lng?: NullableFloatFieldUpdateOperationsInput | number | null
     radio?: IntFieldUpdateOperationsInput | number
+    margenFuera?: IntFieldUpdateOperationsInput | number
     activa?: BoolFieldUpdateOperationsInput | boolean
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -61855,6 +61972,7 @@ export namespace Prisma {
     lat?: NullableFloatFieldUpdateOperationsInput | number | null
     lng?: NullableFloatFieldUpdateOperationsInput | number | null
     radio?: IntFieldUpdateOperationsInput | number
+    margenFuera?: IntFieldUpdateOperationsInput | number
     activa?: BoolFieldUpdateOperationsInput | boolean
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -61881,6 +61999,7 @@ export namespace Prisma {
     lat?: NullableFloatFieldUpdateOperationsInput | number | null
     lng?: NullableFloatFieldUpdateOperationsInput | number | null
     radio?: IntFieldUpdateOperationsInput | number
+    margenFuera?: IntFieldUpdateOperationsInput | number
     activa?: BoolFieldUpdateOperationsInput | boolean
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -61898,6 +62017,7 @@ export namespace Prisma {
     lat?: NullableFloatFieldUpdateOperationsInput | number | null
     lng?: NullableFloatFieldUpdateOperationsInput | number | null
     radio?: IntFieldUpdateOperationsInput | number
+    margenFuera?: IntFieldUpdateOperationsInput | number
     activa?: BoolFieldUpdateOperationsInput | boolean
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -62053,6 +62173,8 @@ export namespace Prisma {
     metodoSalida?: $Enums.MetodoMarcacion | null
     distanciaEntrada?: number | null
     distanciaSalida?: number | null
+    fueraGeocercaEntrada?: boolean
+    fueraGeocercaSalida?: boolean
     editadoPor?: string | null
     editadoEn?: Date | string | null
     creadoEn?: Date | string
@@ -62083,6 +62205,8 @@ export namespace Prisma {
     metodoSalida?: $Enums.MetodoMarcacion | null
     distanciaEntrada?: number | null
     distanciaSalida?: number | null
+    fueraGeocercaEntrada?: boolean
+    fueraGeocercaSalida?: boolean
     editadoPor?: string | null
     editadoEn?: Date | string | null
     creadoEn?: Date | string
@@ -62212,6 +62336,8 @@ export namespace Prisma {
     metodoSalida?: NullableEnumMetodoMarcacionFieldUpdateOperationsInput | $Enums.MetodoMarcacion | null
     distanciaEntrada?: NullableFloatFieldUpdateOperationsInput | number | null
     distanciaSalida?: NullableFloatFieldUpdateOperationsInput | number | null
+    fueraGeocercaEntrada?: BoolFieldUpdateOperationsInput | boolean
+    fueraGeocercaSalida?: BoolFieldUpdateOperationsInput | boolean
     editadoPor?: NullableStringFieldUpdateOperationsInput | string | null
     editadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -62242,6 +62368,8 @@ export namespace Prisma {
     metodoSalida?: NullableEnumMetodoMarcacionFieldUpdateOperationsInput | $Enums.MetodoMarcacion | null
     distanciaEntrada?: NullableFloatFieldUpdateOperationsInput | number | null
     distanciaSalida?: NullableFloatFieldUpdateOperationsInput | number | null
+    fueraGeocercaEntrada?: BoolFieldUpdateOperationsInput | boolean
+    fueraGeocercaSalida?: BoolFieldUpdateOperationsInput | boolean
     editadoPor?: NullableStringFieldUpdateOperationsInput | string | null
     editadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -63623,6 +63751,8 @@ export namespace Prisma {
     metodoSalida?: $Enums.MetodoMarcacion | null
     distanciaEntrada?: number | null
     distanciaSalida?: number | null
+    fueraGeocercaEntrada?: boolean
+    fueraGeocercaSalida?: boolean
     editadoPor?: string | null
     editadoEn?: Date | string | null
     creadoEn?: Date | string
@@ -63653,6 +63783,8 @@ export namespace Prisma {
     metodoSalida?: $Enums.MetodoMarcacion | null
     distanciaEntrada?: number | null
     distanciaSalida?: number | null
+    fueraGeocercaEntrada?: boolean
+    fueraGeocercaSalida?: boolean
     editadoPor?: string | null
     editadoEn?: Date | string | null
     creadoEn?: Date | string
@@ -63693,6 +63825,8 @@ export namespace Prisma {
     metodoSalida?: NullableEnumMetodoMarcacionFieldUpdateOperationsInput | $Enums.MetodoMarcacion | null
     distanciaEntrada?: NullableFloatFieldUpdateOperationsInput | number | null
     distanciaSalida?: NullableFloatFieldUpdateOperationsInput | number | null
+    fueraGeocercaEntrada?: BoolFieldUpdateOperationsInput | boolean
+    fueraGeocercaSalida?: BoolFieldUpdateOperationsInput | boolean
     editadoPor?: NullableStringFieldUpdateOperationsInput | string | null
     editadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -63723,6 +63857,8 @@ export namespace Prisma {
     metodoSalida?: NullableEnumMetodoMarcacionFieldUpdateOperationsInput | $Enums.MetodoMarcacion | null
     distanciaEntrada?: NullableFloatFieldUpdateOperationsInput | number | null
     distanciaSalida?: NullableFloatFieldUpdateOperationsInput | number | null
+    fueraGeocercaEntrada?: BoolFieldUpdateOperationsInput | boolean
+    fueraGeocercaSalida?: BoolFieldUpdateOperationsInput | boolean
     editadoPor?: NullableStringFieldUpdateOperationsInput | string | null
     editadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -65970,6 +66106,7 @@ export namespace Prisma {
     lat?: number | null
     lng?: number | null
     radio?: number
+    margenFuera?: number
     activa?: boolean
     creadoEn?: Date | string
     actualizadoEn?: Date | string
@@ -66296,6 +66433,7 @@ export namespace Prisma {
     lat?: NullableFloatFieldUpdateOperationsInput | number | null
     lng?: NullableFloatFieldUpdateOperationsInput | number | null
     radio?: IntFieldUpdateOperationsInput | number
+    margenFuera?: IntFieldUpdateOperationsInput | number
     activa?: BoolFieldUpdateOperationsInput | boolean
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -66312,6 +66450,7 @@ export namespace Prisma {
     lat?: NullableFloatFieldUpdateOperationsInput | number | null
     lng?: NullableFloatFieldUpdateOperationsInput | number | null
     radio?: IntFieldUpdateOperationsInput | number
+    margenFuera?: IntFieldUpdateOperationsInput | number
     activa?: BoolFieldUpdateOperationsInput | boolean
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -66328,6 +66467,7 @@ export namespace Prisma {
     lat?: NullableFloatFieldUpdateOperationsInput | number | null
     lng?: NullableFloatFieldUpdateOperationsInput | number | null
     radio?: IntFieldUpdateOperationsInput | number
+    margenFuera?: IntFieldUpdateOperationsInput | number
     activa?: BoolFieldUpdateOperationsInput | boolean
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -66946,6 +67086,8 @@ export namespace Prisma {
     metodoSalida?: $Enums.MetodoMarcacion | null
     distanciaEntrada?: number | null
     distanciaSalida?: number | null
+    fueraGeocercaEntrada?: boolean
+    fueraGeocercaSalida?: boolean
     editadoPor?: string | null
     editadoEn?: Date | string | null
     creadoEn?: Date | string
@@ -67130,6 +67272,8 @@ export namespace Prisma {
     metodoSalida?: NullableEnumMetodoMarcacionFieldUpdateOperationsInput | $Enums.MetodoMarcacion | null
     distanciaEntrada?: NullableFloatFieldUpdateOperationsInput | number | null
     distanciaSalida?: NullableFloatFieldUpdateOperationsInput | number | null
+    fueraGeocercaEntrada?: BoolFieldUpdateOperationsInput | boolean
+    fueraGeocercaSalida?: BoolFieldUpdateOperationsInput | boolean
     editadoPor?: NullableStringFieldUpdateOperationsInput | string | null
     editadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -67159,6 +67303,8 @@ export namespace Prisma {
     metodoSalida?: NullableEnumMetodoMarcacionFieldUpdateOperationsInput | $Enums.MetodoMarcacion | null
     distanciaEntrada?: NullableFloatFieldUpdateOperationsInput | number | null
     distanciaSalida?: NullableFloatFieldUpdateOperationsInput | number | null
+    fueraGeocercaEntrada?: BoolFieldUpdateOperationsInput | boolean
+    fueraGeocercaSalida?: BoolFieldUpdateOperationsInput | boolean
     editadoPor?: NullableStringFieldUpdateOperationsInput | string | null
     editadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -67186,6 +67332,8 @@ export namespace Prisma {
     metodoSalida?: NullableEnumMetodoMarcacionFieldUpdateOperationsInput | $Enums.MetodoMarcacion | null
     distanciaEntrada?: NullableFloatFieldUpdateOperationsInput | number | null
     distanciaSalida?: NullableFloatFieldUpdateOperationsInput | number | null
+    fueraGeocercaEntrada?: BoolFieldUpdateOperationsInput | boolean
+    fueraGeocercaSalida?: BoolFieldUpdateOperationsInput | boolean
     editadoPor?: NullableStringFieldUpdateOperationsInput | string | null
     editadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -67591,6 +67739,8 @@ export namespace Prisma {
     metodoSalida?: $Enums.MetodoMarcacion | null
     distanciaEntrada?: number | null
     distanciaSalida?: number | null
+    fueraGeocercaEntrada?: boolean
+    fueraGeocercaSalida?: boolean
     editadoPor?: string | null
     editadoEn?: Date | string | null
     creadoEn?: Date | string
@@ -67616,6 +67766,8 @@ export namespace Prisma {
     metodoSalida?: $Enums.MetodoMarcacion | null
     distanciaEntrada?: number | null
     distanciaSalida?: number | null
+    fueraGeocercaEntrada?: boolean
+    fueraGeocercaSalida?: boolean
     editadoPor?: string | null
     editadoEn?: Date | string | null
     creadoEn?: Date | string
@@ -67716,6 +67868,8 @@ export namespace Prisma {
     metodoSalida?: NullableEnumMetodoMarcacionFieldUpdateOperationsInput | $Enums.MetodoMarcacion | null
     distanciaEntrada?: NullableFloatFieldUpdateOperationsInput | number | null
     distanciaSalida?: NullableFloatFieldUpdateOperationsInput | number | null
+    fueraGeocercaEntrada?: BoolFieldUpdateOperationsInput | boolean
+    fueraGeocercaSalida?: BoolFieldUpdateOperationsInput | boolean
     editadoPor?: NullableStringFieldUpdateOperationsInput | string | null
     editadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -67745,6 +67899,8 @@ export namespace Prisma {
     metodoSalida?: NullableEnumMetodoMarcacionFieldUpdateOperationsInput | $Enums.MetodoMarcacion | null
     distanciaEntrada?: NullableFloatFieldUpdateOperationsInput | number | null
     distanciaSalida?: NullableFloatFieldUpdateOperationsInput | number | null
+    fueraGeocercaEntrada?: BoolFieldUpdateOperationsInput | boolean
+    fueraGeocercaSalida?: BoolFieldUpdateOperationsInput | boolean
     editadoPor?: NullableStringFieldUpdateOperationsInput | string | null
     editadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -67772,6 +67928,8 @@ export namespace Prisma {
     metodoSalida?: NullableEnumMetodoMarcacionFieldUpdateOperationsInput | $Enums.MetodoMarcacion | null
     distanciaEntrada?: NullableFloatFieldUpdateOperationsInput | number | null
     distanciaSalida?: NullableFloatFieldUpdateOperationsInput | number | null
+    fueraGeocercaEntrada?: BoolFieldUpdateOperationsInput | boolean
+    fueraGeocercaSalida?: BoolFieldUpdateOperationsInput | boolean
     editadoPor?: NullableStringFieldUpdateOperationsInput | string | null
     editadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -67795,6 +67953,8 @@ export namespace Prisma {
     metodoSalida?: NullableEnumMetodoMarcacionFieldUpdateOperationsInput | $Enums.MetodoMarcacion | null
     distanciaEntrada?: NullableFloatFieldUpdateOperationsInput | number | null
     distanciaSalida?: NullableFloatFieldUpdateOperationsInput | number | null
+    fueraGeocercaEntrada?: BoolFieldUpdateOperationsInput | boolean
+    fueraGeocercaSalida?: BoolFieldUpdateOperationsInput | boolean
     editadoPor?: NullableStringFieldUpdateOperationsInput | string | null
     editadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -67824,6 +67984,8 @@ export namespace Prisma {
     metodoSalida?: NullableEnumMetodoMarcacionFieldUpdateOperationsInput | $Enums.MetodoMarcacion | null
     distanciaEntrada?: NullableFloatFieldUpdateOperationsInput | number | null
     distanciaSalida?: NullableFloatFieldUpdateOperationsInput | number | null
+    fueraGeocercaEntrada?: BoolFieldUpdateOperationsInput | boolean
+    fueraGeocercaSalida?: BoolFieldUpdateOperationsInput | boolean
     editadoPor?: NullableStringFieldUpdateOperationsInput | string | null
     editadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -67851,6 +68013,8 @@ export namespace Prisma {
     metodoSalida?: NullableEnumMetodoMarcacionFieldUpdateOperationsInput | $Enums.MetodoMarcacion | null
     distanciaEntrada?: NullableFloatFieldUpdateOperationsInput | number | null
     distanciaSalida?: NullableFloatFieldUpdateOperationsInput | number | null
+    fueraGeocercaEntrada?: BoolFieldUpdateOperationsInput | boolean
+    fueraGeocercaSalida?: BoolFieldUpdateOperationsInput | boolean
     editadoPor?: NullableStringFieldUpdateOperationsInput | string | null
     editadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
