@@ -11,6 +11,8 @@ export default function TabConexiones() {
   const [alertasTarde, setAlertasTarde] = useState(false);
   // «No ha llegado» (11 de octubre de 2026): comparte el chat con el de llegadas tarde.
   const [noHaLlegado, setNoHaLlegado] = useState(false);
+  // Novedades por aprobar (12 de octubre de 2026): sin tipo ni motivo, que pueden ser de salud.
+  const [novedades, setNovedades] = useState(false);
   const [chatId, setChatId] = useState('');
   const [guardandoTg, setGuardandoTg] = useState(false);
   const [probandoTg, setProbandoTg] = useState(false);
@@ -20,6 +22,7 @@ export default function TabConexiones() {
     api.get('/configuracion').then(r => {
       setAlertasTarde(r.data.TELEGRAM_ALERTAS_TARDE === '1');
       setNoHaLlegado(r.data.TELEGRAM_NO_HA_LLEGADO === '1');
+      setNovedades(r.data.TELEGRAM_NOVEDADES === '1');
       setChatId(r.data.TELEGRAM_CHAT_ID || '');
       setCargado(true);
     });
@@ -41,9 +44,10 @@ export default function TabConexiones() {
   };
   const toggleAlertas = () => cambiarAviso('TELEGRAM_ALERTAS_TARDE', alertasTarde, setAlertasTarde);
   const toggleNoHaLlegado = () => cambiarAviso('TELEGRAM_NO_HA_LLEGADO', noHaLlegado, setNoHaLlegado);
+  const toggleNovedades = () => cambiarAviso('TELEGRAM_NOVEDADES', novedades, setNovedades);
 
   // Los pasos del chat se ven con CUALQUIERA de los dos avisos encendido: lo comparten.
-  const algunAviso = alertasTarde || noHaLlegado;
+  const algunAviso = alertasTarde || noHaLlegado || novedades;
 
   const guardarChat = async () => {
     setGuardandoTg(true); setMsgTg(null);
@@ -100,6 +104,17 @@ export default function TabConexiones() {
               </p>
             </div>
             <Interruptor encendido={noHaLlegado} onClick={toggleNoHaLlegado} disabled={!cargado} etiqueta="tg-no-llego" />
+          </div>
+
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <p id="tg-novedades" className="font-medium text-ink text-sm mb-0.5">Novedades por aprobar</p>
+              <p className="text-sm text-muted">
+                Cuando alguien reporta una novedad desde el kiosco, llega un aviso con el enlace para revisarla.
+                No dice el tipo ni el motivo: pueden ser de salud, y el chat puede ser un grupo.
+              </p>
+            </div>
+            <Interruptor encendido={novedades} onClick={toggleNovedades} disabled={!cargado} etiqueta="tg-novedades" />
           </div>
 
           {errorAviso && <p className="text-red-600 text-sm">No pudimos guardar el cambio. Intenta de nuevo.</p>}

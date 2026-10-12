@@ -15,5 +15,6 @@ export function rutaDeNotificacion(n: Notificacion): string | null {
   const ficha = `/app/colaboradores/${n.entidadId}`;
   // Por prefijo y no por lista cerrada: el backend puede agregar otro aviso de
   // contrato sin que haya que acordarse de tocar este archivo.
+  if (n.tipo === 'NOVEDAD_PENDIENTE') return `${ficha}?tab=novedades`;
   return n.tipo.startsWith('CONTRATO_') ? `${ficha}?tab=contratos` : ficha;
 }

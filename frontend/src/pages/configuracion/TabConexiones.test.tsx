@@ -81,4 +81,14 @@ describe('TabConexiones: los avisos de Telegram', () => {
     await userEvent.click(tarde);
     expect(tarde).toHaveAttribute('aria-checked', 'true');
   });
+
+  it('el aviso de novedades por aprobar tiene su interruptor y también muestra los pasos del chat', async () => {
+    conConfig({ TELEGRAM_NOVEDADES: '1' });
+    montar();
+    const sw = await interruptor(/novedades por aprobar/i);
+    await waitFor(() => expect(sw).toHaveAttribute('aria-checked', 'true'));
+    expect(screen.getByLabelText(/id del chat de telegram/i)).toBeInTheDocument();
+    await userEvent.click(sw);
+    expect(put).toHaveBeenLastCalledWith('/configuracion', { TELEGRAM_NOVEDADES: '0' });
+  });
 });

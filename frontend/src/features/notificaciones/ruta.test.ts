@@ -28,6 +28,11 @@ describe('a dónde lleva cada notificación', () => {
     }
   });
 
+  it('una novedad por aprobar abre la ficha DIRECTO en novedades (12 de octubre de 2026)', () => {
+    // Igual que el enlace del aviso de Telegram: a eso se viene.
+    expect(rutaDeNotificacion(n({ tipo: 'NOVEDAD_PENDIENTE' }))).toBe('/app/colaboradores/c1?tab=novedades');
+  });
+
   it('el resumen semanal lleva a reportes (11 de octubre de 2026)', () => {
     expect(rutaDeNotificacion(n({ tipo: 'RESUMEN_SEMANAL', entidad: 'resumen', entidadId: '2026-10-05' })))
       .toBe('/app/reportes');

@@ -7,6 +7,7 @@ import { esDescriptorValido, identificarRostro, esParecidoDudoso, continuidadCon
 import { camposDeAutenticacion } from '../utils/metodoMarcacion';
 import { enviarTelegram } from '../utils/telegram';
 import { avisarSiYaLlego } from '../utils/avisoNoHaLlegado';
+import { mensajesDelKiosco, CLAVE_NOVEDADES } from '../utils/telegramDelKiosco';
 import { notificar } from '../utils/notificaciones';
 import { avisoFueraDeGeocerca, type Momento } from '../utils/avisoFueraDeGeocerca';
 import { kioscoPausado, mensajeKioscoPausado } from '../utils/suscripcion';
@@ -209,8 +210,11 @@ async function pausaQueEsperaRegreso<T extends { fecha: Date; salida: Date | nul
 // `ventana` también viene de la salida temprana: el tramo que la novedad excusa,
 // desde que se fue hasta el fin de su franja. Sin ella la novedad queda de día
 // completo, y al aprobarla el saldo excusaba también las horas que sí trabajó.
-async function crearNovedad(colaboradorId: string, tipo: string, descripcion: string, registroId?: string, ventana?: { horaInicio: string; horaFin: string } | null) {
-  const { inicioDia } = rangoDiaBogota();
+//
+// `telegram`: si avisa al grupo por su cuenta. La llegada tarde lo apaga porque manda un solo mensaje
+// con las dos cosas (12 de octubre de 2026).
+async function crearNovedad(colaboradorId: string, tipo: string, descripcion: string, registroId?: string, ventana?: { horaInicio: string; horaFin: string } | null, telegram = true) {
+  const { inicioDia, ahoraBog } = rangoDiaBogota();
   const permiso = await prisma.permiso.create({
     data: {
       colaboradorId,
@@ -234,21 +238,35 @@ async function crearNovedad(colaboradorId: string, tipo: string, descripcion: st
       cuerpo: `Reportó una novedad (${tipo}) pendiente de tu aprobación.`,
       entidad: 'colaborador', entidadId: colaboradorId,
     });
+    if (telegram) {
+      avisarPorTelegram(quien.empresaId, colaboradorId, `${quien.nombre} ${quien.apellido}`, ahoraBog, null, true)
+        .catch(() => {});
+    }
   }
   return permiso;
 }
 
-// Alerta de llegada tarde por Telegram (si la empresa lo activó). No bloquea la marca.
-async function alertarTardanzaTelegram(empresaId: string, nombre: string, ahoraBog: Date, minutosTarde: number) {
+// Los avisos del kiosco por Telegram: llegada tarde y novedad por aprobar, cada uno con su
+// interruptor. Qué se manda lo decide `mensajesDelKiosco` (utils/telegramDelKiosco.ts, probada); esto
+// solo lee la configuración y envía. No bloquea la marca: quien llama no espera el resultado.
+//
+// `ahoraBog` es la hora ya zonificada (toZonedTime): sus getters locales dan la hora de Bogotá.
+async function avisarPorTelegram(empresaId: string, colaboradorId: string, nombre: string, ahoraBog: Date, minutosTarde: number | null, dejoNovedad: boolean) {
   const cfgs = await prisma.configuracion.findMany({
-    where: { empresaId, clave: { in: ['TELEGRAM_ALERTAS_TARDE', 'TELEGRAM_CHAT_ID'] } },
+    where: { empresaId, clave: { in: ['TELEGRAM_ALERTAS_TARDE', CLAVE_NOVEDADES, 'TELEGRAM_CHAT_ID'] } },
   });
   const map = Object.fromEntries(cfgs.map(c => [c.clave, c.valor]));
-  if (map.TELEGRAM_ALERTAS_TARDE !== '1' || !map.TELEGRAM_CHAT_ID) return;
-  const h = ahoraBog.getHours();
-  const hora = `${h % 12 || 12}:${String(ahoraBog.getMinutes()).padStart(2, '0')} ${h >= 12 ? 'p.m.' : 'a.m.'}`;
-  const tardeTxt = minutosTarde >= 60 ? `${Math.floor(minutosTarde / 60)}h ${minutosTarde % 60}min` : `${minutosTarde} min`;
-  await enviarTelegram(map.TELEGRAM_CHAT_ID, `⚠️ <b>${nombre}</b> llegó tarde\n🕐 ${hora} · ${tardeTxt} tarde`);
+  if (!map.TELEGRAM_CHAT_ID) return;
+  const origen = process.env.FRONTEND_ORIGIN?.split(',')[0] ?? 'http://localhost:5173';
+  const mensajes = mensajesDelKiosco({
+    nombre,
+    hora: `${String(ahoraBog.getHours()).padStart(2, '0')}:${String(ahoraBog.getMinutes()).padStart(2, '0')}`,
+    minutosTarde, dejoNovedad,
+    alertasTarde: map.TELEGRAM_ALERTAS_TARDE === '1',
+    novedades: map[CLAVE_NOVEDADES] === '1',
+    enlace: `${origen}/app/colaboradores/${colaboradorId}?tab=novedades`,
+  });
+  for (const m of mensajes) await enviarTelegram(map.TELEGRAM_CHAT_ID, m);
 }
 
 // Esquemas de body: rechazan tipos inesperados (p. ej. `cedula` como objeto de
@@ -1006,9 +1024,12 @@ export default async function workerRoutes(app: FastifyInstance) {
         // La novedad de la llegada tarde viaja con la marca, igual que la de la
         // salida temprana: en una llamada aparte, un fallo dejaba la entrada
         // escrita y el motivo perdido.
+        let dejoNovedad = false;
         if (tardanza && tipoNovedad) {
-          await crearNovedad(payload.id, tipoNovedad, descripcionNovedad, nuevo.id, ventanaDeLlegadaTarde(ahoraBog, tardanza.franja))
-            .catch(err => app.log.error(err, 'No se pudo guardar la novedad de la llegada tarde'));
+          // Sin Telegram propio: el aviso de la llegada tarde lo dice en el mismo mensaje.
+          dejoNovedad = await crearNovedad(payload.id, tipoNovedad, descripcionNovedad, nuevo.id, ventanaDeLlegadaTarde(ahoraBog, tardanza.franja), false)
+            .then(() => true)
+            .catch(err => { app.log.error(err, 'No se pudo guardar la novedad de la llegada tarde'); return false; });
         }
 
         avisarFueraDeGeocerca('ENTRADA', nuevo.id);
@@ -1016,7 +1037,7 @@ export default async function workerRoutes(app: FastifyInstance) {
         // Alerta de llegada tarde por Telegram y en la campana.
         if (tardanza && col) {
           const tarde = tardanza.minutos;
-          alertarTardanzaTelegram(col.empresaId, `${col.nombre} ${col.apellido}`, ahoraBog, tarde).catch(() => {});
+          avisarPorTelegram(col.empresaId, col.id, `${col.nombre} ${col.apellido}`, ahoraBog, tarde, dejoNovedad).catch(() => {});
           const tardeTxt = tarde >= 60 ? `${Math.floor(tarde / 60)}h ${tarde % 60}min` : `${tarde} min`;
           notificar(col.empresaId, {
             tipo: 'LLEGADA_TARDE',
