@@ -78,6 +78,8 @@ const avisosDeSuscripcion_1 = require("./utils/avisosDeSuscripcion");
 const envioResumenSemanal_1 = require("./utils/envioResumenSemanal");
 const avisoNoHaLlegado_1 = require("./utils/avisoNoHaLlegado");
 const avisoPausaSinVolver_1 = require("./utils/avisoPausaSinVolver");
+const avisoTurnosCerrados_1 = require("./utils/avisoTurnosCerrados");
+const turnosCerradosSolos_1 = require("./utils/turnosCerradosSolos");
 const resumenSemanal_1 = require("./utils/resumenSemanal");
 const opcionesDeLog_1 = require("./utils/opcionesDeLog");
 const accesoEmpresa_1 = require("./utils/accesoEmpresa");
@@ -333,6 +335,9 @@ const start = async () => {
         // «No ha vuelto de su pausa» por Telegram (13 de octubre de 2026): el mismo reloj, por lo mismo.
         void (0, programarDiario_1.correrRonda)('pausa-sin-volver', () => (0, avisoPausaSinVolver_1.avisarPausasSinVolver)(app.log), app.log);
         setInterval(() => void (0, programarDiario_1.correrRonda)('pausa-sin-volver', () => (0, avisoPausaSinVolver_1.avisarPausasSinVolver)(app.log), app.log), 5 * 60 * 1000);
+        // «Turnos cerrados solos» por Telegram (13 de octubre de 2026): uno cada mañana a las 7 con los cierres
+        // de la madrugada. La fecha del último envío evita repetirlo cuando la app arranca de nuevo.
+        (0, programarDiario_1.programarDiario)('turnos-cerrados-telegram', turnosCerradosSolos_1.HORA_TURNOS_CERRADOS, () => (0, avisoTurnosCerrados_1.avisarTurnosCerrados)(app.log), app.log);
         // Registra el webhook del bot de Telegram (si hay URL configurada)
         if (process.env.TELEGRAM_WEBHOOK_URL)
             (0, telegram_2.configurarWebhook)(process.env.TELEGRAM_WEBHOOK_URL);

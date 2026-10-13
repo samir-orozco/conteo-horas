@@ -2,6 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.CLAVE_PAUSAS = void 0;
 exports.pausasPorAvisar = pausasPorAvisar;
+exports.aLaHora = aLaHora;
 exports.mensajePausasSinVolver = mensajePausasSinVolver;
 exports.mensajeYaVolvio = mensajeYaVolvio;
 exports.cuerpoDePausaSinVolver = cuerpoDePausaSinVolver;

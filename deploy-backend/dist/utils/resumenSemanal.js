@@ -2,6 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.CLAVE_RESUMEN_SEMANAL = exports.HORA_DEL_RESUMEN = void 0;
 exports.semanaDelResumen = semanaDelResumen;
+exports.diaCorto = diaCorto;
 exports.armarResumen = armarResumen;
 exports.nombreDeSemana = nombreDeSemana;
 exports.tonoDelCambio = tonoDelCambio;
