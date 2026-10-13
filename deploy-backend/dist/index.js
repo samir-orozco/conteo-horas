@@ -77,6 +77,7 @@ const programarDiario_1 = require("./utils/programarDiario");
 const avisosDeSuscripcion_1 = require("./utils/avisosDeSuscripcion");
 const envioResumenSemanal_1 = require("./utils/envioResumenSemanal");
 const avisoNoHaLlegado_1 = require("./utils/avisoNoHaLlegado");
+const avisoPausaSinVolver_1 = require("./utils/avisoPausaSinVolver");
 const resumenSemanal_1 = require("./utils/resumenSemanal");
 const opcionesDeLog_1 = require("./utils/opcionesDeLog");
 const accesoEmpresa_1 = require("./utils/accesoEmpresa");
@@ -329,6 +330,9 @@ const start = async () => {
         // que lo encendieron, y deja rastro en cada pasada (§8.3).
         void (0, programarDiario_1.correrRonda)('no-ha-llegado', () => (0, avisoNoHaLlegado_1.avisarNoHanLlegado)(app.log), app.log);
         setInterval(() => void (0, programarDiario_1.correrRonda)('no-ha-llegado', () => (0, avisoNoHaLlegado_1.avisarNoHanLlegado)(app.log), app.log), 5 * 60 * 1000);
+        // «No ha vuelto de su pausa» por Telegram (13 de octubre de 2026): el mismo reloj, por lo mismo.
+        void (0, programarDiario_1.correrRonda)('pausa-sin-volver', () => (0, avisoPausaSinVolver_1.avisarPausasSinVolver)(app.log), app.log);
+        setInterval(() => void (0, programarDiario_1.correrRonda)('pausa-sin-volver', () => (0, avisoPausaSinVolver_1.avisarPausasSinVolver)(app.log), app.log), 5 * 60 * 1000);
         // Registra el webhook del bot de Telegram (si hay URL configurada)
         if (process.env.TELEGRAM_WEBHOOK_URL)
             (0, telegram_2.configurarWebhook)(process.env.TELEGRAM_WEBHOOK_URL);

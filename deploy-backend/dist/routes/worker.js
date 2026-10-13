@@ -12,6 +12,7 @@ const rostro_1 = require("../utils/rostro");
 const metodoMarcacion_1 = require("../utils/metodoMarcacion");
 const telegram_1 = require("../utils/telegram");
 const avisoNoHaLlegado_1 = require("../utils/avisoNoHaLlegado");
+const avisoPausaSinVolver_1 = require("../utils/avisoPausaSinVolver");
 const telegramDelKiosco_1 = require("../utils/telegramDelKiosco");
 const notificaciones_1 = require("../utils/notificaciones");
 const avisoFueraDeGeocerca_1 = require("../utils/avisoFueraDeGeocerca");
@@ -895,7 +896,8 @@ async function workerRoutes(app) {
                         salida: { not: null, gte: new Date(ahora.getTime() - cierreTurnos_1.VENTANA_TURNO_MS) },
                     },
                     orderBy: { salida: 'desc' },
-                    select: { fecha: true, salida: true, salidaAlmuerzo: true, salidaDescanso: true, descansoVentana: true },
+                    // El id, para cerrar en el grupo el aviso de «no ha vuelto» de esa pausa (13 de octubre de 2026).
+                    select: { id: true, fecha: true, salida: true, salidaAlmuerzo: true, salidaDescanso: true, descansoVentana: true },
                 });
                 // Y un descanso, solo hasta el fin del turno de su día más la gracia: la entrada de
                 // la mañana siguiente a un descanso sin regreso no es su regreso, es la de hoy, con
@@ -1004,6 +1006,11 @@ async function workerRoutes(app) {
                 if (col && !volviendoDePausa) {
                     (0, avisoNoHaLlegado_1.avisarSiYaLlego)(col.empresaId, col.id, `${col.nombre} ${col.apellido}`, entradaReal)
                         .catch(err => app.log.error(err, 'No se pudo avisar que ya llegó'));
+                }
+                // Y si volvía de una pausa por la que el barrido avisó que no había vuelto, lo mismo.
+                if (col && volviendoDePausa) {
+                    (0, avisoPausaSinVolver_1.avisarSiYaVolvio)(col.empresaId, volviendoDePausa.id, `${col.nombre} ${col.apellido}`, volviendoDePausa.salidaDescanso ? 'descanso' : 'almuerzo', entradaReal)
+                        .catch(err => app.log.error(err, 'No se pudo avisar que ya volvió'));
                 }
                 return { accion: 'ENTRADA', registro: nuevo, hora: entradaReal, regresoEstimado: esRegresoEstimado };
             }

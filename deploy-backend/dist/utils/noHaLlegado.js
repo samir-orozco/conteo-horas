@@ -3,6 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.CLAVE_NO_HA_LLEGADO = exports.MINUTOS_DE_ESPERA = void 0;
 exports.quienesNoHanLlegado = quienesNoHanLlegado;
 exports.horaLegible = horaLegible;
+exports.horaDeBogota = horaDeBogota;
 exports.mensajeNoHanLlegado = mensajeNoHanLlegado;
 exports.mensajeYaLlego = mensajeYaLlego;
 exports.cuerpoYaLlego = cuerpoYaLlego;
