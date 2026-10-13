@@ -91,4 +91,14 @@ describe('TabConexiones: los avisos de Telegram', () => {
     await userEvent.click(sw);
     expect(put).toHaveBeenLastCalledWith('/configuracion', { TELEGRAM_NOVEDADES: '0' });
   });
+
+  it('el aviso de pausas sin volver tiene su interruptor y también muestra los pasos del chat (13 de octubre de 2026)', async () => {
+    conConfig({ TELEGRAM_PAUSAS: '1' });
+    montar();
+    const sw = await interruptor(/no ha vuelto de su pausa/i);
+    await waitFor(() => expect(sw).toHaveAttribute('aria-checked', 'true'));
+    expect(screen.getByLabelText(/id del chat de telegram/i)).toBeInTheDocument();
+    await userEvent.click(sw);
+    expect(put).toHaveBeenLastCalledWith('/configuracion', { TELEGRAM_PAUSAS: '0' });
+  });
 });

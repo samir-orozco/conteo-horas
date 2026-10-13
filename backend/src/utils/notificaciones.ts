@@ -26,7 +26,10 @@ export type TipoNotif =
   | 'RESUMEN_SEMANAL'
   // Alguien tenía turno, pasó su tolerancia más 15 minutos y no marcó. Lo escribe el barrido de
   // avisoNoHaLlegado.ts junto con el mensaje de Telegram (11 de octubre de 2026).
-  | 'NO_HA_LLEGADO';
+  | 'NO_HA_LLEGADO'
+  // Alguien no volvió de su almuerzo o descanso 15 minutos después de la hora. Lo escribe el barrido
+  // de avisoPausaSinVolver.ts junto con el mensaje de Telegram (13 de octubre de 2026).
+  | 'PAUSA_SIN_VOLVER';
 
 type NuevaNotif = {
   tipo: TipoNotif;

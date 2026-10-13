@@ -13,6 +13,8 @@ export default function TabConexiones() {
   const [noHaLlegado, setNoHaLlegado] = useState(false);
   // Novedades por aprobar (12 de octubre de 2026): sin tipo ni motivo, que pueden ser de salud.
   const [novedades, setNovedades] = useState(false);
+  // Pausas sin volver (13 de octubre de 2026): almuerzo o descanso 15 minutos pasado su regreso.
+  const [pausas, setPausas] = useState(false);
   const [chatId, setChatId] = useState('');
   const [guardandoTg, setGuardandoTg] = useState(false);
   const [probandoTg, setProbandoTg] = useState(false);
@@ -23,6 +25,7 @@ export default function TabConexiones() {
       setAlertasTarde(r.data.TELEGRAM_ALERTAS_TARDE === '1');
       setNoHaLlegado(r.data.TELEGRAM_NO_HA_LLEGADO === '1');
       setNovedades(r.data.TELEGRAM_NOVEDADES === '1');
+      setPausas(r.data.TELEGRAM_PAUSAS === '1');
       setChatId(r.data.TELEGRAM_CHAT_ID || '');
       setCargado(true);
     });
@@ -45,9 +48,10 @@ export default function TabConexiones() {
   const toggleAlertas = () => cambiarAviso('TELEGRAM_ALERTAS_TARDE', alertasTarde, setAlertasTarde);
   const toggleNoHaLlegado = () => cambiarAviso('TELEGRAM_NO_HA_LLEGADO', noHaLlegado, setNoHaLlegado);
   const toggleNovedades = () => cambiarAviso('TELEGRAM_NOVEDADES', novedades, setNovedades);
+  const togglePausas = () => cambiarAviso('TELEGRAM_PAUSAS', pausas, setPausas);
 
   // Los pasos del chat se ven con CUALQUIERA de los dos avisos encendido: lo comparten.
-  const algunAviso = alertasTarde || noHaLlegado || novedades;
+  const algunAviso = alertasTarde || noHaLlegado || novedades || pausas;
 
   const guardarChat = async () => {
     setGuardandoTg(true); setMsgTg(null);
@@ -104,6 +108,17 @@ export default function TabConexiones() {
               </p>
             </div>
             <Interruptor encendido={noHaLlegado} onClick={toggleNoHaLlegado} disabled={!cargado} etiqueta="tg-no-llego" />
+          </div>
+
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <p id="tg-pausas" className="font-medium text-ink text-sm mb-0.5">Quién no ha vuelto de su pausa</p>
+              <p className="text-sm text-muted">
+                Si alguien no marca su regreso del almuerzo o de un descanso <b>15 minutos</b> después de la hora,
+                llega un mensaje con la lista, y otro cuando vuelve. También queda en la campana.
+              </p>
+            </div>
+            <Interruptor encendido={pausas} onClick={togglePausas} disabled={!cargado} etiqueta="tg-pausas" />
           </div>
 
           <div className="flex items-start justify-between gap-4">

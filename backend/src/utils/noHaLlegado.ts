@@ -74,7 +74,7 @@ export function horaLegible(hhmm: string): string {
 }
 
 // La hora de pared de Bogotá de un instante, "HH:MM". Colombia es UTC-5 fijo.
-function horaDeBogota(instante: Date): string {
+export function horaDeBogota(instante: Date): string {
   const { inicioDia } = rangoDiaBogota(instante);
   const min = Math.floor((instante.getTime() - inicioDia.getTime()) / MIN);
   return `${String(Math.floor(min / 60)).padStart(2, '0')}:${String(min % 60).padStart(2, '0')}`;

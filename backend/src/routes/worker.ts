@@ -7,6 +7,7 @@ import { esDescriptorValido, identificarRostro, esParecidoDudoso, continuidadCon
 import { camposDeAutenticacion } from '../utils/metodoMarcacion';
 import { enviarTelegram } from '../utils/telegram';
 import { avisarSiYaLlego } from '../utils/avisoNoHaLlegado';
+import { avisarSiYaVolvio } from '../utils/avisoPausaSinVolver';
 import { mensajesDelKiosco, CLAVE_NOVEDADES } from '../utils/telegramDelKiosco';
 import { notificar } from '../utils/notificaciones';
 import { avisoFueraDeGeocerca, type Momento } from '../utils/avisoFueraDeGeocerca';
@@ -935,7 +936,8 @@ export default async function workerRoutes(app: FastifyInstance) {
             salida: { not: null, gte: new Date(ahora.getTime() - VENTANA_TURNO_MS) },
           },
           orderBy: { salida: 'desc' },
-          select: { fecha: true, salida: true, salidaAlmuerzo: true, salidaDescanso: true, descansoVentana: true },
+          // El id, para cerrar en el grupo el aviso de «no ha vuelto» de esa pausa (13 de octubre de 2026).
+          select: { id: true, fecha: true, salida: true, salidaAlmuerzo: true, salidaDescanso: true, descansoVentana: true },
         });
         // Y un descanso, solo hasta el fin del turno de su día más la gracia: la entrada de
         // la mañana siguiente a un descanso sin regreso no es su regreso, es la de hoy, con
@@ -1051,6 +1053,11 @@ export default async function workerRoutes(app: FastifyInstance) {
         if (col && !volviendoDePausa) {
           avisarSiYaLlego(col.empresaId, col.id, `${col.nombre} ${col.apellido}`, entradaReal)
             .catch(err => app.log.error(err, 'No se pudo avisar que ya llegó'));
+        }
+        // Y si volvía de una pausa por la que el barrido avisó que no había vuelto, lo mismo.
+        if (col && volviendoDePausa) {
+          avisarSiYaVolvio(col.empresaId, volviendoDePausa.id, `${col.nombre} ${col.apellido}`, volviendoDePausa.salidaDescanso ? 'descanso' : 'almuerzo', entradaReal)
+            .catch(err => app.log.error(err, 'No se pudo avisar que ya volvió'));
         }
         return { accion: 'ENTRADA', registro: nuevo, hora: entradaReal, regresoEstimado: esRegresoEstimado };
       }
