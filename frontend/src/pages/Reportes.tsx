@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 import SelectorRangoFechas from '../components/SelectorRangoFechas';
+import SelectorPeriodoDePago from '../components/SelectorPeriodoDePago';
+import { totalDelReporte, avisoSinTotal, textoDelPeriodo, hoyEnBogota } from '../lib/periodoDePago';
 import SelectorColaborador from '../components/SelectorColaborador';
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
@@ -144,7 +146,16 @@ export default function Reportes() {
   // Informativo: el total que saldría si las extras se cruzaran con el faltante. NO es lo que se
   // liquida; la política no está decidida (1 de octubre de 2026).
   const cruce = reporte?.saldo && !reporte.saldo.sinHorario ? reporte.saldo.cruce : null;
-  const totalDeHoy = reporte ? reporte.salarioBase + reporte.totalAdicional - descuentoSaldo : 0;
+  // El salario y el total del PERÍODO DE PAGO (13 de octubre de 2026): medio salario por quincena, el entero
+  // por mes. Sin período, o con uno que no ha terminado, no hay total (lib/periodoDePago.ts). Con las fechas
+  // del reporte calculado, no con las del selector, que pueden haber cambiado sin volver a calcular.
+  const pago = reporte ? totalDelReporte({
+    desde: reporte.desde, hasta: reporte.hasta, salarioMensual: reporte.salarioBase,
+    totalAdicional: reporte.totalAdicional, descuento: descuentoSaldo, hoy: hoyEnBogota(),
+  }) : null;
+  const totalDeHoy = pago?.estado === 'TOTAL' ? pago.total : 0;
+  const rotuloSalario = pago?.estado === 'TOTAL' ? `Salario de la ${textoDelPeriodo(pago.periodo)}` : 'Salario base mensual';
+  const salarioMostrado = pago?.estado === 'TOTAL' ? pago.salario : reporte?.salarioBase ?? 0;
   const totalConCruce = cruce ? totalDeHoy + cruce.diferenciaDePago : 0;
 
   const exportarExcel = () => {
@@ -158,20 +169,22 @@ export default function Reportes() {
     liqFilas.push(['', 'Total recargos del período', '', '', '', Math.round(reporte.totalRecargos)]);
     liqFilas.push(['', 'Total horas extra del período', '', '', '', Math.round(reporte.totalExtra)]);
     liqFilas.push(['', 'Subtotal (adicional al salario)', '', '', '', Math.round(reporte.totalAdicional)]);
-    liqFilas.push(['', 'Salario base mensual', '', '', '', Math.round(reporte.salarioBase)]);
+    liqFilas.push(['', rotuloSalario, '', '', '', Math.round(salarioMostrado)]);
     if (descuentoSaldo > 0) {
       liqFilas.push(['', `Saldo pendiente (${fmtMin(reporte.saldo!.minutosSaldo)} sin reponer)`, '', '', '', -Math.round(descuentoSaldo)]);
     }
-    liqFilas.push(['', 'TOTAL A PAGAR', '', '', '', Math.round(reporte.salarioBase + reporte.totalAdicional - descuentoSaldo)]);
+    // Sin período terminado no hay total: la fila dice por qué, para que nadie lo sume a mano con el salario
+    // del mes completo.
+    if (pago?.estado === 'TOTAL') liqFilas.push(['', 'TOTAL A PAGAR', '', '', '', Math.round(pago.total)]);
+    else if (pago) liqFilas.push(['', `Sin total a pagar: ${avisoSinTotal(pago)}`, '', '', '', '']);
     // Informativas y fuera del total: lo trabajado en conjunto y el efecto de cruzar las extras.
     if (reporte.saldo && !reporte.saldo.sinHorario && reporte.saldo.minutosTotalTrabajados !== undefined && (reporte.saldo.minutosExtra ?? 0) > 0) {
       liqFilas.push(['', `Informativo: total trabajado ${fmtMin(reporte.saldo.minutosTotalTrabajados)} (${fmtMin(reporte.saldo.minutosTrabajados)} ordinarias + ${fmtMin(reporte.saldo.minutosExtra!)} extra)`, '', '', '', '']);
     }
-    if (cruce) {
+    if (cruce && pago?.estado === 'TOTAL') {
       liqFilas.push(['', `Informativo: si las extras se cruzaran con el faltante, total a pagar (no es lo que se liquida)`, '', '', '', Math.round(totalConCruce)]);
     }
-    // Debajo del total y fuera de él: el auxilio no es salario, y ese total suma el salario del mes
-    // completo a cualquier rango (defecto conocido, pendiente del módulo de período de pago).
+    // Debajo del total y fuera de él: el auxilio no es salario y se paga aparte.
     if (reporte.auxilioTransporte && reporte.auxilioTransporte > 0) {
       liqFilas.push(['', 'Auxilio de transporte del período (se paga aparte)', '', '', '', Math.round(reporte.auxilioTransporte)]);
     }
@@ -221,6 +234,7 @@ export default function Reportes() {
             textoTodos="Seleccionar colaborador"
             permiteTodos={false}
           />
+          <SelectorPeriodoDePago desde={desde} hasta={hasta} onCambiar={(d, h) => { setDesde(d); setHasta(h); }} />
           <SelectorRangoFechas desde={desde} hasta={hasta} onCambiar={(d, h) => { setDesde(d); setHasta(h); }} />
           <div>
             <button onClick={calcular} disabled={loading || !colaboradorId}
@@ -413,7 +427,7 @@ export default function Reportes() {
               <span className="text-ink font-semibold">{fmt(reporte.totalAdicional)}</span>
             </div>
             <div className="flex justify-between text-muted">
-              <span>Salario base mensual</span><span className="text-ink font-medium">{fmt(reporte.salarioBase)}</span>
+              <span>{rotuloSalario}</span><span className="text-ink font-medium">{fmt(salarioMostrado)}</span>
             </div>
             {descuentoSaldo > 0 && (
               <div className="flex justify-between">
@@ -421,13 +435,18 @@ export default function Reportes() {
                 <span className="text-red-700 font-semibold">−{fmt(descuentoSaldo)}</span>
               </div>
             )}
-            <div className="flex justify-between border-t border-gray-200 pt-2">
-              <span className="font-bold text-ink">Total a pagar</span>
-              <span className="font-bold text-ink text-lg">{fmt(reporte.salarioBase + reporte.totalAdicional - descuentoSaldo)}</span>
-            </div>
+            {pago?.estado === 'TOTAL' ? (
+              <div className="flex justify-between border-t border-gray-200 pt-2">
+                <span className="font-bold text-ink">Total a pagar</span>
+                <span className="font-bold text-ink text-lg">{fmt(pago.total)}</span>
+              </div>
+            ) : pago && (
+              // Sin período de pago terminado no hay total (decisión del dueño, 13 de octubre de 2026).
+              <p className="border-t border-gray-200 pt-2 text-xs text-muted">{avisoSinTotal(pago)}</p>
+            )}
             {/* Qué pasaría si las extras se cruzaran con el faltante. Informativo y aparte: no toca el
                 total de arriba, porque la política no está decidida. */}
-            {cruce && (
+            {cruce && pago?.estado === 'TOTAL' && (
               <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50/60 px-4 py-3 text-xs space-y-1">
                 <p className="font-semibold text-amber-900">Si las extras se cruzaran con el faltante</p>
                 <p className="text-amber-900/80">

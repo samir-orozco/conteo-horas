@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { format } from 'date-fns';
 import { Search, Download, ChevronDown, FileSpreadsheet, AlertTriangle, Eye } from 'lucide-react';
+import SelectorPeriodoDePago from '../components/SelectorPeriodoDePago';
+import { periodoDeLasFechas, salarioDelPeriodo } from '../lib/periodoDePago';
 import SelectorRangoFechas from '../components/SelectorRangoFechas';
 import SedesDeFila from '../components/SedesDeFila';
 import api from '../lib/api';
@@ -15,8 +17,9 @@ import ModalDetalleDePersona from '../features/reportes/ModalDetalleDePersona';
 // HoraPro y el de Siigo. El de Siigo baja DIRECTO, con el mismo formato que da Siigo y ya lleno: el
 // sistema lleva su plantilla adentro y no hay que subir nada.
 //
-// El salario va como BASE del cálculo, no como total a pagar: en una quincena el salario del mes
-// completo no es lo que se paga, y ese módulo todavía no existe.
+// El salario: con un PERÍODO DE PAGO (primera quincena, segunda quincena o mes completo, 13 de octubre de
+// 2026), la columna es el salario del período; con otras fechas, el mensual, dicho como mensual.
+// lib/periodoDePago.ts.
 
 const fmt = (n: number) => new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(n);
 const horas = (min: number) => `${Math.floor(min / 60)}h ${String(Math.round(min % 60)).padStart(2, '0')}m`;
@@ -119,6 +122,9 @@ export default function ReporteNomina() {
   const filas = personas ?? [];
   const total = (f: (p: PersonaDeNomina) => number) => filas.reduce((s, p) => s + f(p), 0);
   const sinDatos = !personas || filas.length === 0;
+  // De las fechas del reporte calculado, no de las del selector, que pueden haber cambiado sin buscar.
+  const dePago = periodoDeLasFechas(periodo.desde, periodo.hasta);
+  const salarioDe = (p: PersonaDeNomina) => (dePago ? salarioDelPeriodo(p.salarioMensual, dePago.tipo) : p.salarioMensual);
 
   return (
     <div className="p-4 md:p-6 w-full">
@@ -134,6 +140,7 @@ export default function ReporteNomina() {
               {sedes.map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
             </select>
           )}
+          <SelectorPeriodoDePago desde={desde} hasta={hasta} onCambiar={(d, h) => { setDesde(d); setHasta(h); }} />
           <SelectorRangoFechas desde={desde} hasta={hasta} onCambiar={(d, h) => { setDesde(d); setHasta(h); }} />
           <button onClick={buscar} disabled={loading}
             className="flex items-center justify-center gap-2 bg-blue-800 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium disabled:opacity-60">
@@ -187,7 +194,7 @@ export default function ReporteNomina() {
               <tr>
                 <th className="px-3 py-2 text-left">Colaborador</th>
                 {variasSedes && <th className="px-3 py-2 text-left">Sede</th>}
-                <th className="px-3 py-2 text-right">Salario base</th>
+                <th className="px-3 py-2 text-right">{dePago ? 'Salario del período' : 'Salario mensual'}</th>
                 {/* «JORNADA ORDINARIA» Y NO «ORDINARIAS» (30 de septiembre de 2026). Esta celda pinta
                     `minutosOrdinarios`, o sea TODO lo que no es extra: diurnas, nocturnas y de descanso.
                     El Excel de esta misma pantalla tenía una columna «Horas ordinarias» que contaba SOLO
@@ -209,7 +216,7 @@ export default function ReporteNomina() {
                     {p.cedula && <span className="text-xs text-muted block">{p.cedula}</span>}
                   </td>
                   {variasSedes && <td className="px-3 py-2.5"><SedesDeFila sedes={p.sedes ?? []} /></td>}
-                  <td className="px-3 py-2.5 text-right text-gray-600">{fmt(p.salarioMensual)}</td>
+                  <td className="px-3 py-2.5 text-right text-gray-600">{fmt(salarioDe(p))}</td>
                   <td className="px-3 py-2.5 text-right text-gray-600">{horas(p.minutosOrdinarios)}</td>
                   <td className="px-3 py-2.5 text-right text-gray-600">{fmt(p.totalRecargos)}</td>
                   <td className="px-3 py-2.5 text-right text-gray-600">{fmt(p.totalExtra)}</td>

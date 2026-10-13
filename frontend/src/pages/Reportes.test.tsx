@@ -69,13 +69,9 @@ const cabecera = (titulo: HTMLElement) =>
 
 // EL AUXILIO SE MUESTRA, PERO FUERA DEL TOTAL (17 de septiembre de 2026).
 //
-// El «Total a pagar» de esta pantalla suma el salario MENSUAL completo a cualquier rango: pidiendo
-// del 1 al 15 muestra un salario entero de más. Es un defecto conocido desde el 2 de septiembre y
-// el dueño decidió posponerlo hasta que exista el módulo de período de pago.
-//
-// Por eso el auxilio va en su propia línea DEBAJO del total y marcado como que se paga aparte:
-// meterlo dentro sería apilar una cifra correcta sobre una equivocada, y ponerlo encima invitaría a
-// sumarlo mentalmente a un total que no lo incluye.
+// El auxilio va en su propia línea DEBAJO del total y marcado como que se paga aparte: no es salario,
+// y ponerlo encima invitaría a sumarlo mentalmente a un total que no lo incluye. El total usa el
+// salario del período de pago desde el 13 de octubre de 2026 (ver el último bloque de este archivo).
 describe('el auxilio de transporte en el reporte por persona', () => {
   // Con `totalAdicional` en cero, el total a pagar valdría lo mismo que el salario y la prueba no
   // podría distinguir un total que suma el auxilio de uno que no. Se le da un valor propio.
@@ -99,16 +95,17 @@ describe('el auxilio de transporte en el reporte por persona', () => {
     const fila = (etiqueta: string) => liquidacion.filas.find(f => String(f[1]).includes(etiqueta));
 
     expect(fila('Auxilio de transporte del período')?.[5]).toBe(58_122);
-    // 1.750.000 de salario + 200.000 de adicional. Si el auxilio se colara, serían 2.008.122.
-    expect(fila('TOTAL A PAGAR')?.[5]).toBe(1_950_000);
+    // Medio salario (es la primera quincena de septiembre) + 200.000 de adicional. Si el auxilio se colara,
+    // serían 1.133.122.
+    expect(fila('TOTAL A PAGAR')?.[5]).toBe(1_075_000);
   });
 
-  it('no se suma al total a pagar: 1.750.000 más 200.000, sin los 58.122 del auxilio', async () => {
+  it('no se suma al total a pagar: 875.000 más 200.000, sin los 58.122 del auxilio', async () => {
     await calcularPara(conAdicional(reporteDe(JULIAN, 5, 11)), JULIAN);
     const textos = screen.getAllByText(/\$/).map(e => (e.textContent ?? '').replace(/\s+/g, ' '));
-    expect(textos).toContain('$ 1.950.000');
+    expect(textos).toContain('$ 1.075.000');
     // Lo que saldría si el auxilio se hubiera colado dentro del total.
-    expect(textos).not.toContain('$ 2.008.122');
+    expect(textos).not.toContain('$ 1.133.122');
   });
 });
 
@@ -202,14 +199,15 @@ describe('el total trabajado y el cruce de las extras en el reporte por persona'
     expect(screen.getByText(/si las extras se cruzaran con el faltante/i)).toBeInTheDocument();
     // Quedaría debiendo 344 min = 5h44, el total con cruce y la diferencia contra el de hoy.
     expect(textos().some(t => t.includes('5h 44min'))).toBe(true);
-    expect(textos()).toContain('$ 2.189.452');
+    // El total de hoy (1.093.073,5) más la diferencia del cruce (−29.074,3).
+    expect(textos()).toContain('$ 1.063.999');
     expect(textos().some(t => /29\.074/.test(t))).toBe(true);
     expect(screen.getByText(/no es lo que se liquida/i)).toBeInTheDocument();
   });
 
-  it('el total a pagar de hoy NO cambia por el cruce: 2.250.905 + 110.357 − 142.736', async () => {
+  it('el total a pagar de hoy NO cambia por el cruce: 2.250.905 / 2 + 110.357 − 142.736', async () => {
     await calcularAna(reporteDeAna(saldoDeAna));
-    expect(textos()).toContain('$ 2.218.526');
+    expect(textos()).toContain('$ 1.093.074');
   });
 
   it('sin cruce posible no se muestra el panel', async () => {
@@ -223,8 +221,87 @@ describe('el total trabajado y el cruce de las extras en el reporte por persona'
     const hojas = exportar.mock.calls.at(-1)![1] as { nombre: string; filas: (string | number)[][] }[];
     const filas = hojas.find(h => h.nombre === 'Liquidación')!.filas;
     const fila = (e: string) => filas.find(f => String(f[1]).includes(e));
-    expect(fila('TOTAL A PAGAR')?.[5]).toBe(2_218_526);
+    expect(fila('TOTAL A PAGAR')?.[5]).toBe(1_093_074);
     expect(fila('Informativo: total trabajado')?.[1]).toContain('176h 46min');
-    expect(fila('Informativo: si las extras se cruzaran')?.[5]).toBe(2_189_452);
+    expect(fila('Informativo: si las extras se cruzaran')?.[5]).toBe(1_063_999);
+  });
+});
+
+// EL PERÍODO DE PAGO (13 de octubre de 2026, decisión del dueño). El «Total a pagar» sumaba el salario MENSUAL
+// completo a cualquier rango. Ahora el salario es el del período (medio salario por quincena, el entero por
+// mes) y, si las fechas no son un período de pago o el período no ha terminado, no hay total: cualquier número
+// sería inventado. La regla, con sus casos, en lib/periodoDePago.test.ts.
+describe('el período de pago en el reporte por persona', () => {
+  const conAdicional = (r: ReturnType<typeof reporteDe>) => ({ ...r, totalAdicional: 200_000, totalExtra: 200_000 });
+  const textos = () => screen.getAllByText(/./).map(e => (e.textContent ?? '').replace(/\s+/g, ' ').trim());
+
+  it('la pantalla ofrece el período de pago', async () => {
+    montar(reporteDe(JULIAN, 5, 11));
+    expect(await screen.findByRole('combobox', { name: 'Período de pago' })).toBeInTheDocument();
+  });
+
+  it('en una quincena terminada, el salario es medio salario y lo dice', async () => {
+    await calcularPara(conAdicional(reporteDe(JULIAN, 5, 11)), JULIAN);
+    expect(textos()).toContain('Salario de la primera quincena de septiembre de 2026');
+    expect(textos()).toContain('$ 875.000');
+    expect(textos()).not.toContain('Salario base mensual');
+  });
+
+  it('con fechas que no son un período, no hay total y se pide elegir uno', async () => {
+    await calcularPara(conAdicional({ ...reporteDe(JULIAN, 5, 11), hasta: '2026-09-13' }), JULIAN);
+    expect(screen.queryByText('Total a pagar')).not.toBeInTheDocument();
+    expect(screen.getByText(/elige un período de pago/)).toBeInTheDocument();
+    // El salario que se muestra sigue siendo el mensual, dicho como mensual: no hay período que prorratear.
+    expect(textos()).toContain('Salario base mensual');
+  });
+
+  it('con un período que no ha terminado, no hay total y se dice cuándo termina', async () => {
+    await calcularPara(conAdicional({ ...reporteDe(JULIAN, 5, 11), desde: '2099-01-01', hasta: '2099-01-15' }), JULIAN);
+    expect(screen.queryByText('Total a pagar')).not.toBeInTheDocument();
+    expect(screen.getByText(/termina el 15 de enero/)).toBeInTheDocument();
+  });
+
+  it('sin total tampoco hay «total con el cruce»', async () => {
+    const saldo = {
+      sinHorario: false, minutosEsperados: 600, minutosPermisoRemunerado: 0, minutosPermisoNoRemunerado: 0,
+      minutosTrabajados: 480, minutosSaldo: 120, valorHora: 8_000, montoSaldo: 16_000, minutosExtra: 60, minutosTotalTrabajados: 540,
+      cruce: { minutosAbsorbidos: 60, minutosSaldo: 60, montoSaldo: 8_000, extraPagado: 0, diferenciaDePago: -2_000 },
+    };
+    await calcularPara({ ...conAdicional(reporteDe(JULIAN, 5, 11)), hasta: '2026-09-13', saldo } as ReturnType<typeof reporteDe>, JULIAN);
+    expect(screen.queryByText(/total a pagar con el cruce/i)).not.toBeInTheDocument();
+  });
+
+  it('el Excel sin total tampoco lleva el «total con el cruce»', async () => {
+    const usuario = userEvent.setup();
+    const saldo = {
+      sinHorario: false, minutosEsperados: 600, minutosPermisoRemunerado: 0, minutosPermisoNoRemunerado: 0,
+      minutosTrabajados: 480, minutosSaldo: 120, valorHora: 8_000, montoSaldo: 16_000, minutosExtra: 60, minutosTotalTrabajados: 540,
+      cruce: { minutosAbsorbidos: 60, minutosSaldo: 60, montoSaldo: 8_000, extraPagado: 0, diferenciaDePago: -2_000 },
+    };
+    await calcularPara({ ...conAdicional(reporteDe(JULIAN, 5, 11)), hasta: '2026-09-13', saldo } as ReturnType<typeof reporteDe>, JULIAN);
+    await usuario.click(screen.getByRole('button', { name: /Descargar Excel/i }));
+    const filas = (exportar.mock.calls.at(-1)![1] as { nombre: string; filas: (string | number)[][] }[])
+      .find(h => h.nombre === 'Liquidación')!.filas;
+    expect(filas.some(f => String(f[1]).includes('total trabajado'))).toBe(true);
+    expect(filas.some(f => String(f[1]).includes('si las extras se cruzaran'))).toBe(false);
+  });
+
+  it('el Excel sin período no lleva TOTAL A PAGAR, y dice por qué', async () => {
+    const usuario = userEvent.setup();
+    await calcularPara(conAdicional({ ...reporteDe(JULIAN, 5, 11), hasta: '2026-09-13' }), JULIAN);
+    await usuario.click(screen.getByRole('button', { name: /Descargar Excel/i }));
+    const filas = (exportar.mock.calls.at(-1)![1] as { nombre: string; filas: (string | number)[][] }[])
+      .find(h => h.nombre === 'Liquidación')!.filas;
+    expect(filas.some(f => String(f[1]).includes('TOTAL A PAGAR'))).toBe(false);
+    expect(filas.some(f => String(f[1]).includes('elige un período de pago'))).toBe(true);
+  });
+
+  it('el Excel de una quincena dice el salario de la quincena', async () => {
+    const usuario = userEvent.setup();
+    await calcularPara(conAdicional(reporteDe(JULIAN, 5, 11)), JULIAN);
+    await usuario.click(screen.getByRole('button', { name: /Descargar Excel/i }));
+    const filas = (exportar.mock.calls.at(-1)![1] as { nombre: string; filas: (string | number)[][] }[])
+      .find(h => h.nombre === 'Liquidación')!.filas;
+    expect(filas.find(f => String(f[1]) === 'Salario de la primera quincena de septiembre de 2026')?.[5]).toBe(875_000);
   });
 });

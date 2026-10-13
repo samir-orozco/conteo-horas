@@ -1,4 +1,5 @@
 import type { Hoja } from '../../lib/exportar';
+import { periodoDeLasFechas, salarioDelPeriodo } from '../../lib/periodoDePago';
 
 // El Excel de HoraPro del reporte de nómina del período (15 de septiembre de 2026).
 //
@@ -84,6 +85,9 @@ const horasDe = (p: PersonaDeNomina, codigo: string) =>
   p.liquidacion.filter(l => l.codigo === codigo).reduce((s, l) => s + l.horas, 0);
 
 export function hojasDeNomina(personas: PersonaDeNomina[], periodo: Periodo): Hoja[] {
+  // El salario del PERÍODO DE PAGO (13 de octubre de 2026): medio salario por quincena, el entero por mes. Si
+  // las fechas no son un período de pago, la celda va vacía: no hay período que prorratear.
+  const dePago = periodoDeLasFechas(periodo.desde, periodo.hasta);
   const resumen: Hoja = {
     nombre: 'Resumen',
     columnas: [
@@ -94,13 +98,14 @@ export function hojasDeNomina(personas: PersonaDeNomina[], periodo: Periodo): Ho
       // SOLO las HOD, así que nombra su concepto igual que las siete de `COLUMNAS_DE_CONCEPTO` que
       // vienen detrás. El nombre viejo chocaba con la columna «Ordinarias» de la pantalla, que suma
       // TODO lo que no es extra: mismo rótulo y dos cifras distintas para la misma persona.
-      'Cédula', 'Nombre', 'Cargo', 'Salario mensual', 'Valor hora', 'Auxilio de transporte',
+      'Cédula', 'Nombre', 'Cargo', 'Salario mensual', 'Valor hora', 'Salario del período', 'Auxilio de transporte',
       'Días con marcación', 'Marcaciones cerradas', 'Ordinaria diurna (h)',
       ...COLUMNAS_DE_CONCEPTO.map(c => c.titulo),
       'Recargos', 'Extras', 'Total adicional',
     ],
     filas: personas.map(p => [
-      p.cedula ?? '', nombreDe(p), p.cargo ?? '', p.salarioMensual, p.valorHora, p.auxilioTransporte ?? '',
+      p.cedula ?? '', nombreDe(p), p.cargo ?? '', p.salarioMensual, p.valorHora,
+      dePago ? salarioDelPeriodo(p.salarioMensual, dePago.tipo) : '', p.auxilioTransporte ?? '',
       p.diasCont ?? '', p.registrosCont,
       horasDe(p, ORDINARIA),
       ...COLUMNAS_DE_CONCEPTO.map(c => horasDe(p, c.codigo)),

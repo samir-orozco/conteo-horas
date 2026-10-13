@@ -176,3 +176,28 @@ describe('hojasDeNomina', () => {
     expect(n.filas[1]).toEqual(['1030405060', 'Luis Pérez', 'MEDICO', 'No', 0, 1]);
   });
 });
+
+// EL SALARIO DEL PERÍODO (13 de octubre de 2026, decisión del dueño). «Salario mensual» sigue siendo la base del
+// valor de la hora; al lado va lo que corresponde al período de pago: medio salario por quincena, el entero por
+// mes. Si las fechas no son un período de pago, la celda va vacía: no hay período que prorratear.
+describe('el salario del período en el resumen', () => {
+  const col = (periodo: { desde: string; hasta: string }, titulo: string) => {
+    const r = hojasDeNomina([ANA], periodo).find(h => h.nombre === 'Resumen')!;
+    return r.filas[0][r.columnas.indexOf(titulo)];
+  };
+
+  it('va justo después del valor de la hora', () => {
+    const r = hoja([ANA], 'Resumen');
+    expect(r.columnas.indexOf('Salario del período')).toBe(r.columnas.indexOf('Valor hora') + 1);
+  });
+
+  it('en una quincena es medio salario; en el mes, el salario entero', () => {
+    expect(col({ desde: '2026-09-01', hasta: '2026-09-15' }, 'Salario del período')).toBe(875_000);
+    expect(col({ desde: '2026-09-16', hasta: '2026-09-30' }, 'Salario del período')).toBe(875_000);
+    expect(col({ desde: '2026-09-01', hasta: '2026-09-30' }, 'Salario del período')).toBe(1_750_000);
+  });
+
+  it('con fechas que no son un período de pago, queda vacía', () => {
+    expect(col({ desde: '2026-09-01', hasta: '2026-09-13' }, 'Salario del período')).toBe('');
+  });
+});

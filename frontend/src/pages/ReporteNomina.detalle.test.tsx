@@ -237,3 +237,34 @@ describe('el detalle de una persona en el reporte de nómina', () => {
     expect(fila.closest('tr')!).toHaveTextContent('24h 00m');
   });
 });
+
+// EL SALARIO DEL PERÍODO EN LA TABLA (13 de octubre de 2026, decisión del dueño). La columna decía el salario
+// MENSUAL a cualquier rango. Con un período de pago muestra lo del período: medio salario por quincena. El
+// reloj de arriba está el 15 de septiembre, así que la pantalla abre del 1 al 15: la primera quincena.
+describe('el salario en la tabla de nómina', () => {
+  const columna = (titulo: string) => {
+    const titulos = Array.from(document.querySelectorAll('thead th')).map(th => th.textContent?.trim());
+    return titulos.indexOf(titulo);
+  };
+  const celdaDeAna = async (titulo: string) => {
+    const fila = (await screen.findByRole('button', { name: /Ana Gómez/ })).closest('tr')!;
+    return fila.querySelectorAll('td')[columna(titulo)]?.textContent?.replace(/\s+/g, ' ').trim();
+  };
+
+  it('ofrece el período de pago', async () => {
+    montar();
+    expect(await screen.findByRole('combobox', { name: 'Período de pago' })).toHaveDisplayValue('Primera quincena');
+  });
+
+  it('en una quincena la columna es «Salario del período», con medio salario', async () => {
+    montar();
+    expect(await celdaDeAna('Salario del período')).toBe('$ 875.000');
+  });
+
+  it('con fechas que no son un período, es el salario mensual, dicho como mensual', async () => {
+    vi.setSystemTime(new Date('2026-09-13T12:00:00Z'));
+    montar();
+    expect(await celdaDeAna('Salario mensual')).toBe('$ 1.750.000');
+    expect(columna('Salario del período')).toBe(-1);
+  });
+});
