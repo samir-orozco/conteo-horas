@@ -15,6 +15,8 @@ export default function TabConexiones() {
   const [novedades, setNovedades] = useState(false);
   // Pausas sin volver (13 de octubre de 2026): almuerzo o descanso 15 minutos pasado su regreso.
   const [pausas, setPausas] = useState(false);
+  // Turnos cerrados solos (13 de octubre de 2026): un mensaje cada mañana a las 7.
+  const [turnosCerrados, setTurnosCerrados] = useState(false);
   const [chatId, setChatId] = useState('');
   const [guardandoTg, setGuardandoTg] = useState(false);
   const [probandoTg, setProbandoTg] = useState(false);
@@ -26,6 +28,7 @@ export default function TabConexiones() {
       setNoHaLlegado(r.data.TELEGRAM_NO_HA_LLEGADO === '1');
       setNovedades(r.data.TELEGRAM_NOVEDADES === '1');
       setPausas(r.data.TELEGRAM_PAUSAS === '1');
+      setTurnosCerrados(r.data.TELEGRAM_TURNOS_CERRADOS === '1');
       setChatId(r.data.TELEGRAM_CHAT_ID || '');
       setCargado(true);
     });
@@ -49,9 +52,10 @@ export default function TabConexiones() {
   const toggleNoHaLlegado = () => cambiarAviso('TELEGRAM_NO_HA_LLEGADO', noHaLlegado, setNoHaLlegado);
   const toggleNovedades = () => cambiarAviso('TELEGRAM_NOVEDADES', novedades, setNovedades);
   const togglePausas = () => cambiarAviso('TELEGRAM_PAUSAS', pausas, setPausas);
+  const toggleTurnosCerrados = () => cambiarAviso('TELEGRAM_TURNOS_CERRADOS', turnosCerrados, setTurnosCerrados);
 
   // Los pasos del chat se ven con CUALQUIERA de los dos avisos encendido: lo comparten.
-  const algunAviso = alertasTarde || noHaLlegado || novedades || pausas;
+  const algunAviso = alertasTarde || noHaLlegado || novedades || pausas || turnosCerrados;
 
   const guardarChat = async () => {
     setGuardandoTg(true); setMsgTg(null);
@@ -130,6 +134,17 @@ export default function TabConexiones() {
               </p>
             </div>
             <Interruptor encendido={novedades} onClick={toggleNovedades} disabled={!cargado} etiqueta="tg-novedades" />
+          </div>
+
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <p id="tg-turnos-cerrados" className="font-medium text-ink text-sm mb-0.5">Turnos cerrados solos</p>
+              <p className="text-sm text-muted">
+                Cada mañana a las 7, si en la noche se cerró solo algún turno porque no marcaron la salida, llega la
+                lista con la hora que se estimó, para revisarla.
+              </p>
+            </div>
+            <Interruptor encendido={turnosCerrados} onClick={toggleTurnosCerrados} disabled={!cargado} etiqueta="tg-turnos-cerrados" />
           </div>
 
           {errorAviso && <p className="text-red-600 text-sm">No pudimos guardar el cambio. Intenta de nuevo.</p>}

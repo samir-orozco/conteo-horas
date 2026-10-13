@@ -101,4 +101,14 @@ describe('TabConexiones: los avisos de Telegram', () => {
     await userEvent.click(sw);
     expect(put).toHaveBeenLastCalledWith('/configuracion', { TELEGRAM_PAUSAS: '0' });
   });
+
+  it('el mensaje de turnos cerrados solos tiene su interruptor y también muestra los pasos del chat (13 de octubre de 2026)', async () => {
+    conConfig({ TELEGRAM_TURNOS_CERRADOS: '1' });
+    montar();
+    const sw = await interruptor(/turnos cerrados solos/i);
+    await waitFor(() => expect(sw).toHaveAttribute('aria-checked', 'true'));
+    expect(screen.getByLabelText(/id del chat de telegram/i)).toBeInTheDocument();
+    await userEvent.click(sw);
+    expect(put).toHaveBeenLastCalledWith('/configuracion', { TELEGRAM_TURNOS_CERRADOS: '0' });
+  });
 });

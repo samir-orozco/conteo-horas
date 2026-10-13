@@ -95,7 +95,7 @@ export function pausasPorAvisar(
 }
 
 // «a la 1:00 p.m.», «a las 3:15 p.m.»: la una va en singular.
-function aLaHora(d: Date): string {
+export function aLaHora(d: Date): string {
   const h = horaLegible(horaDeBogota(d));
   return `${h.startsWith('1:') ? 'a la' : 'a las'} ${h}`;
 }

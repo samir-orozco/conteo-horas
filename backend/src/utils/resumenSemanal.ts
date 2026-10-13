@@ -96,7 +96,7 @@ const horasDe = (p: Periodo) => sumar(p.horas, h => h.minutosOrdinarios + h.minu
 const nombreDe = (x: { nombre: string; apellido: string }) => `${x.nombre} ${x.apellido}`;
 
 // "2026-09-29" → "mar 29". Se lee de la cadena y no con el reloj de la máquina (§8.1).
-function diaCorto(fecha: string): string {
+export function diaCorto(fecha: string): string {
   const [a, m, d] = fecha.split('-').map(Number);
   return `${DIAS[new Date(Date.UTC(a, m - 1, d)).getUTCDay()]} ${d}`;
 }
