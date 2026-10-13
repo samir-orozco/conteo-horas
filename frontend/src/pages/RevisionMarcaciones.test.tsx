@@ -283,9 +283,15 @@ describe('el barrido del día', () => {
       evento({ clave: 'r2:entrada', registroId: 'r2', colaboradorId: 'c2' }),
       evento({ clave: 'r3:entrada', registroId: 'r3' }),
     ]);
-    await screen.findByText('1 / 3');
+    // ESPERAS DE 5 SEGUNDOS Y NO EL SEGUNDO POR DEFECTO (13 de octubre de 2026). Esta prueba falló tres
+    // veces en la suite completa (11 y 13 de octubre, y el 9 en otra sesión) y nunca corrida sola. Las tres
+    // con la máquina ocupada en otra cosa a la vez; en 17 corridas sin esa carga no se pudo reproducir.
+    // Encadena dos esperas —el contador y las tres fotos— y con un segundo cada una no alcanza cuando la
+    // máquina va lenta. Esperar más no debilita nada: las dos son cosas que TIENEN que pasar, y lo que la
+    // prueba protege, que el detector no corra solo, se comprueba después.
+    await screen.findByText('1 / 3', {}, { timeout: 5_000 });
     act(() => simularVisibles());
-    await waitFor(() => expect(get.mock.calls.filter(c => String(c[0]).endsWith('/fotos'))).toHaveLength(3));
+    await waitFor(() => expect(get.mock.calls.filter(c => String(c[0]).endsWith('/fotos'))).toHaveLength(3), { timeout: 5_000 });
     await new Promise(r => setTimeout(r, 30));
     expect(mirarUrl).not.toHaveBeenCalled();
   });
