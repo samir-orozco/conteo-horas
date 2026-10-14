@@ -26,13 +26,16 @@ una entrada «Editó un colaborador» guarda nombre, apellido, cédula, cargo, c
 Lo mismo pasa con la descripción de una novedad que cargue el administrador (puede ser un dato de salud) y con los comentarios
 del seguimiento del clima. Ese registro **no se borra nunca**, ni cuando el dato se corrige o se elimina en el producto.
 
-Hay dos salidas, y la decide el dueño con el abogado antes de redactar ese punto:
+Había dos salidas: cambiar el producto o declararlo en la política. **El dueño eligió cambiar el producto el 14 de octubre de
+2026, y ya está hecho en develop (sin desplegar):** la auditoría dice quién hizo qué, cuándo, desde qué IP y sobre cuál
+registro; del contenido guarda los nombres de los campos y los ids, nunca los valores. Solo las rutas cuyo contenido es de la
+empresa (sus sedes, horarios, festivos, configuración, plan y usuarios del panel) guardan los valores. Una ruta nueva nace
+protegida: la lista es de las que sí guardan, no de las que no. Las filas que ya estaban se limpian con un comando en el
+servidor al desplegar, con la misma regla. Así la promesa del punto 4 vuelve a ser cierta.
 
-- **(A) Cambiar el producto:** que la auditoría guarde quién hizo qué y sobre cuál registro, pero no los valores de los datos
-  del trabajador. La promesa del punto 4 vuelve a ser cierta. Es lo que se recomienda: es minimizar el dato, y la frase del
-  punto 4 es de las que más valor tienen frente a un cliente.
-- **(B) Cambiar la política:** declarar que el personal de HoraPro puede ver esos datos en el registro, para qué, y fijar un
-  plazo de conservación. Hoy no hay ninguno.
+**Lo que queda, y es otra cosa:** el registro de accesos guarda, de un intento rechazado en el kiosco, la cédula que se
+escribió, para detectar a quien prueba cédulas. Si la cédula es de un trabajador (por ejemplo, con un dígito errado), el super
+admin la ve. Lo decide el dueño: declararlo, como hace el texto del punto 3.1, o guardar solo una parte de la cédula.
 
 ## 1. Las otras cinco cosas que la 1.2 dice distinto de lo que el producto hace
 
@@ -104,13 +107,11 @@ Van en el orden de la política. Donde se cambia un texto que existe, está lo q
 
 > Además, HoraPro guarda en su propia base de datos un registro de lo que pasa en el panel: los errores, los intentos de
 > entrar que fueron rechazados, con el correo o la cédula que se escribió, y las acciones de los usuarios, como crear, cambiar
-> o borrar algo. Cada entrada lleva la fecha, la dirección IP, el
-> navegador, el usuario y la empresa, y dice qué se hizo y sobre cuál registro, sin copiar los datos de los trabajadores. Lo
-> consulta solo el personal de HoraPro, para diagnosticar fallas, atender reclamos y detectar abusos. Las marcaciones del
-> kiosco y las respuestas del clima laboral no se copian en ese registro.
-
-Si el dueño elige la salida B, la frase «sin copiar los datos de los trabajadores» se cambia por lo contrario y el punto 4
-deja de decir que HoraPro no tiene cómo verlos. Ese texto se redacta cuando se decida.
+> o borrar algo. Cada entrada lleva la fecha, la dirección IP, el navegador, el usuario y la empresa, y dice qué se hizo y
+> sobre cuál registro. De lo que se envió quedan los nombres de los campos, no sus valores: el registro no copia los datos de
+> los trabajadores ni de ninguna otra persona. Solo lo que es de la empresa, como sus sedes, sus horarios o su configuración,
+> queda con sus valores. Lo consulta solo el personal de HoraPro, para diagnosticar fallas, atender reclamos y detectar
+> abusos. Las marcaciones del kiosco y las respuestas del clima laboral no se copian en ese registro.
 
 ### 3.2 Punto 3.5 nuevo: de quien deja una opinión sobre HoraPro
 
@@ -277,11 +278,13 @@ pregunta a cada colaborador cómo le fue hoy. Los resultados se ven en Clima lab
 10. **Términos para la empresa.** No existen. `docs/CLIMA_LABORAL.md` los pedía para que la empresa acepte, entre otras cosas,
     que es la responsable de informar a su equipo y que HoraPro no le entrega el autor de una nota confidencial. ¿Hacen falta,
     o basta con el punto 4.1 de la política?
-11. **El registro del sistema (punto 0).** Si el dueño elige la salida B, ¿qué plazo de conservación y qué base legal?
+11. **El registro de accesos (final del punto 0).** ¿Guardar la cédula escrita en un intento rechazado del kiosco, para
+    detectar a quien prueba cédulas, cabe en la finalidad de seguridad si se declara, o conviene guardar solo una parte?
 
 ## 6. Lo que decide el dueño, no el abogado
 
-- **Punto 0:** salida A (la auditoría deja de copiar los datos del trabajador) o B (la política lo declara).
+- ~~**Punto 0:** salida A o B.~~ Decidido el 14 de octubre de 2026: A, hecha en develop.
+- **La cédula de los intentos rechazados del kiosco** (final del punto 0).
 - **El plazo del registro del sistema.**
 - **El texto del kiosco** del punto 4, y si va.
 - **Si se despliega antes de la respuesta del abogado.** Recomendación: lo que ya está en producción y la política dice mal

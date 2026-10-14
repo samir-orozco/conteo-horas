@@ -889,8 +889,12 @@ política (`frontend/blog/legal/privacidad.mjs`) NO se ha tocado: se cambia cuan
 apareció que la 1.2 publicada ya no es cierta en seis puntos, por funciones que salieron después del 4 de octubre:
 - **Lo grave:** el registro del sistema guarda el cuerpo de cada cambio del panel (nombre, cédula, salario de un
   trabajador, descripción de una novedad, comentarios del seguimiento) y el super admin lo ve, sin borrado. El punto 4
-  promete que HoraPro no tiene ninguna pantalla para ver eso. Decisión del dueño: cambiar la auditoría (recomendado) o la
-  política.
+  promete que HoraPro no tiene ninguna pantalla para ver eso. **El dueño eligió cambiar la auditoría (14 de octubre), y está
+  hecho en develop:** guarda los nombres de los campos y los ids, no los valores, salvo en las rutas cuyo cuerpo es de la
+  empresa (`CUERPO_DE_LA_EMPRESA` en `utils/auditoriaDePeticion.ts`). Las filas viejas se limpian AL DESPLEGAR con
+  `node dist/scripts/limpiar-auditoria.js` (sin `--aplicar` solo cuenta; con él escribe). En la base local limpió 1.267 de
+  1.379 filas. No depende de las fases 1 a 4: los archivos de la auditoría son iguales en producción y en develop, así que
+  se puede subir sola. Queda aparte la cédula de los intentos rechazados del kiosco (decide el dueño).
 - El correo de los lunes lleva nombres de trabajadores (el punto 8 dice que nunca); Telegram manda cinco clases de aviso (la
   política describe una); la geocerca guarda si se marcó fuera del área; el registro del sistema vive en nuestra base y no
   se borra; las reseñas con nombre son una finalidad que la 1.2 no tiene.
