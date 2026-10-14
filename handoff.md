@@ -761,6 +761,34 @@ números malos. Cada uno con su comprobación antes de tocarlo.
   pero son los más expuestos: si le cambian el horario, esos días se mueven
   enteros. Vale la pena averiguar por qué faltan.
 
+### La deuda de un período sin terminar cuenta días que no han llegado (14 de octubre de 2026): EN ESPERA, decisión del dueño
+
+**Qué pasa.** En el Reporte diario, con un período de pago que todavía no termina (por ejemplo la primera
+quincena de octubre vista el día 14), «Debía trabajar» cuenta TODOS los días del período, también los que
+aún no llegan. `calcularHorasEsperadas` (`backend/src/utils/saldoTiempo.ts`) recorre de `desde` a
+`finExclusivo` sin cortar en hoy. Resultado: «Queda debiendo» y la línea de descuento salen inflados, en rojo,
+por días que la persona no ha tenido cómo trabajar.
+
+**Caso medido en producción, Demo de NIT 901123456:** Laura Gómez trabajó todos los hábiles del 1 al 13 de
+octubre y el reporte del 14 dice «queda debiendo 14h 24min» y le descuenta $ 97.611: son casi exactamente el
+14 y el 15. No debe nada.
+
+**Lo que ya está desplegado para contenerlo** (`c4d11aa`, frontend-build `1c80483`): con el período sin terminar
+NO se muestra el total, sino un aviso de que los días que faltan cuentan como no trabajados. La tarjeta roja y
+la línea de descuento siguen apareciendo, con el número inflado.
+
+**La propuesta, que el dueño dejó para después («dejémoslo así por el momento»):**
+- En un período sin terminar, contar lo esperado **solo hasta ayer** (recomendado: hasta «este momento» haría
+  que a las 9 a. m. alguien deba casi todo el día). La tarjeta diría «Va debiendo (hasta ayer)».
+- Con eso, mostrar un **«Total a la fecha»** con su rótulo claro, en vez de esconderlo.
+- Cuando el período termina, todo vuelve a contarse completo. Los períodos cerrados no cambian ni un peso.
+
+**Por qué es delicado:** va en el servidor y decide cuánto se descuenta. Se haría con el ciclo de la §2 sobre
+`calcularHorasEsperadas` (o una función nueva que decida el corte) y con la comprobación diferencial de la §5:
+guardar el resultado de períodos ya cerrados antes del cambio y comprobar que después da exactamente lo mismo.
+El despliegue lleva backend y reinicio, no solo frontend. Las dos decisiones abiertas (corte en ayer o en este
+momento, y si se muestra el total a la fecha) tienen recomendación pero no respuesta del dueño.
+
 ### Nada que toque cientos de filas puede ir en una sola petición
 
 **Anotado el 24 de septiembre de 2026 a petición del dueño**, mientras se diseñaba
