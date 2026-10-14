@@ -1,14 +1,23 @@
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { prisma } from '../prisma';
 import { capacidadesDe, obtenerPlanes, mensajeDeFuncionBloqueada, type Capacidades, type FeatureKey } from './planes';
+import { funcionesConcedidas } from './concesiones';
 
-// Capacidades efectivas de una empresa (plan + overrides + acceso ilimitado).
+// Capacidades efectivas de una empresa (plan + overrides + funciones con fecha vigentes + acceso ilimitado).
 export async function capacidadesEmpresa(empresaId: string): Promise<Capacidades> {
+  const ahora = new Date();
   const [empresa, planes] = await Promise.all([
-    prisma.empresa.findUnique({ where: { id: empresaId }, include: { suscripcion: true } }),
+    prisma.empresa.findUnique({
+      where: { id: empresaId },
+      include: {
+        suscripcion: true,
+        // Solo las que pueden estar vigentes: el índice (empresaId, funcion) las encuentra sin recorrer la tabla.
+        concesiones: { where: { revocadaEn: null, hasta: { gt: ahora } }, select: { funcion: true, desde: true, hasta: true, revocadaEn: true } },
+      },
+    }),
     obtenerPlanes(prisma),
   ]);
-  return capacidadesDe(empresa?.suscripcion, empresa?.exentaPago ?? false, planes);
+  return capacidadesDe(empresa?.suscripcion, empresa?.exentaPago ?? false, planes, funcionesConcedidas(empresa?.concesiones ?? [], ahora));
 }
 
 // ¿La empresa tiene activa cierta función según su plan?

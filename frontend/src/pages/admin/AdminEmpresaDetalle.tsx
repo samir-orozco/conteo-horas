@@ -12,6 +12,8 @@ import VistaDeAdjunto from '../../components/VistaDeAdjunto';
 import { tipoDeDataUri } from '../../lib/archivos';
 import { funcionesDelPlan, funcionesExtra, cupoExtra, type CatalogoDePlanes } from '../../features/admin/planDeEmpresa';
 import CamposDePrecio from '../../features/admin/CamposDePrecio';
+import FuncionesConFecha from '../../features/admin/FuncionesConFecha';
+import type { Concesion } from '../../features/admin/concesionesDeEmpresa';
 import { precioDeLaSuscripcion, PRECIO_GLOBAL, type FormPrecio } from '../../features/admin/precioDelCliente';
 
 const cop = (n: number) =>
@@ -33,9 +35,14 @@ type Empresa = {
   colaboradoresActivos: number; tarifaMensual: number;
   capacidades: Capacidades;
   usuarios: { id: string; email: string; nombre: string; rol: string; activo: boolean; emailVerificado: boolean }[];
+  // Las funciones con fecha, todas: vigentes, vencidas y quitadas (14 de octubre de 2026, PENDIENTES nº 39).
+  // Opcional por la ventana del despliegue, en la que el servidor todavía no las manda.
+  concesiones?: Concesion[];
   suscripcion: {
     estadoEfectivo: string; diasMora: number; finPrueba: string; pagadoHasta: string | null; pagos: Pago[];
     plan: string; cicloPago: string; limiteOverride: number | null;
+    // Lo dado a la medida, sin fecha (el «EXTRA» de las casillas).
+    funcionesOverride?: Record<string, boolean> | null;
     // El precio propio del cliente, si tiene. Los tres modos están en
     // features/admin/precioDelCliente.ts.
     precioModo?: string | null; precioFijo?: number | null;
@@ -285,6 +292,19 @@ export default function AdminEmpresaDetalle() {
               </button>
               <span className="text-xs text-muted">Las funciones marcadas como <b className="text-emerald-700">EXTRA</b> van por encima del plan (a la medida).</span>
             </div>
+
+            {/* Lo que tiene GUARDADO, no lo que se está editando arriba: la tabla dice lo que la empresa tiene hoy. */}
+            {catalogo && (
+              <div className="border-t border-gray-100 mt-6 pt-5">
+                <FuncionesConFecha empresaId={empresa.id} funciones={catalogo.funciones}
+                  // Lo dado a la medida también puede APAGAR una función del plan: esa no cuenta como incluida.
+                  delPlan={Object.fromEntries(Object.entries(funcionesDelPlan(catalogo, empresa.suscripcion?.plan ?? 'PROFESIONAL'))
+                    .map(([k, v]) => [k, v && empresa.suscripcion?.funcionesOverride?.[k] !== false]))}
+                  extras={empresa.suscripcion?.funcionesOverride ?? {}}
+                  concesiones={empresa.concesiones ?? []}
+                  onCambio={() => { setToast('Funciones por un tiempo actualizadas'); cargar(); }} />
+              </div>
+            )}
           </>
         )}
       </div>

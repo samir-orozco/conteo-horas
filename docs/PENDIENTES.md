@@ -828,6 +828,15 @@ según el plan. La costura se comprueba con `backend/prisma/probar-calificacion-
 momento los trabajadores de TODAS las empresas ven las caritas al salir, y los administradores sin el plan todavía no
 ven nada hasta la fase 4. Conviene desplegarla junto con la 4, o avisarlo.
 
+Fase 2 hecha (14 de octubre de 2026), sin desplegar: tabla `concesiones_funcion` (SQL en `sql/concesiones-funcion.sql`,
+probado en MariaDB 12.3 y sin diferencias contra el esquema según Prisma), `utils/concesiones.ts` (vence sola al
+leer, solo enciende), las dos rutas que calculan funciones la incluyen (`capacidadesEmpresa` y la ficha del super
+admin), rutas POST/PUT/DELETE `/admin/empresas/:id/concesiones` y la tabla «Funciones por un tiempo» en la ficha. Se
+quita marcándola, no borrándola: queda el historial. Probado en el navegador local: dar «Varias sedes» a una empresa
+Profesional la enciende en `capacidadesEmpresa`, y quitarla la apaga. La cascada de eliminar empresa la cuenta
+(`verificar-eliminar-empresa.ts`). Despliegue de CUATRO ramas: SQL, prisma-build, backend, frontend. Esto cubre
+también PENDIENTES nº 7 en lo que toca a funciones (no el precio ni el cupo).
+
 ---
 
 ### Peticiones que eran la misma

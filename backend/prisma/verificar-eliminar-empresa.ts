@@ -98,6 +98,10 @@ async function sembrar(etiqueta: string, afiliadoId: string): Promise<Caso> {
   const resena = await prisma.resena.create({
     data: { origen: 'CLIENTE', estado: 'PUBLICADA', empresaId: empresa.id, usuarioId: usuario.id, estrellas: 5, texto: `Reseña ${s}`, comoAparece: 'ANONIMA' },
   });
+  // Su función con fecha (14 de octubre de 2026): también ON DELETE CASCADE; se comprueba que la cascada la cuente.
+  const concesion = await prisma.concesionFuncion.create({
+    data: { empresaId: empresa.id, funcion: 'clima', hasta: new Date(Date.now() + 30 * 86_400_000), origen: 'SUPER_ADMIN' },
+  });
   return {
     empresaId: empresa.id,
     colaboradorSede: { colaboradorId: colaborador.id, sedeId: sede.id },
@@ -112,7 +116,7 @@ async function sembrar(etiqueta: string, afiliadoId: string): Promise<Caso> {
       plantillas_turno: [plantilla.id],
       calificaciones_clima: [calificacion.id], observaciones_confidenciales: [confidencial.id],
       seguimientos_clima: [seguimiento.id], comentarios_seguimiento_clima: [comentario.id],
-      resenas: [resena.id],
+      resenas: [resena.id], concesiones_funcion: [concesion.id],
     },
   };
 }
@@ -151,13 +155,14 @@ async function contar(caso: Caso): Promise<Record<string, number>> {
     prisma.seguimientoClima.count(porId(f.seguimientos_clima)),
     prisma.comentarioSeguimientoClima.count(porId(f.comentarios_seguimiento_clima)),
     prisma.resena.count(porId(f.resenas)),
+    prisma.concesionFuncion.count(porId(f.concesiones_funcion)),
   ]);
   const tablas = ['empresas', 'suscripciones', 'pagos', 'comisiones', 'usuarios', 'horarios', 'franjas_horario', 'sedes',
     'colaboradores', 'colaboradores_sedes', 'dias_esperados', 'registros', 'registro_cambios', 'permisos', 'contratos',
     'prorrogas_contrato', 'vinculacion_eventos', 'dispositivos_kiosco', 'dias_festivos', 'configuracion', 'notificaciones',
     'constancias_biometricas', 'enlaces_registro_facial', 'plantillas_turno',
     'calificaciones_clima', 'observaciones_confidenciales', 'seguimientos_clima', 'comentarios_seguimiento_clima',
-    'resenas'];
+    'resenas', 'concesiones_funcion'];
   return Object.fromEntries(tablas.map((t, i) => [t, n[i]]));
 }
 

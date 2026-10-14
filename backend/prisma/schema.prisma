@@ -63,6 +63,8 @@ model Empresa {
   seguimientosClima    SeguimientoClima[]
   // Una sola por empresa (docs/RESENAS.md, D1): la que envió, la que omitió o la que cargó el dueño.
   resena               Resena?
+  // Funciones dadas por un tiempo (14 de octubre de 2026): la prueba gratis y lo que da el super admin.
+  concesiones          ConcesionFuncion[]
 
   @@map("empresas")
 }
@@ -95,6 +97,34 @@ model Suscripcion {
   pagos             Pago[]
 
   @@map("suscripciones")
+}
+
+// FUNCIONES CON FECHA (14 de octubre de 2026, PENDIENTES nº 39, fase 2). Una función que la empresa tiene POR UN
+// TIEMPO, por encima de su plan: la que da el super admin («pruébalo 2 meses») o la prueba gratis del clima. Solo
+// enciende, nunca apaga lo que el plan trae, y vence sola: las capacidades se calculan al leer contra `hasta`
+// (utils/concesiones.ts), sin un barrido que tenga que acordarse de apagarla.
+//
+// No se borra al quitarla: se marca `revocadaEn`, para que quede el historial de quién dio qué y cuándo. Ese
+// historial es también lo que dice si una empresa ya usó su prueba gratis.
+model ConcesionFuncion {
+  id                String    @id @default(cuid())
+  empresaId         String
+  empresa           Empresa   @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+  // Clave del catálogo de funciones (utils/planes.ts, FEATURES): 'clima', 'multiSede', 'turnos'…
+  funcion           String
+  desde             DateTime  @default(now())
+  // EXCLUSIVO: la medianoche de Bogotá siguiente al último día. «Hasta el 14 de diciembre» incluye ese día.
+  hasta             DateTime
+  // PRUEBA (la empresa la pidió sola) | SUPER_ADMIN (la dio el dueño).
+  origen            String
+  otorgadaPorId     String?
+  otorgadaPorNombre String?
+  revocadaEn        DateTime?
+  creadoEn          DateTime  @default(now())
+  actualizadoEn     DateTime  @updatedAt
+
+  @@index([empresaId, funcion])
+  @@map("concesiones_funcion")
 }
 
 model Pago {

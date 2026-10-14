@@ -11,6 +11,8 @@ import { decidirEliminacion } from '../utils/eliminarEmpresa';
 import { borrarEmpresaEnCascada } from '../utils/borrarEmpresaEnCascada';
 import { crearSedePrincipal } from '../utils/sedesDeEmpresa';
 import { normalizarVigencia, VIGENCIA_INVALIDA } from '../utils/vigenciaDelAuxilio';
+import { funcionesConcedidas, leerConcesion, leerNuevoFin } from '../utils/concesiones';
+import { hoyEnBogota } from '../utils/fechas';
 
 const DIA_MS = 24 * 60 * 60 * 1000;
 
@@ -54,6 +56,8 @@ export default async function adminRoutes(app: FastifyInstance) {
         suscripcion: { include: { pagos: { orderBy: { creadoEn: 'desc' } } } },
         usuarios: { select: { id: true, email: true, nombre: true, rol: true, activo: true, emailVerificado: true } },
         _count: { select: { colaboradores: { where: { activo: true } } } },
+        // Todas, también las vencidas y las quitadas: la pantalla muestra el historial (PENDIENTES nº 39).
+        concesiones: { orderBy: { creadoEn: 'desc' } },
       },
     });
     if (!empresa) return null;
@@ -63,7 +67,7 @@ export default async function adminRoutes(app: FastifyInstance) {
       ...empresa,
       colaboradoresActivos,
       tarifaMensual: tarifaEmpresa(colaboradoresActivos, precios, susc, empresa.exentaPago, planes),
-      capacidades: capacidadesDe(susc, empresa.exentaPago, planes),
+      capacidades: capacidadesDe(susc, empresa.exentaPago, planes, funcionesConcedidas(empresa.concesiones, new Date())),
       suscripcion: susc
         ? { ...susc, estadoEfectivo: estadoEfectivo(susc), diasMora: diasDeMora(susc), pagos: empresa.suscripcion!.pagos }
         : null,
@@ -403,6 +407,53 @@ export default async function adminRoutes(app: FastifyInstance) {
       },
     });
     return empresaConEstado(id);
+  });
+
+  // ===== FUNCIONES CON FECHA (14 de octubre de 2026, PENDIENTES nº 39, fase 2) =====
+  //
+  // El super admin le da a una empresa una función por un tiempo. Qué vale lo decide utils/concesiones.ts; aquí
+  // se aplica y se deja escrito quién la dio. Una concesión no se borra: se marca quitada, y queda el historial.
+  const quienConcede = (request: { user?: unknown }) => {
+    const u = request.user as { id?: string; nombre?: string } | undefined;
+    return { otorgadaPorId: u?.id ?? null, otorgadaPorNombre: u?.nombre ?? null };
+  };
+
+  app.post('/empresas/:id/concesiones', auth, async (request, reply) => {
+    const { id } = request.params as { id: string };
+    if (!(await prisma.empresa.findUnique({ where: { id }, select: { id: true } }))) {
+      return reply.status(404).send({ error: 'Empresa no encontrada' });
+    }
+    const c = leerConcesion(request.body, hoyEnBogota());
+    if (!c.ok) return reply.status(400).send({ error: c.error });
+    // Una sola vigente por función: si ya la tiene, se le cambia la fecha a la que tiene. Apilarlas haría que
+    // quitar una dejara la función encendida por la otra sin que la pantalla lo explicara.
+    const vigente = await prisma.concesionFuncion.findFirst({
+      where: { empresaId: id, funcion: c.funcion, revocadaEn: null, hasta: { gt: new Date() } }, select: { id: true },
+    });
+    if (vigente) return reply.status(409).send({ error: 'Ya tiene esa función por un tiempo. Cámbiale la fecha.' });
+    const creada = await prisma.concesionFuncion.create({
+      data: { empresaId: id, funcion: c.funcion, hasta: c.hasta, origen: 'SUPER_ADMIN', ...quienConcede(request) },
+    });
+    return reply.status(201).send(creada);
+  });
+
+  // La concesión se busca POR SU EMPRESA: desde la URL de una empresa no se toca la de otra.
+  const concesionDe = (empresaId: string, concesionId: string) =>
+    prisma.concesionFuncion.findFirst({ where: { id: concesionId } })
+      .then(c => (c && c.empresaId === empresaId && c.revocadaEn === null ? c : null));
+
+  app.put('/empresas/:id/concesiones/:concesionId', auth, async (request, reply) => {
+    const { id, concesionId } = request.params as { id: string; concesionId: string };
+    if (!(await concesionDe(id, concesionId))) return reply.status(404).send({ error: 'Concesión no encontrada' });
+    const fin = leerNuevoFin(request.body, hoyEnBogota());
+    if (!fin.ok) return reply.status(400).send({ error: fin.error });
+    return prisma.concesionFuncion.update({ where: { id: concesionId }, data: { hasta: fin.hasta } });
+  });
+
+  app.delete('/empresas/:id/concesiones/:concesionId', auth, async (request, reply) => {
+    const { id, concesionId } = request.params as { id: string; concesionId: string };
+    if (!(await concesionDe(id, concesionId))) return reply.status(404).send({ error: 'Concesión no encontrada' });
+    return prisma.concesionFuncion.update({ where: { id: concesionId }, data: { revocadaEn: new Date() } });
   });
 
   // Precio personalizado del cliente: GLOBAL (usa el del plan) o FIJO

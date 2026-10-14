@@ -119,7 +119,11 @@ const TODAS_ON = F(FEATURES.map(f => f.key));
 
 // Capacidades efectivas de una empresa: plan + overrides. exentaPago = ilimitado
 // (empresas propias): sin límite, todas las funciones, sin costo.
-export function capacidadesDe(susc: SuscLike, exentaPago = false, planes: PlanesMap = PLANES): Capacidades {
+// `concedidas`: las funciones que encienden las concesiones con fecha VIGENTES, ya resueltas por quien llama
+// (utils/concesiones.ts, 14 de octubre de 2026). Se suman encima: encienden, nunca apagan.
+export function capacidadesDe(
+  susc: SuscLike, exentaPago = false, planes: PlanesMap = PLANES, concedidas: Partial<Record<FeatureKey, boolean>> = {},
+): Capacidades {
   if (exentaPago) {
     return {
       plan: 'ILIMITADO', nombrePlan: 'Ilimitado', ciclo: 'MENSUAL',
@@ -134,7 +138,7 @@ export function capacidadesDe(susc: SuscLike, exentaPago = false, planes: Planes
     ciclo: susc?.cicloPago === 'ANUAL' ? 'ANUAL' : 'MENSUAL',
     limite: susc?.limiteOverride ?? p.limite,
     ilimitado: false,
-    features: { ...p.features, ...overrides },
+    features: { ...p.features, ...overrides, ...concedidas },
     precioMensual: p.precioMensual,
     precioAnual: p.precioAnual,
   };
