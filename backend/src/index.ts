@@ -36,6 +36,7 @@ import { avisarPausasSinRegreso } from './utils/cierreAlmuerzo';
 import { mantenerVentana } from './utils/materializarDias';
 import { programarDiario, correrRonda } from './utils/programarDiario';
 import { avisarSuscripcionesDeTodas } from './utils/avisosDeSuscripcion';
+import { avisarPruebasDelClima } from './utils/avisosDePruebaClima';
 import { enviarResumenesSemanales } from './utils/envioResumenSemanal';
 import { avisarNoHanLlegado } from './utils/avisoNoHaLlegado';
 import { avisarPausasSinVolver } from './utils/avisoPausaSinVolver';
@@ -322,6 +323,9 @@ const start = async () => {
     // «Turnos cerrados solos» por Telegram (13 de octubre de 2026): uno cada mañana a las 7 con los cierres
     // de la madrugada. La fecha del último envío evita repetirlo cuando la app arranca de nuevo.
     programarDiario('turnos-cerrados-telegram', HORA_TURNOS_CERRADOS, () => avisarTurnosCerrados(app.log), app.log);
+    // Los avisos de la prueba gratis del clima en la campana (14 de octubre de 2026, PENDIENTES nº 39): a los 20 días,
+    // 3 días antes del fin y al terminar. A las 7, como los de cobro: son para que los lea una persona.
+    programarDiario('pruebas-del-clima', 7, () => avisarPruebasDelClima(app.log), app.log);
     // Registra el webhook del bot de Telegram (si hay URL configurada)
     if (process.env.TELEGRAM_WEBHOOK_URL) configurarWebhook(process.env.TELEGRAM_WEBHOOK_URL);
   } catch (err) {

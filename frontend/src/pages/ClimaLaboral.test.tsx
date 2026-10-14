@@ -12,7 +12,7 @@ vi.mock('../lib/api', () => ({
     post: (...a: unknown[]) => post(...a), delete: (...a: unknown[]) => del(...a),
   },
 }));
-let mockPlan: () => { plan: { features: Record<string, boolean> } | null };
+let mockPlan: () => { plan: { features: Record<string, boolean> } | null; recargar?: () => void };
 vi.mock('../lib/plan', () => ({ useMiPlan: () => mockPlan() }));
 import ClimaLaboral from './ClimaLaboral';
 
@@ -102,11 +102,31 @@ beforeEach(() => {
 });
 
 describe('el plan', () => {
-  it('sin el módulo ofrece subir al Empresarial y no pide nada al servidor', async () => {
+  it('sin el módulo ofrece subir al Empresarial y no pide el panel al servidor', async () => {
     mockPlan = () => ({ plan: { features: { clima: false } } });
     await abrir();
     expect(screen.getByText('Plan Empresarial')).toBeInTheDocument();
     expect(get).not.toHaveBeenCalledWith('/clima/resumen', expect.anything());
+  });
+
+  // La prueba gratis (PENDIENTES nº 39, fase 3). El componente tiene sus pruebas en features/clima/PruebaGratis.test.tsx;
+  // aquí, que la página lo pone donde va y que al empezarla se vuelve a leer el plan, que es lo que abre el panel.
+  it('sin el módulo y con la prueba disponible, la ofrece, y al empezarla vuelve a leer el plan', async () => {
+    const recargar = vi.fn();
+    mockPlan = () => ({ plan: { features: { clima: false } }, recargar });
+    get.mockImplementation(respuestas({ '/clima/prueba': { disponible: true, vigente: null, terminada: null, dias: 30 } }));
+    post.mockResolvedValue({ data: { hasta: '2026-11-13T05:00:00.000Z' } });
+    await abrir();
+    await act(async () => { fireEvent.click(screen.getByRole('button', { name: 'Pruébalo gratis 30 días' })); });
+    expect(post).toHaveBeenCalledWith('/clima/prueba');
+    expect(recargar).toHaveBeenCalled();
+  });
+
+  it('con el clima por la prueba, dice hasta cuándo encima del panel', async () => {
+    get.mockImplementation(respuestas({ '/clima/prueba': { disponible: false, vigente: { hasta: '2026-11-13T05:00:00.000Z' }, terminada: null, dias: 30 } }));
+    await abrir();
+    expect(screen.getByText(/Estás probando el clima laboral gratis hasta el 12 de noviembre de 2026/)).toBeInTheDocument();
+    expect(screen.getByRole('group', { name: 'Ánimo promedio' })).toBeInTheDocument();
   });
 
   it('un supervisor ve que es solo del administrador', async () => {

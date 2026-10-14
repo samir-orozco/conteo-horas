@@ -29,13 +29,20 @@ export type TipoNotif =
   | 'NO_HA_LLEGADO'
   // Alguien no volvió de su almuerzo o descanso 15 minutos después de la hora. Lo escribe el barrido
   // de avisoPausaSinVolver.ts junto con el mensaje de Telegram (13 de octubre de 2026).
-  | 'PAUSA_SIN_VOLVER';
+  | 'PAUSA_SIN_VOLVER'
+  // La prueba gratis del clima laboral (14 de octubre de 2026, PENDIENTES nº 39): al empezar, a los 20 días, 3
+  // días antes del fin y al terminar. Los arma pruebaClima.ts; el primero lo manda la ruta y los demás la pasada
+  // diaria de avisosDePruebaClima.ts, que usa la notificación como marca de «ya se mandó».
+  | 'PRUEBA_CLIMA_INICIO'
+  | 'PRUEBA_CLIMA_AVANCE'
+  | 'PRUEBA_CLIMA_POR_TERMINAR'
+  | 'PRUEBA_CLIMA_TERMINO';
 
 type NuevaNotif = {
   tipo: TipoNotif;
   titulo: string;
   cuerpo?: string;
-  entidad?: 'registro' | 'permiso' | 'colaborador';
+  entidad?: 'registro' | 'permiso' | 'colaborador' | 'clima';
   entidadId?: string;
 };
 

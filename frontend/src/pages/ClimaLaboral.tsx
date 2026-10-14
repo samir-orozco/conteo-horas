@@ -3,7 +3,6 @@ import { useSearchParams } from 'react-router-dom';
 import { Lock } from 'lucide-react';
 import api from '../lib/api';
 import { useMiPlan } from '../lib/plan';
-import FuncionBloqueada from '../components/FuncionBloqueada';
 import SelectorRangoFechas from '../components/SelectorRangoFechas';
 import TarjetasDelClima from '../features/clima/TarjetasDelClima';
 import GraficaEvolucion from '../features/clima/GraficaEvolucion';
@@ -16,6 +15,7 @@ import Buzon from '../features/clima/Buzon';
 import EditorMotivos from '../features/clima/EditorMotivos';
 import PanelPersona from '../features/clima/PanelPersona';
 import TablaSeguimiento from '../features/clima/TablaSeguimiento';
+import PruebaGratis from '../features/clima/PruebaGratis';
 import { granularidad, notasRecientes, rangoDelMes } from '../features/clima/panelClima';
 import type { BuzonClima, MotivosClima, ResumenClima, SeguimientosClima } from '../features/clima/tipos';
 
@@ -38,7 +38,7 @@ export default function ClimaLaboral() {
   const [params, setParams] = useSearchParams();
   const tab: TabId = (TABS.some(t => t.id === params.get('tab')) ? params.get('tab') : 'resumen') as TabId;
   // Con el plan todavía en null no se bloquea: `useMiPlan` resuelve después (igual que en Turnos).
-  const { plan } = useMiPlan();
+  const { plan, recargar } = useMiPlan();
   const sinPlan = !!plan && !plan.features.clima;
 
   const [{ desde, hasta }, setRango] = useState(rangoDelMes);
@@ -98,13 +98,10 @@ export default function ClimaLaboral() {
       </div>
 
       <div className="px-6 md:px-8 py-6">
-        {sinPlan ? (
-          <FuncionBloqueada
-            titulo="Clima laboral"
-            descripcion="Tu equipo califica su día con una carita al marcar la salida, y tú ves cómo está el ánimo, por qué y quién necesita atención."
-            plan="Empresarial"
-          />
-        ) : soloAdmin ? (
+        {/* Sin el plan, la tarjeta para probarlo o subir de plan; con el clima por la prueba, hasta cuándo. Al
+            empezarla se vuelve a leer el plan, y con eso `sinPlan` cae y el panel se abre. */}
+        <PruebaGratis sinPlan={sinPlan} onEmpezada={recargar} />
+        {sinPlan ? null : soloAdmin ? (
           <div className="bg-white rounded-card border border-gray-200 p-6 flex items-center gap-3">
             <Lock size={18} className="text-muted" aria-hidden="true" />
             <p className="text-sm text-ink">Solo el administrador ve el clima laboral.</p>

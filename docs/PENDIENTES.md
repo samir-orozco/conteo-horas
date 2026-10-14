@@ -837,6 +837,29 @@ Profesional la enciende en `capacidadesEmpresa`, y quitarla la apaga. La cascada
 (`verificar-eliminar-empresa.ts`). Despliegue de CUATRO ramas: SQL, prisma-build, backend, frontend. Esto cubre
 también PENDIENTES nº 7 en lo que toca a funciones (no el precio ni el cupo).
 
+Fase 3 hecha (14 de octubre de 2026), sin desplegar, sin cambio de esquema (usa la tabla de la fase 2). La prueba es
+una concesión de `clima` con origen PRUEBA, 30 días contando el día en que se pide (vence a la medianoche de Bogotá
+del día 31), y su historial es lo que dice si la empresa ya la usó: una sola vez, aunque el super admin se la quite.
+- **Las reglas**, en `utils/pruebaClima.ts` con sus pruebas: si se puede pedir, el estado que ve la pantalla, qué aviso
+  toca cada día (uno solo, el más avanzado, para que una pasada caída no mande tarde el de avance) y sus textos.
+- **Las rutas** `GET` y `POST /api/clima/prueba`, solo para el administrador y SIN exigir el plan (son para quien no lo
+  tiene). Al empezarla enciende la calificación del día y deja el aviso de inicio en la campana. Otra vez: 409.
+- **La pasada diaria** `pruebas-del-clima`, a las 7 a. m., con los avisos de los 20 días (respuestas y ánimo promedio
+  desde que empezó), de 3 días antes y del fin. La notificación es la marca de «ya se mandó». Se comprueba con
+  `prisma/probar-avisos-prueba-clima.ts` (se vio fallar quitando la marca).
+- **La pantalla:** donde el clima sale bloqueado, la tarjeta ofrece «Pruébalo gratis 30 días»; si ya la usó, dice
+  cuándo terminó y queda «Subir de plan». Mientras dura, un aviso arriba del panel dice hasta qué día. Los avisos de la
+  campana llevan a Clima laboral.
+- **Probado en el navegador local** con la Ferretería Prueba Reseñas (Profesional): el botón abre el panel con el aviso
+  «hasta el 12 de noviembre de 2026», la campana trae el aviso y lleva al clima, la base quedó con la concesión, la
+  configuración y el aviso, y moviendo la prueba al pasado la pantalla dice «terminó el 13 de octubre» y el servidor
+  responde YA_USO. Todo se borró después.
+
+OJO, encontrado al probarla: con DOS backends contra la misma base (pasó en local, 3001 y 3012), la pasada mandó el
+aviso de «terminó» dos veces. La marca se lee y después se escribe, sin atomicidad, y el resumen semanal (que manda
+correo) tiene el mismo patrón. En producción ya hubo dos procesos vivos tras un reinicio (el `kill` del 9 de octubre).
+Quedó como tarea aparte: un mecanismo común para que una pasada sea segura con dos procesos.
+
 ---
 
 ### Peticiones que eran la misma

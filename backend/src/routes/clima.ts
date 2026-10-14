@@ -1,7 +1,11 @@
 import { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { Prisma } from '@prisma/client';
 import { prisma } from '../prisma';
-import { exigeFuncion } from '../utils/capacidades';
+import { exigeFuncion, capacidadesEmpresa } from '../utils/capacidades';
+import { notificar } from '../utils/notificaciones';
+import { hoyEnBogota } from '../utils/fechas';
+import { CLAVE_CALIFICACION_DIA } from '../utils/clima';
+import { DIAS_DE_PRUEBA, FUNCION_DE_PRUEBA, decidirPrueba, estadoDePrueba, finDePrueba, textoDeAviso } from '../utils/pruebaClima';
 import { rangoReporte } from '../utils/fechas';
 import { sedesPorDefecto } from '../utils/sedesDeEmpresa';
 import {
@@ -35,6 +39,43 @@ const fechaValida = (v: unknown): v is string => typeof v === 'string' && /^\d{4
 
 export default async function climaRoutes(app: FastifyInstance) {
   const auth = { preHandler: [app.requireEmpresa, exigeFuncion('clima'), soloAdministrador] };
+
+  // ===== LA PRUEBA GRATIS (14 de octubre de 2026, PENDIENTES nº 39, fase 3) =====
+  //
+  // Estas dos NO exigen el plan de clima: son justamente para quien no lo tiene. Sí exigen al administrador, que es
+  // quien ve el clima. Qué se decide está en utils/pruebaClima.ts.
+  const authPrueba = { preHandler: [app.requireEmpresa, soloAdministrador] };
+  const pruebasDe = (empresaId: string) => prisma.concesionFuncion.findMany({
+    where: { empresaId, funcion: FUNCION_DE_PRUEBA, origen: 'PRUEBA' },
+    select: { desde: true, hasta: true, revocadaEn: true },
+  });
+
+  app.get('/prueba', authPrueba, async (request) => {
+    return { ...estadoDePrueba(await pruebasDe(request.empresaId!), new Date()), dias: DIAS_DE_PRUEBA };
+  });
+
+  app.post('/prueba', authPrueba, async (request, reply) => {
+    const empresaId = request.empresaId!;
+    const [cap, previas] = await Promise.all([capacidadesEmpresa(empresaId), pruebasDe(empresaId)]);
+    const d = decidirPrueba({ tieneClima: !!cap.features.clima, pruebasPrevias: previas.length });
+    if (!d.ok) return reply.status(409).send({ error: d.error, codigo: d.codigo });
+    const prueba = await prisma.concesionFuncion.create({
+      data: {
+        empresaId, funcion: FUNCION_DE_PRUEBA, hasta: finDePrueba(hoyEnBogota()), origen: 'PRUEBA',
+        otorgadaPorId: request.usuarioId ?? null, otorgadaPorNombre: request.usuarioNombre ?? null,
+      },
+    });
+    // Para probar el clima hace falta que el kiosco pregunte: si la empresa había apagado la calificación del
+    // día, la prueba la vuelve a encender (fase 1).
+    await prisma.configuracion.upsert({
+      where: { empresaId_clave: { empresaId, clave: CLAVE_CALIFICACION_DIA } },
+      create: { empresaId, clave: CLAVE_CALIFICACION_DIA, valor: '1' },
+      update: { valor: '1' },
+    });
+    const aviso = textoDeAviso('INICIO', { hasta: prueba.hasta });
+    notificar(empresaId, { tipo: aviso.tipo, titulo: aviso.titulo, cuerpo: aviso.cuerpo, entidad: 'clima', entidadId: prueba.id });
+    return reply.status(201).send({ hasta: prueba.hasta });
+  });
 
   // La sede de cada persona, atribuida al LEER con la regla de los reportes: sus sedes asignadas, o la
   // principal si es presencial y no tiene ninguna. Null («Sin sede») solo para híbridos y remotos.
