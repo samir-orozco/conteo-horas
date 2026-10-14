@@ -37,6 +37,7 @@ import { mantenerVentana } from './utils/materializarDias';
 import { programarDiario, correrRonda } from './utils/programarDiario';
 import { avisarSuscripcionesDeTodas } from './utils/avisosDeSuscripcion';
 import { avisarPruebasDelClima } from './utils/avisosDePruebaClima';
+import { avisarClimaSinPlan } from './utils/avisoClimaSinPlan';
 import { enviarResumenesSemanales } from './utils/envioResumenSemanal';
 import { avisarNoHanLlegado } from './utils/avisoNoHaLlegado';
 import { avisarPausasSinVolver } from './utils/avisoPausaSinVolver';
@@ -326,6 +327,9 @@ const start = async () => {
     // Los avisos de la prueba gratis del clima en la campana (14 de octubre de 2026, PENDIENTES nº 39): a los 20 días,
     // 3 días antes del fin y al terminar. A las 7, como los de cobro: son para que los lea una persona.
     programarDiario('pruebas-del-clima', 7, () => avisarPruebasDelClima(app.log), app.log);
+    // El aviso a las empresas SIN el plan de que alguien entró a «necesita atención» en el clima, sin decir quién
+    // (PENDIENTES nº 39, fase 4). A las 7, con los demás avisos para una persona.
+    programarDiario('clima-sin-plan', 7, () => avisarClimaSinPlan(app.log), app.log);
     // Registra el webhook del bot de Telegram (si hay URL configurada)
     if (process.env.TELEGRAM_WEBHOOK_URL) configurarWebhook(process.env.TELEGRAM_WEBHOOK_URL);
   } catch (err) {

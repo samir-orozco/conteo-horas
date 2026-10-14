@@ -25,6 +25,8 @@ const ICONO: Record<string, typeof Bell> = {
   PRUEBA_CLIMA_AVANCE: Smile,
   PRUEBA_CLIMA_POR_TERMINAR: Smile,
   PRUEBA_CLIMA_TERMINO: Smile,
+  // Alguien entró a «necesita atención» en una empresa sin el plan (PENDIENTES nº 39, fase 4).
+  CLIMA_ATENCION_SIN_PLAN: Smile,
 };
 
 // Dropdown compacto anclado al botón de la campana (emerge desde él).

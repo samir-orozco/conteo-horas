@@ -217,7 +217,14 @@ describe('necesitanAtencion', () => {
       c('a', 2, 1, ['Compañeros']), c('a', 3, 2, ['Mucho trabajo', 'Compañeros']),
       c('a', 4, 1, ['Mucho trabajo']), c('a', 5, 2, ['Mucho trabajo']),
     ]);
-    expect(p).toEqual({ colaboradorId: 'a', dias: 4, desde: bog(2026, 10, 2, 0), motivo: 'Mucho trabajo' });
+    expect(p).toEqual({ colaboradorId: 'a', dias: 4, desde: bog(2026, 10, 2, 0), entro: bog(2026, 10, 4, 0), motivo: 'Mucho trabajo' });
+  });
+
+  // Desde cuándo NECESITA atención, que no es desde cuándo está mal: entra con la tercera respuesta mala. Con
+  // esto el aviso a una empresa sin el plan sabe si alguien entró después del último (PENDIENTES nº 39, fase 4).
+  it('dice cuándo entró: el día de la tercera respuesta mala, no el de la primera ni el de la última', () => {
+    const [p] = necesitanAtencion([c('a', 1, 2), c('a', 4, 2), c('a', 6, 1), c('a', 9, 1)]);
+    expect(p.entro).toEqual(bog(2026, 10, 6, 0));
   });
 
   it('sin motivos en la racha, el motivo es null', () => {

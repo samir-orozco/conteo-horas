@@ -64,12 +64,14 @@ export const fechaCortaSinAnio = (iso: string | Date) =>
 // Cuántas notas confidenciales hay de esta semana y de la anterior, para la tarjeta del buzón. El buzón
 // solo trae las semanas que tienen notas: tomar la primera sin mirar su fecha contaba como «recientes»
 // notas de hace meses (revisión adversarial del 4 de octubre de 2026).
-export function notasRecientes(buzon: { semanas: { semana: string; notas: string[] }[] } | null, ahora: Date = new Date()): number | null {
+// Sirve para el buzón completo (las notas) y para el de sin el plan, que trae cuántas (PENDIENTES nº 39, fase 4).
+export function notasRecientes(buzon: { semanas: { semana: string; notas: string[] | number }[] } | null, ahora: Date = new Date()): number | null {
   if (!buzon) return null;
   const [a, m, d] = formatInTimeZone(ahora, TZ, 'yyyy-MM-dd').split('-').map(Number);
   const diaDeLaSemana = Number(formatInTimeZone(ahora, TZ, 'i')); // 1 = lunes … 7 = domingo
   const lunesAnterior = Date.UTC(a, m - 1, d - (diaDeLaSemana - 1) - 7, 5);
-  return buzon.semanas.filter(s => new Date(s.semana).getTime() >= lunesAnterior).reduce((n, s) => n + s.notas.length, 0);
+  return buzon.semanas.filter(s => new Date(s.semana).getTime() >= lunesAnterior)
+    .reduce((n, s) => n + (typeof s.notas === 'number' ? s.notas : s.notas.length), 0);
 }
 
 // «Respuestas negativas»: la parte de las respuestas que fue Muy mal o Mal. Un número suelto («537») no

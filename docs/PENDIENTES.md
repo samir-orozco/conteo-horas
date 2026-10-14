@@ -860,6 +860,29 @@ aviso de «terminó» dos veces. La marca se lee y después se escribe, sin atom
 correo) tiene el mismo patrón. En producción ya hubo dos procesos vivos tras un reinicio (el `kill` del 9 de octubre).
 Quedó como tarea aparte: un mecanismo común para que una pasada sea segura con dos procesos.
 
+Fase 4 hecha (14 de octubre de 2026), sin desplegar, sin cambio de esquema. Lo que ve y recibe una empresa SIN el plan:
+- **Resumen:** las mismas tarjetas del panel con el ánimo promedio (y su variación), «Respondieron», CUÁNTAS personas
+  necesitan atención («Con el plan Empresarial ves quiénes y por qué») y las notas recientes del buzón. Sin sede ni
+  gráficas. La ruta `GET /api/clima/vistazo` saca una LISTA BLANCA del mismo resumen del panel
+  (`utils/climaSinPlan.ts`), así que las dos cuentan exactamente lo mismo; no abre casos de seguimiento.
+- **Buzón:** cuántas notas por semana, con tarjetas borrosas de relleno. `GET /api/clima/buzon/conteo` agrupa por
+  semana y ni siquiera lee el texto: no hay nada que destapar desde el inspector.
+- **Campana:** «N personas reportaron días malos seguidos», sin nombres, cuando alguien ENTRÓ a «necesita atención»
+  después del último aviso (entra con la tercera respuesta mala: `entro` en `necesitanAtencion`) y con al menos 7
+  días entre avisos. Ofrece la prueba si no la ha usado. Pasada diaria `clima-sin-plan` a las 7. No avisa con la
+  calificación del día apagada ni mientras la empresa tiene el clima (por plan, prueba o concesión).
+- **Correo de los lunes:** la misma cifra como última línea de «Necesita tu atención». Sola no hace que se mande el
+  correo: es una invitación, no algo por hacer.
+- **Decidido sin preguntar** (se puede cambiar): sin «Respuestas negativas» ni gráficas en la vista sin el plan (no
+  estaban en la lista del dueño), avisos con 7 días de separación mínima, y Seguimiento y Motivos quedan solo con la
+  tarjeta de la prueba.
+- **Probado:** pruebas con sus mutaciones; antes y después de reorganizar la ruta del resumen, su salida con datos
+  locales es idéntica byte a byte; `prisma/probar-aviso-clima-sin-plan.ts` contra la base (24 comprobaciones, se vio
+  fallar quitando la marca y el interruptor); y en el navegador local con datos temporales en la Ferretería, borrados
+  después: tarjetas, buzón borroso sin el texto en la página, aviso en la campana que lleva al clima.
+
+Falta la fase 5 (textos legales, abogado) antes de lanzarlo. Las fases 1 a 4 se despliegan juntas: cuatro ramas.
+
 ---
 
 ### Peticiones que eran la misma

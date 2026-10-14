@@ -60,6 +60,9 @@ export type EntradaDelResumen = {
   // Todas las que siguen sin aprobar, sean de la semana que sean: el pendiente es hoy.
   novedadesPorAprobar: number;
   contratos: AlertaDeContrato[];
+  // Cuántas personas necesitan atención en el clima, SOLO si la empresa no tiene el plan: con el plan las ve con
+  // nombre en el panel. Cero en cualquier otro caso (PENDIENTES nº 39, fase 4).
+  atencionClimaSinPlan: number;
 };
 
 export type Cifra = { actual: number; anterior: number };
@@ -134,6 +137,12 @@ export function armarResumen(e: EntradaDelResumen): Resumen {
     atencion.push(`${e.novedadesPorAprobar} ${plural(e.novedadesPorAprobar, 'novedad espera', 'novedades esperan')} tu aprobación`);
   }
   atencion.push(...e.contratos.map(lineaDeContrato));
+  // Lo de arriba es lo que hay que hacer; esto es una invitación, y por eso no cuenta para decidir si se manda.
+  const hayQueMirar = atencion.length > 0;
+  if (e.atencionClimaSinPlan) {
+    const n = e.atencionClimaSinPlan;
+    atencion.push(`${n} ${plural(n, 'persona reportó', 'personas reportaron')} días malos seguidos en el clima laboral. Con el plan Empresarial ves quiénes y por qué`);
+  }
 
   const masTarde = e.actual.tardanzas
     .filter(t => t.diasTarde > 0)
@@ -164,7 +173,7 @@ export function armarResumen(e: EntradaDelResumen): Resumen {
     turnosCerradosSolos: cerrados.length,
     masTarde,
     porDia,
-    hayAlgo: huboActividad(e.actual) || atencion.length > 0,
+    hayAlgo: huboActividad(e.actual) || hayQueMirar,
     huboActividad: huboActividad(e.actual),
     comparable: huboActividad(e.anterior),
   };

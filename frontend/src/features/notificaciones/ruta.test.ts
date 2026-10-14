@@ -23,7 +23,7 @@ describe('a dónde lleva cada notificación', () => {
   });
 
   it('un aviso de la prueba gratis del clima lleva a Clima laboral (14 de octubre de 2026)', () => {
-    for (const tipo of ['PRUEBA_CLIMA_INICIO', 'PRUEBA_CLIMA_AVANCE', 'PRUEBA_CLIMA_POR_TERMINAR', 'PRUEBA_CLIMA_TERMINO']) {
+    for (const tipo of ['PRUEBA_CLIMA_INICIO', 'PRUEBA_CLIMA_AVANCE', 'PRUEBA_CLIMA_POR_TERMINAR', 'PRUEBA_CLIMA_TERMINO', 'CLIMA_ATENCION_SIN_PLAN']) {
       expect(rutaDeNotificacion(n({ tipo, entidad: 'clima', entidadId: 'prueba-1' }))).toBe('/app/clima');
     }
   });

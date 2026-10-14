@@ -36,7 +36,10 @@ export type TipoNotif =
   | 'PRUEBA_CLIMA_INICIO'
   | 'PRUEBA_CLIMA_AVANCE'
   | 'PRUEBA_CLIMA_POR_TERMINAR'
-  | 'PRUEBA_CLIMA_TERMINO';
+  | 'PRUEBA_CLIMA_TERMINO'
+  // Una empresa SIN el plan tiene personas que entraron a «necesita atención» en el clima (14 de octubre de 2026,
+  // PENDIENTES nº 39, fase 4). Sin nombres. Lo manda avisoClimaSinPlan.ts; su `entidadId` es hasta qué día contó.
+  | 'CLIMA_ATENCION_SIN_PLAN';
 
 type NuevaNotif = {
   tipo: TipoNotif;

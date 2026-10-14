@@ -58,7 +58,7 @@ const tarde = (nombre: string, diasTarde: number, totalMinutos: number): FilaTar
 const vacio: Periodo = { horas: [], tardanzas: [] };
 const entrada = (o: Partial<EntradaDelResumen> = {}): EntradaDelResumen => ({
   semana, actual: vacio, anterior: vacio,
-  turnosCerradosSolos: [], novedadesPorAprobar: 0, contratos: [],
+  turnosCerradosSolos: [], novedadesPorAprobar: 0, contratos: [], atencionClimaSinPlan: 0,
   ...o,
 });
 
@@ -184,6 +184,31 @@ describe('armarResumen', () => {
     expect(armarResumen(entrada()).hayAlgo).toBe(false);
     expect(armarResumen(entrada({ novedadesPorAprobar: 1 })).hayAlgo).toBe(true);
     expect(armarResumen(entrada({ actual: { horas: [persona('Ana', { minutosOrdinarios: 60 })], tardanzas: [] } })).hayAlgo).toBe(true);
+  });
+});
+
+// El clima de una empresa SIN el plan (14 de octubre de 2026, PENDIENTES nº 39, fase 4): cuántas personas necesitan
+// atención, sin decir quiénes. Va último y solo no basta para mandar el correo: una semana sin actividad no se vuelve
+// «algo que contar» por alguien que quedó en atención hace un mes.
+describe('armarResumen, el clima sin el plan', () => {
+  it('dice cuántas personas reportaron días malos seguidos y qué da el plan, al final de lo que hay que mirar', () => {
+    const r = armarResumen(entrada({ novedadesPorAprobar: 1, atencionClimaSinPlan: 2 }));
+    expect(r.atencion).toEqual([
+      '1 novedad espera tu aprobación',
+      '2 personas reportaron días malos seguidos en el clima laboral. Con el plan Empresarial ves quiénes y por qué',
+    ]);
+  });
+
+  it('en singular con una persona', () => {
+    expect(armarResumen(entrada({ atencionClimaSinPlan: 1 })).atencion[0]).toBe('1 persona reportó días malos seguidos en el clima laboral. Con el plan Empresarial ves quiénes y por qué');
+  });
+
+  it('con nadie en atención no dice nada', () => {
+    expect(armarResumen(entrada({ novedadesPorAprobar: 1 })).atencion).toEqual(['1 novedad espera tu aprobación']);
+  });
+
+  it('solo, no hace que se mande el correo', () => {
+    expect(armarResumen(entrada({ atencionClimaSinPlan: 3 })).hayAlgo).toBe(false);
   });
 });
 

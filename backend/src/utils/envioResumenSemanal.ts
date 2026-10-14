@@ -2,6 +2,7 @@ import { prisma } from '../prisma';
 import { enviarCorreo, destinatarios } from './correo';
 import { estadoDelContrato, type TipoContrato } from './contratos';
 import { rangoReporte } from './fechas';
+import { atencionDeLaEmpresa, esClimaSinPlan } from './atencionClima';
 import { liquidarEmpresa, tardanzasDeEmpresa } from './reportesDeEmpresa';
 import {
   semanaDelResumen, armarResumen, correoDelResumen, avisoDelResumen, CLAVE_RESUMEN_SEMANAL,
@@ -30,7 +31,7 @@ async function periodo(empresaId: string, s: Semana): Promise<Periodo> {
 // Todo lo que el resumen necesita de una empresa, leído de la base.
 async function entradaDe(empresaId: string, semana: Semana & { anterior: Semana }, ahora: Date): Promise<EntradaDelResumen> {
   const { desdeF, finExclusivo } = rangoReporte(semana.desde, semana.hasta);
-  const [actual, anterior, cerrados, novedadesPorAprobar, contratos] = await Promise.all([
+  const [actual, anterior, cerrados, novedadesPorAprobar, contratos, atencionClimaSinPlan] = await Promise.all([
     periodo(empresaId, semana),
     periodo(empresaId, semana.anterior),
     // Las salidas que puso el auto-cierre. Por (colaboradorId, fecha), igual que los resúmenes:
@@ -49,6 +50,8 @@ async function entradaDe(empresaId: string, semana: Semana & { anterior: Semana 
         prorrogas: { select: { desde: true, hasta: true } },
       },
     }),
+    // Cuántas personas necesitan atención en el clima, solo si la empresa NO tiene el plan (PENDIENTES nº 39, fase 4).
+    esClimaSinPlan(empresaId).then(async sinPlan => (sinPlan ? (await atencionDeLaEmpresa(empresaId)).length : 0)),
   ]);
 
   return {
@@ -59,6 +62,7 @@ async function entradaDe(empresaId: string, semana: Semana & { anterior: Semana 
       fecha: r.fecha.toISOString().slice(0, 10),
     })),
     novedadesPorAprobar,
+    atencionClimaSinPlan,
     contratos: contratos.flatMap(c => {
       const { alertas } = estadoDelContrato(
         { tipo: c.tipo as TipoContrato, fechaInicio: c.fechaInicio, fechaFin: c.fechaFin, fechaInicioPractica: c.fechaInicioPractica },

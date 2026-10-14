@@ -129,6 +129,36 @@ describe('el plan', () => {
     expect(screen.getByRole('group', { name: 'Ánimo promedio' })).toBeInTheDocument();
   });
 
+  // La vista sin el plan (PENDIENTES nº 39, fase 4). Los componentes tienen sus pruebas (VistazoSinPlan, BuzonBorroso);
+  // aquí, que la página pide lo de sin el plan y NO lo del panel completo, y al revés con el plan.
+  const VISTAZO = { total: 60, personas: 38, promedio: 3.8, variacion: 0.2, jornadas: 80, atencion: 2 };
+  const CONTEO = { semanas: [{ semana: '2026-10-05T05:00:00.000Z', notas: 2 }] };
+
+  it('sin el módulo, el resumen trae las cifras sin nombres y no pide el panel completo', async () => {
+    mockPlan = () => ({ plan: { features: { clima: false } } });
+    get.mockImplementation(respuestas({ '/clima/vistazo': VISTAZO, '/clima/buzon/conteo': CONTEO }));
+    await abrir();
+    expect(within(screen.getByRole('group', { name: 'Necesitan atención' })).getByText('2')).toBeInTheDocument();
+    expect(within(screen.getByRole('group', { name: 'Ánimo promedio' })).getByText('3,8')).toBeInTheDocument();
+    expect(get).toHaveBeenCalledWith('/clima/vistazo', { params: expect.objectContaining({ desde: expect.any(String), hasta: expect.any(String) }) });
+    for (const url of ['/clima/resumen', '/clima/buzon', '/clima/motivos', '/sedes']) {
+      expect(get.mock.calls.some(([u]) => u === url)).toBe(false);
+    }
+  });
+
+  it('sin el módulo, el buzón dice cuántas notas hay y las muestra borrosas', async () => {
+    mockPlan = () => ({ plan: { features: { clima: false } } });
+    get.mockImplementation(respuestas({ '/clima/vistazo': VISTAZO, '/clima/buzon/conteo': CONTEO }));
+    await abrir('/app/clima?tab=buzon');
+    expect(screen.getByText('2 notas')).toBeInTheDocument();
+    expect(screen.getAllByRole('img', { name: 'Nota confidencial oculta' })).toHaveLength(2);
+  });
+
+  it('con el módulo no pide la vista sin el plan', async () => {
+    await abrir();
+    expect(get.mock.calls.some(([u]) => u === '/clima/vistazo' || u === '/clima/buzon/conteo')).toBe(false);
+  });
+
   it('un supervisor ve que es solo del administrador', async () => {
     get.mockImplementation((url: string) => (url.startsWith('/clima')
       ? Promise.reject({ response: { status: 403, data: { codigo: 'SOLO_ADMIN', error: 'Solo el administrador ve el clima laboral.' } } })

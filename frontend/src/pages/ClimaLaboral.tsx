@@ -16,8 +16,10 @@ import EditorMotivos from '../features/clima/EditorMotivos';
 import PanelPersona from '../features/clima/PanelPersona';
 import TablaSeguimiento from '../features/clima/TablaSeguimiento';
 import PruebaGratis from '../features/clima/PruebaGratis';
+import VistazoSinPlan from '../features/clima/VistazoSinPlan';
+import BuzonBorroso from '../features/clima/BuzonBorroso';
 import { granularidad, notasRecientes, rangoDelMes } from '../features/clima/panelClima';
-import type { BuzonClima, MotivosClima, ResumenClima, SeguimientosClima } from '../features/clima/tipos';
+import type { BuzonClima, ConteoBuzon, MotivosClima, ResumenClima, SeguimientosClima, VistazoClima } from '../features/clima/tipos';
 
 // CLIMA LABORAL (4 de octubre de 2026): lo que respondió la gente al marcar la salida. Solo plan
 // Empresarial y solo el administrador. docs/CLIMA_LABORAL.md §3.6.
@@ -54,6 +56,20 @@ export default function ClimaLaboral() {
   const [seguimientos, setSeguimientos] = useState<SeguimientosClima | null>(null);
   // Sube cada vez que cambia un caso, para volver a leer las listas que lo muestran.
   const [cambios, setCambios] = useState(0);
+  // SIN EL PLAN (PENDIENTES nº 39, fase 4): cifras sin nombres y cuántas notas hay, en vez del panel. Las piden sus
+  // propias rutas, que no exigen el plan y no mandan ni un nombre ni un texto.
+  const [vistazo, setVistazo] = useState<VistazoClima | null>(null);
+  const [conteoBuzon, setConteoBuzon] = useState<ConteoBuzon | null>(null);
+
+  useEffect(() => {
+    if (!sinPlan) return;
+    api.get('/clima/buzon/conteo').then(r => setConteoBuzon(r.data)).catch(() => setConteoBuzon(null));
+  }, [sinPlan]);
+
+  useEffect(() => {
+    if (!sinPlan) return;
+    api.get('/clima/vistazo', { params: { desde, hasta } }).then(r => setVistazo(r.data)).catch(() => setVistazo(null));
+  }, [sinPlan, desde, hasta]);
 
   useEffect(() => {
     if (sinPlan) return;
@@ -101,7 +117,18 @@ export default function ClimaLaboral() {
         {/* Sin el plan, la tarjeta para probarlo o subir de plan; con el clima por la prueba, hasta cuándo. Al
             empezarla se vuelve a leer el plan, y con eso `sinPlan` cae y el panel se abre. */}
         <PruebaGratis sinPlan={sinPlan} onEmpezada={recargar} />
-        {sinPlan ? null : soloAdmin ? (
+        {sinPlan ? (
+          tab === 'resumen' ? (
+            vistazo && (
+              <div className="mt-6 space-y-6">
+                <SelectorRangoFechas desde={desde} hasta={hasta} onCambiar={(d, h) => setRango({ desde: d, hasta: h })} />
+                <VistazoSinPlan v={vistazo} notasDelBuzon={notasRecientes(conteoBuzon)} onVerBuzon={() => setParams({ tab: 'buzon' })} />
+              </div>
+            )
+          ) : tab === 'buzon' ? (
+            conteoBuzon && <div className="mt-6"><BuzonBorroso conteo={conteoBuzon} /></div>
+          ) : null
+        ) : soloAdmin ? (
           <div className="bg-white rounded-card border border-gray-200 p-6 flex items-center gap-3">
             <Lock size={18} className="text-muted" aria-hidden="true" />
             <p className="text-sm text-ink">Solo el administrador ve el clima laboral.</p>

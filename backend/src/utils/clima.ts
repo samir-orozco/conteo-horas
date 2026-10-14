@@ -114,7 +114,8 @@ export function leerObservacion(cuerpo: unknown): Resultado<{ texto: string; con
 }
 
 export type CalificacionDelDia = { colaboradorId: string; fecha: Date; carita: number; motivos: string[] };
-export type EnAtencion = { colaboradorId: string; dias: number; desde: Date; motivo: string | null };
+// `desde` es la primera respuesta mala de la racha; `entro`, la tercera, que es cuando pasa a necesitar atención.
+export type EnAtencion = { colaboradorId: string; dias: number; desde: Date; entro: Date; motivo: string | null };
 
 // Quién lleva varias respuestas seguidas en Muy mal o Mal. Cuenta RESPUESTAS y no
 // días de calendario: quien descansa el domingo nunca sumaría tres seguidos.
@@ -129,7 +130,9 @@ export function necesitanAtencion(calificaciones: CalificacionDelDia[]): EnAtenc
   for (const [colaboradorId, lista] of porPersona) {
     const racha = rachaFinal([...lista].sort((a, b) => a.fecha.getTime() - b.fecha.getTime()));
     if (racha.length < RACHA_DE_ATENCION) continue;
-    resultado.push({ colaboradorId, dias: racha.length, desde: racha[0].fecha, motivo: motivoMasRepetido(racha) });
+    resultado.push({
+      colaboradorId, dias: racha.length, desde: racha[0].fecha, entro: racha[RACHA_DE_ATENCION - 1].fecha, motivo: motivoMasRepetido(racha),
+    });
   }
   return resultado.sort((a, b) => b.dias - a.dias);
 }

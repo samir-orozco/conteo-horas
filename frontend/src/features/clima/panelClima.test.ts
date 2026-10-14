@@ -86,6 +86,14 @@ describe('notasRecientes — la tarjeta del buzón', () => {
   it('sin buzón cargado no hay número', () => {
     expect(notasRecientes(null, ahora)).toBeNull();
   });
+
+  // Sin el plan llega CUÁNTAS notas, no el texto (PENDIENTES nº 39, fase 4); la tarjeta cuenta igual.
+  it('también cuenta con el buzón sin el plan, que trae números en vez de notas', () => {
+    const conteo = { semanas: [
+      { semana: '2026-10-19T05:00:00.000Z', notas: 1 }, { semana: '2026-10-12T05:00:00.000Z', notas: 2 }, { semana: '2026-10-05T05:00:00.000Z', notas: 7 },
+    ] };
+    expect(notasRecientes(conteo, ahora)).toBe(3);
+  });
 });
 
 describe('porcentajeNegativas', () => {

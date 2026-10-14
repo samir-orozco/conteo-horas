@@ -1,17 +1,18 @@
 import { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
-import { Prisma } from '@prisma/client';
 import { prisma } from '../prisma';
 import { exigeFuncion, capacidadesEmpresa } from '../utils/capacidades';
 import { notificar } from '../utils/notificaciones';
 import { hoyEnBogota } from '../utils/fechas';
 import { CLAVE_CALIFICACION_DIA } from '../utils/clima';
 import { DIAS_DE_PRUEBA, FUNCION_DE_PRUEBA, decidirPrueba, estadoDePrueba, finDePrueba, textoDeAviso } from '../utils/pruebaClima';
+import { vistazoDelClima } from '../utils/climaSinPlan';
+import { atencionDeLaEmpresa, comoLista } from '../utils/atencionClima';
 import { rangoReporte } from '../utils/fechas';
 import { sedesPorDefecto } from '../utils/sedesDeEmpresa';
 import {
   CATALOGO_DE_MOTIVOS, MAX_MOTIVOS, MOTIVOS_PREDETERMINADOS, MOTIVO_OTRO,
-  necesitanAtencion, ordenRevuelto, promedioPorSede, resumenDelClima, semanaDe, validarMotivosDeEmpresa,
-  variacionDelPromedio, filasParaLaRacha, CARITA_MAX_DE_ATENCION, type CalificacionDelDia,
+  ordenRevuelto, promedioPorSede, resumenDelClima, semanaDe, validarMotivosDeEmpresa,
+  variacionDelPromedio, type CalificacionDelDia,
   casosPorAbrir, leerCambioDeSeguimiento, leerComentario, type EnAtencion,
 } from '../utils/clima';
 import { CLAVE_MOTIVOS, SALIDAS_QUE_ABREN_LA_VENTANA, motivosDeEmpresa } from '../utils/climaDelKiosco';
@@ -34,27 +35,27 @@ async function soloAdministrador(request: FastifyRequest, reply: FastifyReply) {
   }
 }
 
-const comoLista = (v: Prisma.JsonValue): string[] => (Array.isArray(v) ? v.filter((m): m is string => typeof m === 'string') : []);
 const fechaValida = (v: unknown): v is string => typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v);
 
 export default async function climaRoutes(app: FastifyInstance) {
   const auth = { preHandler: [app.requireEmpresa, exigeFuncion('clima'), soloAdministrador] };
 
+  // Las rutas que NO exigen el plan de clima, porque son para quien no lo tiene: la prueba gratis (fase 3) y la vista
+  // sin el plan (fase 4), PENDIENTES nº 39. Sí exigen al administrador, que es quien ve el clima.
+  const authSinPlan = { preHandler: [app.requireEmpresa, soloAdministrador] };
+
   // ===== LA PRUEBA GRATIS (14 de octubre de 2026, PENDIENTES nº 39, fase 3) =====
-  //
-  // Estas dos NO exigen el plan de clima: son justamente para quien no lo tiene. Sí exigen al administrador, que es
-  // quien ve el clima. Qué se decide está en utils/pruebaClima.ts.
-  const authPrueba = { preHandler: [app.requireEmpresa, soloAdministrador] };
+  // Qué se decide está en utils/pruebaClima.ts.
   const pruebasDe = (empresaId: string) => prisma.concesionFuncion.findMany({
     where: { empresaId, funcion: FUNCION_DE_PRUEBA, origen: 'PRUEBA' },
     select: { desde: true, hasta: true, revocadaEn: true },
   });
 
-  app.get('/prueba', authPrueba, async (request) => {
+  app.get('/prueba', authSinPlan, async (request) => {
     return { ...estadoDePrueba(await pruebasDe(request.empresaId!), new Date()), dias: DIAS_DE_PRUEBA };
   });
 
-  app.post('/prueba', authPrueba, async (request, reply) => {
+  app.post('/prueba', authSinPlan, async (request, reply) => {
     const empresaId = request.empresaId!;
     const [cap, previas] = await Promise.all([capacidadesEmpresa(empresaId), pruebasDe(empresaId)]);
     const d = decidirPrueba({ tieneClima: !!cap.features.clima, pruebasPrevias: previas.length });
@@ -95,23 +96,6 @@ export default async function climaRoutes(app: FastifyInstance) {
     return { colaboradores, sedes, sedesDe };
   }
 
-  // Quién necesita atención HOY en toda la empresa, entre las personas activas: lo malo que vino después
-  // del último buen día de cada una, por viejo que sea. Una ventana fija de fechas dejaba fuera a quien
-  // responde poco (revisión adversarial del 4 de octubre de 2026).
-  async function atencionDeLaEmpresa(empresaId: string, activos: Set<string>): Promise<EnAtencion[]> {
-    const [buenos, malas] = await Promise.all([
-      prisma.calificacionClima.groupBy({ by: ['colaboradorId'], where: { empresaId, carita: { gt: CARITA_MAX_DE_ATENCION } }, _max: { fecha: true } }),
-      prisma.calificacionClima.findMany({
-        where: { empresaId, carita: { lte: CARITA_MAX_DE_ATENCION } },
-        select: { colaboradorId: true, fecha: true, carita: true, motivos: true },
-      }),
-    ]);
-    const ultimoBueno = new Map(buenos.filter(b => b._max.fecha).map(b => [b.colaboradorId, b._max.fecha as Date]));
-    return necesitanAtencion(
-      filasParaLaRacha(malas.map(m => ({ ...m, motivos: comoLista(m.motivos) })), ultimoBueno).filter(c => activos.has(c.colaboradorId)),
-    );
-  }
-
   // EL SEGUIMIENTO (4 de octubre de 2026): cada persona que entra a «Necesitan atención» recibe su caso,
   // con las reglas de `casosPorAbrir`. Se abren al leer la lista, y la llave única (persona, comienzo de
   // la racha) impide que dos lecturas simultáneas abran el mismo caso dos veces.
@@ -134,13 +118,18 @@ export default async function climaRoutes(app: FastifyInstance) {
   const responsablesDe = (empresaId: string) =>
     prisma.usuario.findMany({ where: { empresaId, activo: true }, select: { id: true, nombre: true }, orderBy: { nombre: 'asc' } });
 
-  app.get('/resumen', auth, async (request, reply) => {
-    const empresaId = request.empresaId!;
-    const { desde, hasta, sedeId } = request.query as { desde?: unknown; hasta?: unknown; sedeId?: unknown };
-    if (!fechaValida(desde) || !fechaValida(hasta) || desde > hasta) {
-      return reply.status(400).send({ error: 'El rango de fechas no es válido.' });
-    }
-    const sede = typeof sedeId === 'string' && sedeId !== '' ? sedeId : null;
+  // El rango y la sede de la consulta, o null si el rango no vale.
+  const leerRango = (query: unknown) => {
+    const { desde, hasta, sedeId } = query as { desde?: unknown; hasta?: unknown; sedeId?: unknown };
+    if (!fechaValida(desde) || !fechaValida(hasta) || desde > hasta) return null;
+    return { desde, hasta, sede: typeof sedeId === 'string' && sedeId !== '' ? sedeId : null };
+  };
+
+  // EL RESUMEN DEL PANEL. Lo usan el panel completo y la vista sin el plan, que es una lista blanca de esto
+  // (utils/climaSinPlan.ts): así las dos cuentan exactamente lo mismo. `abrirCasos` decide si abre los casos de
+  // seguimiento de quien entró a «necesita atención»: el panel sí; la vista sin el plan no, porque nadie puede ver
+  // esos casos y quedarían abiertos con una fecha en la que nadie los vio.
+  async function resumenDelPanel(empresaId: string, desde: string, hasta: string, sede: string | null, abrirCasos: boolean) {
     const { desdeF, finExclusivo } = rangoReporte(desde, hasta);
     // El período anterior, del mismo largo, para la variación del promedio.
     const desdeAnterior = new Date(desdeF.getTime() - (finExclusivo.getTime() - desdeF.getTime()));
@@ -185,7 +174,7 @@ export default async function climaRoutes(app: FastifyInstance) {
     // con TODA la empresa, no solo con la sede del filtro: filtrar la vista no puede dejar a nadie sin caso.
     const activos = new Set(colaboradores.filter(c => c.activo).map(c => c.id));
     const atencionTodas = await atencionDeLaEmpresa(empresaId, activos);
-    await sincronizarSeguimientos(empresaId, atencionTodas);
+    if (abrirCasos) await sincronizarSeguimientos(empresaId, atencionTodas);
     const casos = atencionTodas.length === 0 ? [] : await prisma.seguimientoClima.findMany({
       where: { empresaId, colaboradorId: { in: atencionTodas.map(a => a.colaboradorId) } },
       select: { id: true, colaboradorId: true, desde: true, estado: true },
@@ -216,6 +205,19 @@ export default async function climaRoutes(app: FastifyInstance) {
       atencion,
       recientes,
     };
+  }
+
+  app.get('/resumen', auth, async (request, reply) => {
+    const r = leerRango(request.query);
+    if (!r) return reply.status(400).send({ error: 'El rango de fechas no es válido.' });
+    return resumenDelPanel(request.empresaId!, r.desde, r.hasta, r.sede, true);
+  });
+
+  // LA VISTA SIN EL PLAN (14 de octubre de 2026, PENDIENTES nº 39, fase 4): cifras sin nombres de toda la empresa.
+  app.get('/vistazo', authSinPlan, async (request, reply) => {
+    const r = leerRango(request.query);
+    if (!r) return reply.status(400).send({ error: 'El rango de fechas no es válido.' });
+    return vistazoDelClima(await resumenDelPanel(request.empresaId!, r.desde, r.hasta, null, false));
   });
 
   // EL HISTORIAL DE UNA PERSONA, para «Revisar» en «Necesitan atención» (4 de octubre de 2026). Va con
@@ -357,13 +359,16 @@ export default async function climaRoutes(app: FastifyInstance) {
     return { ok: true };
   });
 
+  // Las notas que se ven hoy: las ya visibles de las últimas SEMANAS_DEL_BUZON semanas.
+  const ventanaDelBuzon = (empresaId: string, ahora: Date) => ({
+    empresaId, visibleDesde: { lte: ahora },
+    semana: { gte: new Date(semanaDe(ahora).getTime() - (SEMANAS_DEL_BUZON - 1) * 7 * DIA_MS) },
+  });
+
   // EL BUZÓN CONFIDENCIAL: solo el texto, sin nada que diga quién ni cuándo. Ni el id sale de aquí.
   app.get('/buzon', auth, async (request) => {
-    const empresaId = request.empresaId!;
-    const ahora = new Date();
-    const desde = new Date(semanaDe(ahora).getTime() - (SEMANAS_DEL_BUZON - 1) * 7 * DIA_MS);
     const notas = await prisma.observacionConfidencial.findMany({
-      where: { empresaId, visibleDesde: { lte: ahora }, semana: { gte: desde } },
+      where: ventanaDelBuzon(request.empresaId!, new Date()),
       select: { id: true, semana: true, texto: true },
     });
     const porSemana = new Map<number, { id: string; texto: string }[]>();
@@ -372,6 +377,19 @@ export default async function climaRoutes(app: FastifyInstance) {
       semanas: [...porSemana]
         .sort(([a], [b]) => b - a)
         .map(([semana, lista]) => ({ semana: new Date(semana), notas: ordenRevuelto(lista).map(n => n.texto) })),
+    };
+  });
+
+  // EL BUZÓN SIN EL PLAN (PENDIENTES nº 39, fase 4): CUÁNTAS notas por semana, nunca el texto. Ni siquiera se lee:
+  // la consulta solo trae la semana. Un desenfoque por CSS se quita desde el inspector; un texto que no viajó, no.
+  app.get('/buzon/conteo', authSinPlan, async (request) => {
+    const grupos = await prisma.observacionConfidencial.groupBy({
+      by: ['semana'], where: ventanaDelBuzon(request.empresaId!, new Date()), _count: { _all: true },
+    });
+    return {
+      semanas: grupos
+        .sort((a, b) => b.semana.getTime() - a.semana.getTime())
+        .map(g => ({ semana: g.semana, notas: g._count._all })),
     };
   });
 

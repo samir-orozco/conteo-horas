@@ -23,6 +23,11 @@ export type ResumenClima = {
 
 export type BuzonClima = { semanas: { semana: string; notas: string[] }[] };
 
+// Lo que ve una empresa SIN el plan (GET /clima/vistazo y /clima/buzon/conteo, PENDIENTES nº 39, fase 4): cifras sin
+// nombres, y cuántas notas por semana en vez de su texto.
+export type VistazoClima = { total: number; personas: number; promedio: number | null; variacion: number | null; jornadas: number; atencion: number };
+export type ConteoBuzon = { semanas: { semana: string; notas: number }[] };
+
 export type MotivosClima = {
   motivos: string[];
   otro: string;
