@@ -789,6 +789,45 @@ en vez de la sede atribuida. Hecho en el paso 4 del nº 11. La opción 2 (sede p
 persona y «Marcó en» la de la jornada. La TABLA de la pantalla sigue como estaba; esa es la que decide esta
 entrada.
 
+## 39. Calificación del día para todos, prueba gratis del clima y funciones con fecha
+
+**Pedido y decisiones del dueño (14 de octubre de 2026).** Que la calificación del día («¿Cómo te fue hoy?») se
+pueda usar en todos los planes, que solo el plan Empresarial vea los resultados completos, y que quien no lo
+tenga pueda probar el clima gratis. Lo decidido:
+
+- **Calificación del día ENCENDIDA para todos los planes**, con un interruptor en Configuración › Marcación para
+  apagarla. (Se le propuso arrancar apagada en los planes sin clima, para que la empresa la pidiera; el dueño
+  prefirió encendida. Va en la política: ver la fase 5.)
+- **Solo el Empresarial ve los resultados completos.** Sin el plan, el panel muestra el ánimo promedio, la
+  participación y CUÁNTAS personas necesitan atención, sin nombres. Quiénes, motivos y observaciones piden el plan.
+- **El buzón confidencial sin el plan:** se ve el conteo de notas, con las notas borrosas. OJO al construirlo: el
+  texto NO puede viajar al navegador; un desenfoque por CSS se quita desde el inspector. El servidor manda solo el
+  número y la pantalla dibuja tarjetas de relleno.
+- **Las respuestas se siguen recogiendo** después de la prueba, para avisar que hay novedades o casos por revisar.
+- **Prueba gratis de 30 días, una sola vez por empresa,** con un botón «Pruébalo gratis 30 días» donde el clima
+  aparece bloqueado. El super admin puede dar más tiempo.
+- **Funciones con fecha desde el super admin:** en el detalle de la empresa, una tabla con todas las funciones
+  (sedes, clima, turnos, Siigo, GPS…) para darlas por un tiempo («pruébalo 2 meses»), extenderlas o quitarlas.
+
+**Roadmap:**
+1. **Interruptor «Calificación del día»** en Marcación, para todos los planes. El kiosco pregunta si está
+   encendido, sin mirar el plan; el panel sigue cerrado sin el plan. Sin cambio de esquema (tabla de configuración).
+2. **Funciones con fecha** (super admin). Tabla nueva con quién la dio, desde y hasta, y origen (prueba o super
+   admin): cambia el esquema, despliegue de cuatro ramas. Hoy `suscripciones.funcionesOverride` es solo sí/no.
+3. **«Pruébalo gratis 30 días»** autoservicio, sobre la fase 2. Avisos en la campana al empezar, a los 20 días,
+   3 días antes de terminar y al terminar.
+4. **La vista sin el plan:** promedio, participación, conteo en atención, conteo de notas borrosas, y avisos en la
+   campana y en el resumen semanal para subir de plan («2 personas reportaron días malos seguidos»).
+5. **Lo legal:** la política tiene que decir que la calificación la activa la empresa y para qué; texto del kiosco;
+   el abogado, que ya estaba pendiente para el clima. Antes de lanzar la prueba a todas.
+
+**Estado:** fase 1 hecha (14 de octubre de 2026), sin desplegar: clave `CLIMA_CALIFICACION_DIA` (sin guardar =
+encendida), interruptor en Marcación solo para el administrador, y el kiosco pregunta según el interruptor y no
+según el plan. La costura se comprueba con `backend/prisma/probar-calificacion-del-dia.ts` contra el servidor local
+(empresa temporal de plan Profesional; se vio fallar devolviendo la regla vieja). OJO al desplegarla: desde ese
+momento los trabajadores de TODAS las empresas ven las caritas al salir, y los administradores sin el plan todavía no
+ven nada hasta la fase 4. Conviene desplegarla junto con la 4, o avisarlo.
+
 ---
 
 ### Peticiones que eran la misma

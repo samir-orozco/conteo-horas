@@ -9,6 +9,7 @@ import { enviarTelegram, telegramConfigurado } from '../utils/telegram';
 import { CLAVE_RESUMEN_SEMANAL } from '../utils/resumenSemanal';
 import { capacidadesEmpresa } from '../utils/capacidades';
 import { CLAVE_MOTIVOS } from '../utils/climaDelKiosco';
+import { CLAVE_CALIFICACION_DIA } from '../utils/clima';
 import {
   CLAVE_PERMISOS_REMUNERADOS, PERMISOS_CONFIGURABLES, PERMISOS_REMUNERADOS_LEY,
   PERMISOS_NUNCA_REMUNERADOS, normalizarPoliticaPermisos, parsearPoliticaPermisos,
@@ -87,6 +88,17 @@ export default async function configuracionRoutes(app: FastifyInstance) {
       }
       if (data[CLAVE_RESUMEN_SEMANAL] !== '0' && data[CLAVE_RESUMEN_SEMANAL] !== '1') {
         return reply.status(400).send({ error: 'El resumen semanal solo se enciende o se apaga' });
+      }
+    }
+    // La calificación del día («¿Cómo te fue hoy?» en el kiosco) es de toda la empresa y se les pregunta a
+    // todos los trabajadores: la cambia un administrador, en cualquier plan, y solo a encendido o apagado
+    // (14 de octubre de 2026, PENDIENTES nº 39).
+    if (CLAVE_CALIFICACION_DIA in data) {
+      if ((request.user as { rol?: string } | undefined)?.rol !== 'ADMIN') {
+        return reply.status(403).send({ error: 'Solo el administrador cambia la calificación del día' });
+      }
+      if (data[CLAVE_CALIFICACION_DIA] !== '0' && data[CLAVE_CALIFICACION_DIA] !== '1') {
+        return reply.status(400).send({ error: 'La calificación del día solo se enciende o se apaga' });
       }
     }
     // La política de permisos remunerados decide descuentos de nómina: solo el

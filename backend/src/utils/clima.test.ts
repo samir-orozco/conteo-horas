@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   MOTIVO_OTRO, MOTIVOS_PREDETERMINADOS, CATALOGO_DE_MOTIVOS, MAX_MOTIVOS, MAX_OBSERVACION,
-  debePreguntarClima, leerMotivosDeEmpresa, validarMotivosDeEmpresa, leerCalificacion, leerObservacion,
+  debePreguntarClima, calificacionDelDiaEncendida, leerMotivosDeEmpresa, validarMotivosDeEmpresa, leerCalificacion, leerObservacion,
   necesitanAtencion, semanaDe, visibleDesde, ordenRevuelto,
   resumenDelClima, variacionDelPromedio, promedioPorSede, yaSePreguntoHoy, filasParaLaRacha,
   casosPorAbrir, leerCambioDeSeguimiento, leerComentario,
@@ -12,7 +12,7 @@ const bog = (a: number, mes: number, d: number, h: number, min = 0) =>
   new Date(Date.UTC(a, mes - 1, d, h + 5, min, 0));
 
 describe('debePreguntarClima', () => {
-  const base = { accion: 'SALIDA' as const, pausa: false, tieneModulo: true, yaSePreguntoHoy: false };
+  const base = { accion: 'SALIDA' as const, pausa: false, calificacionEncendida: true, yaSePreguntoHoy: false };
 
   it('pregunta en la salida que cierra la jornada', () => {
     expect(debePreguntarClima(base)).toBe(true);
@@ -26,8 +26,10 @@ describe('debePreguntarClima', () => {
     expect(debePreguntarClima({ ...base, pausa: true })).toBe(false);
   });
 
-  it('no pregunta si el plan no incluye el módulo', () => {
-    expect(debePreguntarClima({ ...base, tieneModulo: false })).toBe(false);
+  // Desde el 14 de octubre de 2026 la pregunta no depende del plan sino del interruptor de la empresa
+  // (PENDIENTES nº 39): todos los planes califican; el plan decide quién ve los resultados.
+  it('no pregunta si la empresa apagó la calificación del día', () => {
+    expect(debePreguntarClima({ ...base, calificacionEncendida: false })).toBe(false);
   });
 
   it('si ya se le preguntó hoy, no vuelve a preguntar', () => {
@@ -449,5 +451,20 @@ describe('leerComentario', () => {
     expect(leerComentario({ texto: '   ' }).ok).toBe(false);
     expect(leerComentario({ texto: 'x'.repeat(2001) }).ok).toBe(false);
     expect(leerComentario(null).ok).toBe(false);
+  });
+});
+
+// EL INTERRUPTOR «CALIFICACIÓN DEL DÍA» (14 de octubre de 2026, PENDIENTES nº 39). Encendido para todos los
+// planes salvo que la empresa lo apague: sin la clave guardada, está encendido. Solo «0» lo apaga; cualquier
+// otro valor lo deja como estaba de fábrica, porque la ruta de configuración no acepta otro que «0» o «1».
+describe('calificacionDelDiaEncendida', () => {
+  it('sin la clave guardada está encendida', () => {
+    expect(calificacionDelDiaEncendida(null)).toBe(true);
+    expect(calificacionDelDiaEncendida(undefined)).toBe(true);
+  });
+
+  it('«1» la enciende y «0» la apaga', () => {
+    expect(calificacionDelDiaEncendida('1')).toBe(true);
+    expect(calificacionDelDiaEncendida('0')).toBe(false);
   });
 });

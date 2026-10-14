@@ -1,8 +1,7 @@
 import { randomUUID } from 'crypto';
 import { prisma } from '../prisma';
-import { tieneFuncion } from './capacidades';
 import { Prisma } from '@prisma/client';
-import { debePreguntarClima, leerMotivosDeEmpresa, yaSePreguntoHoy } from './clima';
+import { CLAVE_CALIFICACION_DIA, calificacionDelDiaEncendida, debePreguntarClima, leerMotivosDeEmpresa, yaSePreguntoHoy } from './clima';
 import { rangoDiaBogota } from './fechas';
 
 // La plomería del clima laboral en el kiosco (4 de octubre de 2026). Las decisiones están en
@@ -43,17 +42,20 @@ export async function climaDeLaSalida(
   firmar: (token: TokenClima) => string,
 ): Promise<{ token: string; motivos: string[] } | null> {
   // Las consultas se saltan cuando ya se sabe la respuesta: una pausa no pregunta nunca.
-  const tieneModulo = !p.pausa && await tieneFuncion(p.empresaId, 'clima');
+  // El interruptor de la empresa, no el plan (PENDIENTES nº 39): todos los planes califican.
+  const calificacionEncendida = !p.pausa && calificacionDelDiaEncendida((await prisma.configuracion.findUnique({
+    where: { empresaId_clave: { empresaId: p.empresaId, clave: CLAVE_CALIFICACION_DIA } },
+  }))?.valor);
   const { inicioDia, finDia } = rangoDiaBogota(p.fechaJornada);
   const delDia = { colaboradorId: p.colaboradorId, fecha: { gte: inicioDia, lt: finDia } };
-  const [calificada, otrasSalidas] = tieneModulo
+  const [calificada, otrasSalidas] = calificacionEncendida
     ? await Promise.all([
       prisma.calificacionClima.findFirst({ where: delDia, select: { id: true } }),
       prisma.registro.count({ where: { ...delDia, ...SALIDAS_QUE_ABREN_LA_VENTANA, id: { not: p.registroId } } }),
     ])
     : [null, 0];
   const preguntado = yaSePreguntoHoy({ calificoHoy: !!calificada, otrasSalidasDelKioscoHoy: otrasSalidas });
-  if (!debePreguntarClima({ accion: 'SALIDA', pausa: p.pausa, tieneModulo, yaSePreguntoHoy: preguntado })) return null;
+  if (!debePreguntarClima({ accion: 'SALIDA', pausa: p.pausa, calificacionEncendida, yaSePreguntoHoy: preguntado })) return null;
   const token = firmar({ rol: ROL_CLIMA, id: p.colaboradorId, empresaId: p.empresaId, fecha: inicioDia.toISOString(), jti: randomUUID() });
   return { token, motivos: await motivosDeEmpresa(p.empresaId) };
 }

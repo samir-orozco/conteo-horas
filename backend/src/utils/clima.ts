@@ -30,12 +30,21 @@ export const MOTIVOS_PREDETERMINADOS = [
 
 type Resultado<T> = ({ ok: true } & T) | { ok: false; error: string };
 
+// EL INTERRUPTOR «CALIFICACIÓN DEL DÍA» (14 de octubre de 2026, PENDIENTES nº 39). La pregunta del kiosco ya
+// no depende del plan: todos los planes califican, y el plan decide quién ve los resultados completos. La
+// empresa la apaga en Configuración › Marcación. Sin la clave guardada está encendida (decisión del dueño).
+export const CLAVE_CALIFICACION_DIA = 'CLIMA_CALIFICACION_DIA';
+
+export function calificacionDelDiaEncendida(valor: string | null | undefined): boolean {
+  return valor !== '0';
+}
+
 // ¿La salida que se acaba de marcar abre la ventana de las caritas? Solo la que
 // cierra la jornada, y una vez por día: en un turno partido, la primera.
 export function debePreguntarClima(p: {
-  accion: 'ENTRADA' | 'SALIDA'; pausa: boolean; tieneModulo: boolean; yaSePreguntoHoy: boolean;
+  accion: 'ENTRADA' | 'SALIDA'; pausa: boolean; calificacionEncendida: boolean; yaSePreguntoHoy: boolean;
 }): boolean {
-  return p.accion === 'SALIDA' && !p.pausa && p.tieneModulo && !p.yaSePreguntoHoy;
+  return p.accion === 'SALIDA' && !p.pausa && p.calificacionEncendida && !p.yaSePreguntoHoy;
 }
 
 // En un turno partido se pregunta solo en la PRIMERA salida, la responda o no. Mirar solo si calificó

@@ -4,11 +4,14 @@ import api from '../../lib/api';
 import { useNavigate } from 'react-router-dom';
 import { useMiPlan } from '../../lib/plan';
 import FuncionBloqueada from '../../components/FuncionBloqueada';
+import { useAuth } from '../../context/AuthContext';
+import CalificacionDelDia from './CalificacionDelDia';
 
 // Métodos de marcación del kiosco (las alertas de Telegram viven en Conexiones).
 export default function TabMarcacion() {
   const navigate = useNavigate();
   const { plan } = useMiPlan();
+  const { usuario } = useAuth();
   const [permiteCedula, setPermiteCedula] = useState(true);
   const [cargado, setCargado] = useState(false);
 
@@ -102,6 +105,10 @@ export default function TabMarcacion() {
         </p>
       </div>
       )}
+
+      {/* «¿Cómo te fue hoy?» al salir (14 de octubre de 2026, PENDIENTES nº 39): para todos los planes, y lo
+          cambia solo el administrador, igual que lo exige el servidor. */}
+      {usuario?.rol === 'ADMIN' && <CalificacionDelDia />}
       </div>
     </div>
   );
