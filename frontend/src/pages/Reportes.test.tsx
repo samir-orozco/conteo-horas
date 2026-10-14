@@ -261,6 +261,29 @@ describe('el período de pago en el reporte por persona', () => {
     expect(screen.getByText(/termina el 15 de enero/)).toBeInTheDocument();
   });
 
+  // El salario del período se sabe aunque no haya terminado: con «Primera quincena» elegida, decir
+  // «Salario base mensual» contradecía lo de arriba (pedido del dueño, 14 de octubre de 2026).
+  it('con un período que no ha terminado, el salario ya es el del período', async () => {
+    await calcularPara(conAdicional({ ...reporteDe(JULIAN, 5, 11), desde: '2099-01-01', hasta: '2099-01-15' }), JULIAN);
+    expect(textos()).toContain('Salario de la primera quincena de enero de 2099');
+    expect(textos()).toContain('$ 875.000');
+    expect(textos()).not.toContain('Salario base mensual');
+  });
+
+  it('con el mes completo dice «Salario de septiembre», sin «la»', async () => {
+    await calcularPara(conAdicional({ ...reporteDe(JULIAN, 5, 11), hasta: '2026-09-30' }), JULIAN);
+    expect(textos()).toContain('Salario de septiembre de 2026');
+    expect(textos()).toContain('$ 1.750.000');
+  });
+
+  // El recuadro amarillo hablaba «del mes» también con una quincena elegida.
+  it('el recuadro de arriba habla del período, no del mes', async () => {
+    await calcularPara(conAdicional(reporteDe(JULIAN, 5, 11)), JULIAN);
+    const recuadro = screen.getByText(/ya cubre las horas ordinarias/).closest('span')!;
+    expect(recuadro.textContent).toContain('ya cubre las horas ordinarias del período');
+    expect(recuadro.textContent).not.toContain('del mes');
+  });
+
   it('sin total tampoco hay «total con el cruce»', async () => {
     const saldo = {
       sinHorario: false, minutosEsperados: 600, minutosPermisoRemunerado: 0, minutosPermisoNoRemunerado: 0,

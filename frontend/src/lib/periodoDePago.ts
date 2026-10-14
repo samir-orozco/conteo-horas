@@ -77,23 +77,34 @@ export function textoDelPeriodo({ tipo, anio, mes }: PeriodoDePago): string {
   }
 }
 
+// La etiqueta del salario en el reporte: «Salario de la primera quincena de…», pero «Salario de octubre de
+// 2026». Con «de la» para todo salió «Salario de la octubre» a producción (13 de octubre de 2026).
+export function rotuloDelSalario(p: PeriodoDePago): string {
+  switch (p.tipo) {
+    case 'PRIMERA_QUINCENA':
+    case 'SEGUNDA_QUINCENA': return `Salario de la ${textoDelPeriodo(p)}`;
+    case 'MES': return `Salario de ${textoDelPeriodo(p)}`;
+  }
+}
+
 // ===== El «Total a pagar» del reporte =====
 //
 // Una sola decisión para la pantalla y el Excel: si hay total y con qué salario. Sin período no hay total,
 // porque cualquier número sería inventado (decisión del dueño). Con un período sin terminar tampoco: los
-// días que faltan cuentan como no trabajados y el descuento saldría inflado.
+// días que faltan cuentan como no trabajados y el descuento saldría inflado. El SALARIO del período sí va
+// en los dos casos con período: se sabe desde el primer día, y lo único provisional es la deuda.
 export type TotalDelReporte =
   | { estado: 'TOTAL'; periodo: PeriodoDePago; salario: number; total: number }
   | { estado: 'SIN_PERIODO' }
-  | { estado: 'SIN_TERMINAR'; periodo: PeriodoDePago };
+  | { estado: 'SIN_TERMINAR'; periodo: PeriodoDePago; salario: number };
 
 export function totalDelReporte(r: {
   desde: string; hasta: string; salarioMensual: number; totalAdicional: number; descuento: number; hoy: string;
 }): TotalDelReporte {
   const periodo = periodoDeLasFechas(r.desde, r.hasta);
   if (!periodo) return { estado: 'SIN_PERIODO' };
-  if (!periodoTerminado(periodo, r.hoy)) return { estado: 'SIN_TERMINAR', periodo };
   const salario = salarioDelPeriodo(r.salarioMensual, periodo.tipo);
+  if (!periodoTerminado(periodo, r.hoy)) return { estado: 'SIN_TERMINAR', periodo, salario };
   return { estado: 'TOTAL', periodo, salario, total: salario + r.totalAdicional - r.descuento };
 }
 

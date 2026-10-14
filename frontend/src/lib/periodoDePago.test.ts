@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   fechasDelPeriodo, periodoDeLasFechas, salarioDelPeriodo, periodoTerminado, hoyEnBogota, textoDelPeriodo,
-  totalDelReporte, avisoSinTotal,
+  totalDelReporte, avisoSinTotal, rotuloDelSalario,
 } from './periodoDePago';
 
 // EL PERÍODO DE PAGO EN LOS REPORTES (13 de octubre de 2026, decisión del dueño). El «Total a pagar» sumaba el
@@ -116,9 +116,12 @@ describe('totalDelReporte', () => {
     expect(totalDelReporte({ ...base, desde: '2026-10-01', hasta: '2026-10-13' })).toEqual({ estado: 'SIN_PERIODO' });
   });
 
-  it('con un período que no ha terminado, no hay total y se dice cuándo termina', () => {
+  // El salario del período se sabe desde el primer día; lo único provisional es la deuda, y por eso es
+  // el total lo que no se muestra (14 de octubre de 2026: la pantalla decía «Salario base mensual» con
+  // «Primera quincena» elegida, y se contradecía).
+  it('con un período que no ha terminado, no hay total, pero el salario del período sí', () => {
     expect(totalDelReporte({ ...base, hoy: '2026-10-13', desde: '2026-10-01', hasta: '2026-10-15' })).toEqual({
-      estado: 'SIN_TERMINAR', periodo: { tipo: 'PRIMERA_QUINCENA', anio: 2026, mes: 10 },
+      estado: 'SIN_TERMINAR', periodo: { tipo: 'PRIMERA_QUINCENA', anio: 2026, mes: 10 }, salario: 875_452.5,
     });
   });
 });
@@ -130,13 +133,26 @@ describe('avisoSinTotal', () => {
   });
 
   it('sin terminar, dice qué período y que los días que faltan cuentan como no trabajados', () => {
-    expect(avisoSinTotal({ estado: 'SIN_TERMINAR', periodo: { tipo: 'SEGUNDA_QUINCENA', anio: 2026, mes: 10 } }))
+    expect(avisoSinTotal({ estado: 'SIN_TERMINAR', periodo: { tipo: 'SEGUNDA_QUINCENA', anio: 2026, mes: 10 }, salario: 0 }))
       .toBe('La segunda quincena de octubre de 2026 termina el 31 de octubre. El total a pagar sale cuando termine: '
         + 'hasta entonces, los días que faltan cuentan como no trabajados.');
   });
 
   it('el mes completo se dice con su artículo', () => {
-    expect(avisoSinTotal({ estado: 'SIN_TERMINAR', periodo: { tipo: 'MES', anio: 2026, mes: 10 } }))
+    expect(avisoSinTotal({ estado: 'SIN_TERMINAR', periodo: { tipo: 'MES', anio: 2026, mes: 10 }, salario: 0 }))
       .toMatch(/^El mes de octubre de 2026 termina el 31 de octubre\./);
+  });
+});
+
+// La etiqueta del salario en el reporte. «Salario de la primera quincena de…», pero «Salario de octubre de
+// 2026», no «Salario de la octubre» (salió así a producción el 13 de octubre de 2026 con «Mes completo»).
+describe('rotuloDelSalario', () => {
+  it('una quincena lleva su artículo', () => {
+    expect(rotuloDelSalario({ tipo: 'PRIMERA_QUINCENA', anio: 2026, mes: 10 })).toBe('Salario de la primera quincena de octubre de 2026');
+    expect(rotuloDelSalario({ tipo: 'SEGUNDA_QUINCENA', anio: 2026, mes: 9 })).toBe('Salario de la segunda quincena de septiembre de 2026');
+  });
+
+  it('el mes completo no', () => {
+    expect(rotuloDelSalario({ tipo: 'MES', anio: 2026, mes: 10 })).toBe('Salario de octubre de 2026');
   });
 });
