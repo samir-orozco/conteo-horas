@@ -99,21 +99,24 @@ function accionPropia(metodo: string, ruta: string, cuerpo: unknown): string | n
   }
 }
 
+// De qué recurso es una ruta ya normalizada. Bajo `/api/admin` el recurso es el segundo segmento:
+// `admin/empresas` no es lo mismo que `empresas` (una la toca HoraPro, la otra la empresa sobre sí misma).
+// Bajo `/api/clima` también: los motivos, los casos y sus comentarios son cosas distintas, y el comentario
+// va anidado en su caso.
+function claveDeRecurso(ruta: string): string {
+  const partes = ruta.split('/').filter(Boolean); // ['api', 'admin', 'empresas', ':id']
+  return partes[1] === 'admin' ? `admin/${partes[2] ?? ''}`
+    : partes[1] === 'clima' ? (partes.includes('comentarios') ? 'clima/comentarios' : `clima/${partes[2] ?? ''}`)
+      : (partes[1] ?? '');
+}
+
 const VERBOS: Record<string, string> = { POST: 'Creó', PUT: 'Editó', PATCH: 'Editó', DELETE: 'Borró' };
 
 export function accionDePeticion(metodo: string | undefined, url: string | undefined, cuerpo?: unknown): string {
   const ruta = rutaNormalizada(url);
   const propia = accionPropia((metodo ?? '').toUpperCase(), ruta, cuerpo);
   if (propia) return propia;
-  const partes = ruta.split('/').filter(Boolean); // ['api', 'admin', 'empresas', ':id']
-  // Bajo `/api/admin` el recurso es el segundo segmento: `admin/empresas` no es lo mismo que
-  // `empresas` (una la toca HoraPro, la otra la empresa sobre sí misma).
-  // Bajo `/api/clima` también: los motivos, los casos y sus comentarios son cosas distintas, y el
-  // comentario va anidado en su caso.
-  const clave = partes[1] === 'admin' ? `admin/${partes[2] ?? ''}`
-    : partes[1] === 'clima' ? (partes.includes('comentarios') ? 'clima/comentarios' : `clima/${partes[2] ?? ''}`)
-      : (partes[1] ?? '');
-  const recurso = RECURSOS[clave];
+  const recurso = RECURSOS[claveDeRecurso(ruta)];
   const verboBase = VERBOS[(metodo ?? '').toUpperCase()];
   if (!recurso || !verboBase) return `${(metodo ?? '').toUpperCase()} ${ruta}`;
   // "Creó los precios" no se dice. Lo que no se cuenta de a uno se guarda, no se crea.
@@ -157,8 +160,69 @@ function limpiar(valor: unknown): unknown {
   return valor;
 }
 
-export function cuerpoParaGuardar(cuerpo: unknown): string {
+// LOS DATOS DE LAS PERSONAS NO SE COPIAN AQUÍ (14 de octubre de 2026). Decisión del dueño, opción A de
+// POLITICA-PRIVACIDAD-1.3-para-abogado.md §0. Este registro lo ve el super admin y no se borra, y guardaba el cuerpo
+// entero: la cédula y el salario de un trabajador, la descripción de una novedad, un comentario del seguimiento. La
+// política promete que HoraPro no tiene ninguna pantalla para ver los datos de los trabajadores de sus clientes.
+//
+// La regla: la auditoría dice quién hizo qué y sobre cuál registro. Del cuerpo quedan los NOMBRES de los campos y los
+// ids, que dicen sobre cuál registro y no son datos de nadie; cada valor se cambia por NO_SE_GUARDA. Solo las rutas
+// cuyo cuerpo es de la EMPRESA (sus sedes, horarios, configuración, su plan) guardan los valores, con la limpieza de
+// siempre. Es una lista de las que SÍ, y no de las que no: una ruta que se escriba mañana nace protegida.
+//
+// `auth` está entre las que sí porque el rol que se le pone a un usuario es lo que delata una escalada (ver
+// utils/rolDeEmpresa.ts); sus cuerpos son de los usuarios del panel, no de los trabajadores. Wompi NO: su aviso de pago
+// trae el correo de quien pagó, y la política dice que de un pago guardamos el identificador y el estado.
+const CUERPO_DE_LA_EMPRESA = new Set([
+  'festivos', 'sedes', 'horarios', 'plantillas-turno', 'clima/motivos', 'notificaciones', 'configuracion', 'suscripcion',
+  'auth', 'admin/empresas', 'admin/configuracion', 'admin/auxilios', 'admin/planes', 'admin/resenas',
+]);
+const esDeLaEmpresa = (url: string | null | undefined) => CUERPO_DE_LA_EMPRESA.has(claveDeRecurso(rutaNormalizada(url ?? '')));
+
+export const NO_SE_GUARDA = '(no se guarda)';
+const DETALLE_RECORTADO = '(no se guarda: el detalle venía recortado)';
+const textoNoGuardado = (texto: string) => `(texto de ${texto.length} caracteres; no se guarda)`;
+// Lo que ya es un reemplazo, para que limpiar dos veces no cambie nada.
+const YA_REEMPLAZADO = /^\((texto de \d+ caracteres; )?no se guarda[^)]*\)$/;
+
+// `id`, `colaboradorId`, `sedeIds`: dicen sobre cuál registro. Un id es corto; uno largo no es un id.
+const CLAVE_DE_ID = /^id$|Ids?$/;
+const esId = (v: unknown) => typeof v === 'string' && v.length <= 64;
+
+// La forma del cuerpo sin sus valores: los nombres de los campos, los ids, y lo de adentro con la misma regla.
+function soloLaForma(valor: unknown, clave = ''): unknown {
+  if (CLAVE_DE_ID.test(clave) && (esId(valor) || (Array.isArray(valor) && valor.every(esId)))) return valor;
+  if (Array.isArray(valor)) return valor.map(v => soloLaForma(v, clave));
+  if (valor && typeof valor === 'object') {
+    return Object.fromEntries(Object.entries(valor as Record<string, unknown>).map(([k, v]) => [k, soloLaForma(v, k)]));
+  }
+  return NO_SE_GUARDA;
+}
+
+export function cuerpoParaGuardar(cuerpo: unknown, url: string | undefined): string {
   if (cuerpo === null || cuerpo === undefined) return '';
-  if (typeof cuerpo === 'string') return recortar(cuerpo, MAXIMO_CUERPO);
-  return recortar(JSON.stringify(limpiar(cuerpo)), MAXIMO_CUERPO);
+  if (esDeLaEmpresa(url)) {
+    if (typeof cuerpo === 'string') return recortar(cuerpo, MAXIMO_CUERPO);
+    return recortar(JSON.stringify(limpiar(cuerpo)), MAXIMO_CUERPO);
+  }
+  if (typeof cuerpo === 'string') return textoNoGuardado(cuerpo);
+  return recortar(JSON.stringify(soloLaForma(cuerpo)), MAXIMO_CUERPO);
+}
+
+/**
+ * Lo que queda de una fila que YA estaba guardada, con la misma regla, o null si no cambia. Lo usa el comando
+ * `src/scripts/limpiar-auditoria.ts` para las filas de antes del 14 de octubre de 2026. Una fila recortada a
+ * MAXIMO_CUERPO no se puede leer como JSON, y se reemplaza entera.
+ */
+export function detalleSinDatosDePersonas(detalle: string | null, ruta: string | null): string | null {
+  if (!detalle || esDeLaEmpresa(ruta) || YA_REEMPLAZADO.test(detalle)) return null;
+  let valor: unknown;
+  try {
+    valor = JSON.parse(detalle);
+  } catch {
+    const inicio = detalle.trimStart()[0];
+    return inicio === '{' || inicio === '[' ? DETALLE_RECORTADO : textoNoGuardado(detalle);
+  }
+  const limpio = recortar(JSON.stringify(soloLaForma(valor)), MAXIMO_CUERPO);
+  return limpio === detalle ? null : limpio;
 }
