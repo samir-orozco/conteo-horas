@@ -883,6 +883,20 @@ Fase 4 hecha (14 de octubre de 2026), sin desplegar, sin cambio de esquema. Lo q
 
 Falta la fase 5 (textos legales, abogado) antes de lanzarlo. Las fases 1 a 4 se despliegan juntas: cuatro ramas.
 
+Fase 5 en curso (14 de octubre de 2026): `POLITICA-PRIVACIDAD-1.3-para-abogado.md`, en la raíz, con lo que el producto hace,
+los textos propuestos para la política y para el producto, 11 preguntas para el abogado y lo que decide el dueño. La
+política (`frontend/blog/legal/privacidad.mjs`) NO se ha tocado: se cambia cuando el texto esté aprobado. Al armarla
+apareció que la 1.2 publicada ya no es cierta en seis puntos, por funciones que salieron después del 4 de octubre:
+- **Lo grave:** el registro del sistema guarda el cuerpo de cada cambio del panel (nombre, cédula, salario de un
+  trabajador, descripción de una novedad, comentarios del seguimiento) y el super admin lo ve, sin borrado. El punto 4
+  promete que HoraPro no tiene ninguna pantalla para ver eso. Decisión del dueño: cambiar la auditoría (recomendado) o la
+  política.
+- El correo de los lunes lleva nombres de trabajadores (el punto 8 dice que nunca); Telegram manda cinco clases de aviso (la
+  política describe una); la geocerca guarda si se marcó fuera del área; el registro del sistema vive en nuestra base y no
+  se borra; las reseñas con nombre son una finalidad que la 1.2 no tiene.
+Lo nuevo del clima para todas las empresas (fases 1 a 4) espera las preguntas 1, 2 y 7 del documento: si es dato sensible,
+si encendida por defecto vuelve a HoraPro responsable, y si es un cambio sustancial con aviso de 15 días.
+
 ---
 
 ### Peticiones que eran la misma
