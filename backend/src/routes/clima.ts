@@ -11,7 +11,7 @@ import { sedesPorDefecto } from '../utils/sedesDeEmpresa';
 import {
   CATALOGO_DE_MOTIVOS, MAX_MOTIVOS, MOTIVOS_PREDETERMINADOS, MOTIVO_OTRO,
   ordenRevuelto, semanaDe, validarMotivosDeEmpresa,
-  leerCambioDeSeguimiento, leerComentario,
+  leerCambioDeSeguimiento, leerComentario, casoDeLaAtencion,
 } from '../utils/clima';
 import { CLAVE_MOTIVOS, motivosDeEmpresa } from '../utils/climaDelKiosco';
 import { pruebasDe, resumenDelPanel, sedesDeLaGente, sincronizarSeguimientos } from '../utils/lecturasDelClima';
@@ -170,7 +170,10 @@ export default async function climaRoutes(app: FastifyInstance) {
         .sort((a, b) => ORDEN_DE_ESTADO[a.estado] - ORDEN_DE_ESTADO[b.estado] || b.abiertoEn.getTime() - a.abiertoEn.getTime())
         .map(c => {
           const p = persona.get(c.colaboradorId);
-          const enLista = atencion.find(a => a.colaboradorId === c.colaboradorId && a.desde.getTime() === c.desde.getTime());
+          // Quien hoy necesita atención y a quien este caso representa: el de su racha o, si no hay, el que siga
+          // abierto (`casoDeLaAtencion`, la misma regla del resumen del panel).
+          const suya = atencion.find(a => a.colaboradorId === c.colaboradorId);
+          const enLista = suya && casoDeLaAtencion(suya, casos.filter(x => x.colaboradorId === c.colaboradorId))?.id === c.id ? suya : undefined;
           return {
             id: c.id, colaboradorId: c.colaboradorId,
             nombre: p ? `${p.nombre} ${p.apellido}` : 'Persona eliminada',

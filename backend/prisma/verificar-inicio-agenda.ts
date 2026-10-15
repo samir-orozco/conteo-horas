@@ -2,7 +2,8 @@
 //   - los festivos de la agenda son los de la tarjeta anterior (`proximosFestivos`) que caen en los 30 días;
 //   - los cumpleaños de la agenda que caen este mes son los de la tarjeta anterior (`cumpleanos`) de hoy en adelante;
 //   - cada contrato de «Pendientes por resolver» que vence o pide aviso en la ventana está en la agenda, y nada más;
-//   - el vencimiento de la suscripción sale al administrador si cae en su última semana, y nunca al supervisor;
+//   - el vencimiento de la suscripción sale al administrador si cae en su última semana (hoy y seis días más), y
+//     nunca al supervisor;
 //   - cada día viaja como medianoche de Bogotá (05:00Z);
 //   - el plan de la consulta nueva de la suscripción (§8.4).
 // La decisión está probada aparte (utils/agendaDelInicio.test.ts). Solo lectura.
@@ -76,7 +77,13 @@ async function main() {
     marca(a.every((x, i) => i === 0 || x.dia >= a[i - 1].dia), 'en orden de fecha');
 
     const festivos = a.filter(x => x.tipo === 'FESTIVO').map(x => `${x.dia.slice(0, 10)} ${x.nombre} ${x.propio}`);
-    const antes = d.proximosFestivos.filter(f => enLaVentana(f.fecha)).map(f => `${claveDiaBogota(new Date(f.fecha))} ${f.nombre} ${f.propio}`);
+    // Un festivo repetido (propio y nacional, mismo día y nombre) sale una vez, como de la empresa.
+    const unicos = new Map<string, boolean>();
+    for (const f of d.proximosFestivos.filter(x => enLaVentana(x.fecha))) {
+      const k = `${claveDiaBogota(new Date(f.fecha))} ${f.nombre}`;
+      unicos.set(k, (unicos.get(k) ?? false) || f.propio);
+    }
+    const antes = [...unicos].map(([k, propio]) => `${k} ${propio}`);
     marca(JSON.stringify(festivos) === JSON.stringify(antes), `festivos: los ${festivos.length} de la tarjeta anterior en los 30 días`);
     if (festivos.length) conFestivos++;
 
@@ -90,7 +97,7 @@ async function main() {
 
     const esperados = d.pendientes.contratos.flatMap(c => [
       ...(c.estado === 'POR_VENCER' && enLaVentana(c.limitePreaviso) ? [`CONTRATO_PREAVISO ${c.colaboradorId} ${claveDiaBogota(new Date(c.limitePreaviso))}`] : []),
-      ...(c.estado !== 'VENCIDO' && enLaVentana(c.vence) ? [`CONTRATO_VENCE ${c.colaboradorId} ${claveDiaBogota(new Date(c.vence))}`] : []),
+      ...(c.estado === 'PREAVISO_VENCIDO' && enLaVentana(c.vence) ? [`CONTRATO_SE_PRORROGA ${c.colaboradorId} ${claveDiaBogota(new Date(c.vence))}`] : []),
     ]).sort();
     const contratos = a.filter(x => x.tipo.startsWith('CONTRATO_')).map(x => `${x.tipo} ${x.colaboradorId} ${x.dia.slice(0, 10)}`).sort();
     marca(JSON.stringify(contratos) === JSON.stringify(esperados), `contratos: ${contratos.length} eventos, los de los pendientes que caen en la ventana`);
@@ -103,7 +110,7 @@ async function main() {
       const vence = s.pagadoHasta ?? s.finPrueba;
       const ultimo = claveDiaBogota(new Date(vence.getTime() - 1));
       const n = Math.round((medianocheBogota(ultimo).getTime() - hoy.getTime()) / DIA);
-      if (new Date(d.fecha) < vence && n <= 7) esperado = `${ultimo} ${!s.pagadoHasta}`;
+      if (new Date(d.fecha) < vence && n <= 6) esperado = `${ultimo} ${!s.pagadoHasta}`;
     }
     const sus = a.filter(x => x.tipo === 'SUSCRIPCION_VENCE').map(x => `${x.dia.slice(0, 10)} ${x.eraPrueba}`);
     marca(JSON.stringify(sus) === JSON.stringify(esperado ? [esperado] : []), `suscripción: ${esperado ?? 'nada que anunciar esta semana'}`);

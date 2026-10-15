@@ -2,7 +2,7 @@
 // módulo propio (15 de octubre de 2026), para que también lo use el Inicio. Las respuestas tienen que
 // quedar idénticas, byte a byte.
 //
-//   npx ts-node prisma/diferencial-clima-panel.ts antes     guarda /clima/resumen y /clima/vistazo
+//   npx ts-node prisma/diferencial-clima-panel.ts antes     guarda /clima/resumen, /clima/vistazo y /clima/seguimientos
 //   npx ts-node prisma/diferencial-clima-panel.ts despues   los vuelve a pedir y compara
 //
 // OJO: /clima/resumen ABRE casos de seguimiento al leer (así funciona el panel). Por eso «antes» se
@@ -33,6 +33,10 @@ async function main() {
         foto[`${e.nombre}|${ruta}|${desde}|${hasta}`] = `${r.statusCode} ${r.body}`;
       }
     }
+    // La pestaña Seguimiento (15 de octubre de 2026): el caso que representa a quien necesita atención sale de la
+    // misma regla que el resumen (`casoDeLaAtencion`). Abre casos al leer, como el resumen.
+    const seg = await app.inject({ method: 'GET', url: '/api/clima/seguimientos' });
+    foto[`${e.nombre}|seguimientos`] = `${seg.statusCode} ${seg.body}`;
     await app.close();
   }
   if (MODO === 'antes') {

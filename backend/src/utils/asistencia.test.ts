@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { estadoDeAsistencia, asistenciaPorDia, type PersonaParaAsistencia } from './asistencia';
+import { estadoDeAsistencia, asistenciaPorDia, huecosDelVinculo, type PersonaParaAsistencia } from './asistencia';
 
 // QUIÉN DEBÍA VENIR Y QUIÉN LLEGÓ (15 de octubre de 2026).
 //
@@ -28,6 +28,12 @@ describe('estadoDeAsistencia', () => {
 
   it('quien todavía no existía en el sistema cuando tenía que entrar no cuenta', () => {
     expect(estadoDeAsistencia({ ...base, creadoEn: bog(14, 9) })).toBe('NO_EXISTIA');
+  });
+
+  // Revisión adversarial (15 de octubre de 2026): dado de alta a las 9 y marcando a las 9:30, la barra lo contaba
+  // «sin turno» mientras la tarjeta de llegadas tarde y el reporte le ponían 85 minutos tarde. Si marcó, llegó.
+  it('quien llega el día de su alta, después de su hora, cuenta como llegó, igual que en las llegadas tarde', () => {
+    expect(estadoDeAsistencia({ ...base, creadoEn: bog(14, 9), llego: true })).toBe('LLEGO');
   });
 
   it('llegó', () => {
@@ -115,5 +121,73 @@ describe('asistenciaPorDia', () => {
   it('la fecha viaja como la medianoche de Bogotá, nunca como texto suelto', () => {
     const [lunes] = asistenciaPorDia(claves, ahora, [], new Set());
     expect(lunes.fecha.toISOString()).toBe('2026-10-12T05:00:00.000Z');
+  });
+});
+
+// LOS HUECOS DEL VÍNCULO (15 de octubre de 2026, revisiones adversariales). Quien se retiró y volvió no debía venir
+// mientras estuvo retirado, pero sí antes de retirarse. El retiro es el último día trabajado (se puede entrar y salir
+// el mismo día, utils/vinculacion.ts), así que el hueco empieza la medianoche siguiente; y termina cuando se REGISTRÓ
+// el reingreso, nunca antes de su fecha: reingresado a las 10 de la mañana, el turno de las 8 ya había pasado.
+describe('huecosDelVinculo', () => {
+  const ev = (tipo: 'INGRESO' | 'RETIRO' | 'REINGRESO', fecha: Date, creadoEn: Date = fecha) => ({ tipo, fecha, creadoEn });
+
+  it('sin retiros no hay huecos', () => {
+    expect(huecosDelVinculo([ev('INGRESO', bog(1))])).toEqual([]);
+  });
+
+  it('del día siguiente al retiro hasta que se registró el reingreso', () => {
+    expect(huecosDelVinculo([ev('RETIRO', bog(9)), ev('REINGRESO', bog(14), bog(14, 10))])).toEqual([[bog(10), bog(14, 10)]]);
+  });
+
+  it('un reingreso registrado antes de su fecha cuenta desde su fecha', () => {
+    expect(huecosDelVinculo([ev('RETIRO', bog(9)), ev('REINGRESO', bog(14), bog(12, 8))])).toEqual([[bog(10), bog(14)]]);
+  });
+
+  it('retirado por error y reingresado el mismo día: no hay hueco', () => {
+    expect(huecosDelVinculo([ev('RETIRO', bog(15), bog(15, 9)), ev('REINGRESO', bog(15), bog(15, 10))])).toEqual([]);
+  });
+
+  it('varios retiros, en el orden en que pasaron aunque lleguen desordenados', () => {
+    expect(huecosDelVinculo([ev('REINGRESO', bog(14)), ev('RETIRO', bog(2)), ev('RETIRO', bog(11)), ev('REINGRESO', bog(5))]))
+      .toEqual([[bog(3), bog(5)], [bog(12), bog(14)]]);
+  });
+
+  // El Inicio solo lee personas activas: si su último evento es un retiro, o es uno programado para más adelante o los
+  // datos quedaron incoherentes (un reingreso que no se escribió). Un hueco abierto escondería sus faltas para siempre,
+  // en silencio; mejor que se vean (verificación adversarial).
+  it('un retiro sin reingreso, en una persona activa, no esconde nada', () => {
+    expect(huecosDelVinculo([ev('RETIRO', bog(9))])).toEqual([]);
+  });
+
+  // La migración del historial solo sembró INGRESO: quien se retiró antes no tiene RETIRO. Si se le reingresa, estuvo
+  // retirada hasta entonces (verificación adversarial).
+  it('un reingreso sin retiro antes: retirada desde siempre hasta que se registró', () => {
+    expect(huecosDelVinculo([ev('INGRESO', bog(1)), ev('REINGRESO', bog(15), bog(15, 10))])).toEqual([[new Date(0), bog(15, 10)]]);
+  });
+
+  // Solo el primer evento puede ser el reingreso de antes del historial. Un segundo reingreso seguido es un dato
+  // incoherente, y no puede borrar todo lo de antes como si hubiera estado retirada desde siempre.
+  it('dos reingresos seguidos: el segundo no borra lo de antes', () => {
+    expect(huecosDelVinculo([ev('RETIRO', bog(2)), ev('REINGRESO', bog(5)), ev('REINGRESO', bog(14))])).toEqual([[bog(3), bog(5)]]);
+  });
+
+  // En el orden en que se registraron, no por su fecha: un retiro programado para el lunes 12 y deshecho el jueves 8
+  // con un reingreso no deja hueco.
+  it('un retiro programado y deshecho antes de su fecha no deja hueco', () => {
+    expect(huecosDelVinculo([ev('RETIRO', bog(12), bog(8, 10)), ev('REINGRESO', bog(8), bog(8, 15))])).toEqual([]);
+  });
+});
+
+describe('estadoDeAsistencia con los huecos del vínculo', () => {
+  it('un turno dentro de un hueco es de cuando no estaba: no falta', () => {
+    expect(estadoDeAsistencia({ ...base, huecos: [[bog(10), bog(14, 10)]] })).toBe('NO_EXISTIA');
+  });
+
+  it('antes de retirarse sí debía venir: la falta de antes del retiro sigue siendo falta', () => {
+    expect(estadoDeAsistencia({ ...base, huecos: [[bog(16), bog(20)]] })).toBe('FALTA');
+  });
+
+  it('si marcó, llegó, aunque caiga en un hueco', () => {
+    expect(estadoDeAsistencia({ ...base, llego: true, huecos: [[bog(10), bog(14, 10)]] })).toBe('LLEGO');
   });
 });

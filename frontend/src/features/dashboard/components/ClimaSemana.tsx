@@ -99,28 +99,30 @@ export default function ClimaSemana({ clima }: { clima: ClimaDelInicio }) {
         </>
       )}
 
+      {/* «Necesita atención» es cómo está cada uno hoy, no los 7 días: una semana sin respuestas no la esconde. */}
       {conFuncion ? (
-        v.total > 0 && (v.atencion > 0 ? (
-          <button type="button" onClick={() => navigate('/app/clima')}
+        v.atencion > 0 ? (
+          // Al seguimiento: ahí están siempre, con su caso. El resumen del panel las esconde en un período sin respuestas.
+          <button type="button" onClick={() => navigate('/app/clima?tab=seguimiento')}
             className="mt-4 w-full flex items-center gap-2 rounded-xl border border-gray-200 px-3.5 py-2.5 text-left text-sm font-medium text-ink hover:border-ink transition-colors">
             <UserRoundSearch size={16} className="text-muted shrink-0" aria-hidden="true" />
             <span className="flex-1">{personas(v.atencion)}</span>
             <ArrowRight size={14} className="text-muted shrink-0" />
           </button>
-        ) : <p className="mt-4 text-xs text-muted">Nadie lleva tres respuestas malas seguidas</p>)
+        ) : v.total > 0 && <p className="mt-4 text-xs text-muted">Nadie lleva tres respuestas malas seguidas</p>
       ) : (
-        <SinPlan atencion={v.total > 0 ? v.atencion : null} clima={clima} />
+        <SinPlan atencion={v.atencion} clima={clima} />
       )}
     </section>
   );
 }
 
-function SinPlan({ atencion, clima }: { atencion: number | null; clima: ClimaDelInicio }) {
+function SinPlan({ atencion, clima }: { atencion: number; clima: ClimaDelInicio }) {
   const navigate = useNavigate();
   const inv = invitacionDelClima(clima.prueba);
   return (
     <div className="mt-4 space-y-3">
-      {atencion !== null && atencion > 0 && (
+      {atencion > 0 && (
         <div className="text-sm">
           <p className="text-ink font-medium">{personas(atencion)}</p>
           <p className="text-xs text-muted">Con el plan Empresarial ves quiénes y por qué</p>

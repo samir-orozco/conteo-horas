@@ -96,3 +96,44 @@ describe('ReporteLlegadasTarde con varias sedes', () => {
     expect(screen.queryByRole('region', { name: 'Resumen por sede' })).not.toBeInTheDocument();
   });
 });
+
+// EL DESGLOSE DE UNA PERSONA (15 de octubre de 2026, verificación adversarial). Desde que las llegadas se miden con
+// los días esperados, a quien tiene el horario inactivo se le miden contra los turnos que le pintó el planificador: la
+// cabecera no puede nombrar el horario inactivo como la referencia. Y las fechas del período son cadenas
+// «yyyy-MM-dd»: leídas con `new Date` caen a medianoche UTC y en Bogotá (o en Los Ángeles, donde corren estas
+// pruebas) se pintaban con el día anterior.
+describe('ReporteLlegadasTarde: el desglose de una persona', () => {
+  it('con el horario inactivo dice «Turnos programados», y el período empieza el día 1', async () => {
+    get.mockImplementation((url: string) => {
+      if (url === '/colaboradores') return Promise.resolve({ data: [] });
+      if (url === '/sedes') return Promise.resolve({ data: [] });
+      if (url === '/reportes/tardanzas-resumen') return Promise.resolve({ data: RESPUESTA });
+      if (url === '/reportes/tardanzas') return Promise.resolve({ data: {
+        sinHorario: false, horario: { nombre: 'Viejo', toleranciaMin: 10, activo: false }, toleranciaMin: 5, detalle: [], totalMinutos: 0, diasTarde: 0,
+      } });
+      return Promise.reject(new Error('url inesperada: ' + url));
+    });
+    render(<ReporteLlegadasTarde />);
+    const fija = await screen.findByRole('row', { name: /Fija/ });
+    await act(async () => { fija.click(); });
+    const cabecera = await screen.findByText(/Turnos programados/);
+    expect(cabecera.textContent).not.toMatch(/Viejo/);
+    expect(cabecera.textContent).toMatch(/^01\/\d{2}\/\d{4} — /);
+  });
+
+  it('si en ese período no tenía contra qué medirse, la cabecera no inventa los turnos programados', async () => {
+    get.mockImplementation((url: string) => {
+      if (url === '/colaboradores') return Promise.resolve({ data: [] });
+      if (url === '/sedes') return Promise.resolve({ data: [] });
+      if (url === '/reportes/tardanzas-resumen') return Promise.resolve({ data: RESPUESTA });
+      if (url === '/reportes/tardanzas') return Promise.resolve({ data: { sinHorario: true, detalle: [], totalMinutos: 0, diasTarde: 0 } });
+      return Promise.reject(new Error('url inesperada: ' + url));
+    });
+    render(<ReporteLlegadasTarde />);
+    const fija = await screen.findByRole('row', { name: /Fija/ });
+    await act(async () => { fija.click(); });
+    await screen.findByRole('heading', { name: /Fija Prueba/ });
+    await waitFor(() => expect(get).toHaveBeenCalledWith('/reportes/tardanzas', expect.anything()));
+    expect(screen.queryByText(/Turnos programados/)).not.toBeInTheDocument();
+  });
+});

@@ -1,6 +1,6 @@
 import { rangoDiaBogota } from './fechas';
 import { minutosDe, type NovedadParaDia } from './tardanzas';
-import { estadoDeAsistencia } from './asistencia';
+import { estadoDeAsistencia, type Hueco } from './asistencia';
 import { escapar } from './correo';
 
 // «NO HA LLEGADO» POR TELEGRAM (11 de octubre de 2026).
@@ -20,6 +20,8 @@ export type PersonaDelDia = {
   nombre: string;
   apellido: string;
   creadoEn: Date;
+  // Los tramos en que estuvo retirada (`huecosDelVinculo`), con la misma regla del Inicio.
+  huecos?: Hueco[];
   // El día esperado de HOY, ya combinado (materializado o del horario). null = no hay cómo saberlo.
   dia: { programado: boolean; horaEntrada: string | null; horaSalida: string | null; toleranciaMin: number } | null;
 };
@@ -55,7 +57,7 @@ export function quienesNoHanLlegado(ahora: Date, personas: PersonaDelDia[], c: C
       // aprobadas o no: si avisó que tenía cita, «no ha llegado» en el grupo es ruido.
       const estado = estadoDeAsistencia({
         dia: p.dia, inicioDia, llego: c.conEntrada.has(p.colaboradorId), creadoEn: p.creadoEn, festivo: c.festivo,
-        novedades: c.novedades.filter(n => n.colaboradorId === p.colaboradorId), ahora,
+        novedades: c.novedades.filter(n => n.colaboradorId === p.colaboradorId), ahora, huecos: p.huecos,
       });
       if (estado !== 'FALTA' || c.yaAvisados.has(p.colaboradorId)) return false;
       // Lo propio del aviso: los 15 minutos de espera después de la tolerancia, y no avisar de un

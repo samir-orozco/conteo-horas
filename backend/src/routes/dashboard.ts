@@ -20,6 +20,7 @@ import { pruebasDe, resumenDelPanel } from '../utils/lecturasDelClima';
 import { DIAS_DE_PRUEBA, estadoDePrueba } from '../utils/pruebaClima';
 import { climaParaElInicio } from '../utils/climaDelInicio';
 import { armarAgenda } from '../utils/agendaDelInicio';
+import { registrarError } from '../utils/registrarEvento';
 import { liquidarEmpresa } from '../utils/reportesDeEmpresa';
 import { leerRangoDelInicio, resumenDeLaQuincena } from '../utils/extrasDelInicio';
 
@@ -107,7 +108,7 @@ export default async function dashboardRoutes(app: FastifyInstance) {
       salidaAlmuerzo: true, salidaDescanso: true,
       colaborador: { select: { id: true, nombre: true, apellido: true, cargo: true } },
     };
-    const [registrosHoy, turnosAbiertos, registrosMes, salidasConFoto, diasCongelados, porAprobar, horariosActivos, marcacionDelKiosco, permisos, diasDeLaVentana, marcasDeLaVentana] = await Promise.all([
+    const [registrosHoy, turnosAbiertos, registrosMes, salidasConFoto, diasCongelados, porAprobar, horariosActivos, marcacionDelKiosco, permisos, diasDeLaVentana, marcasDeLaVentana, vinculo] = await Promise.all([
       prisma.registro.findMany({
         where: { colaboradorId: { in: colIds }, fecha: { gte: inicioDia, lt: finDia } },
         select: SEL_REG,
@@ -173,6 +174,12 @@ export default async function dashboardRoutes(app: FastifyInstance) {
       prisma.registro.findMany({
         where: { colaboradorId: { in: colIds }, fecha: { gte: ventana.inicio, lt: finDia }, entrada: { not: null } },
         select: { colaboradorId: true, fecha: true, entrada: true },
+      }),
+      // Los retiros y reingresos: no debía venir mientras estuvo retirada (`huecosDelVinculo`). Por el índice
+      // (colaboradorId, fecha) de vinculacion_eventos.
+      prisma.vinculacionEvento.findMany({
+        where: { colaboradorId: { in: colIds }, tipo: { in: ['RETIRO', 'REINGRESO'] }, fecha: { lte: finDia } },
+        select: { colaboradorId: true, tipo: true, fecha: true, creadoEn: true },
       }),
     ]);
     const conFotoSalida = new Set(salidasConFoto.map(r => r.id));
@@ -248,9 +255,11 @@ export default async function dashboardRoutes(app: FastifyInstance) {
     // Una sola regla, la de los días esperados (decisión del dueño, 15 de octubre de 2026): la del
     // reporte de llegadas tarde y la del aviso de Telegram. Antes este tablero miraba el horario de hoy
     // y no veía los turnos pintados en el planificador ni los días libres de la programación.
+    const vinculoDe = new Map<string, typeof vinculo>();
+    for (const v of vinculo) vinculoDe.set(v.colaboradorId, [...(vinculoDe.get(v.colaboradorId) ?? []), v]);
     const semana = armarSemanaDelInicio({
       ahora,
-      colaboradores,
+      colaboradores: colaboradores.map(c => ({ ...c, vinculo: vinculoDe.get(c.id) ?? [] })),
       materializados: diasDeLaVentana,
       marcas: marcasDeLaVentana,
       novedades: permisos,
@@ -410,7 +419,9 @@ export default async function dashboardRoutes(app: FastifyInstance) {
     const esAdministrador = (request.user as { rol?: string } | undefined)?.rol === 'ADMIN';
     let clima: ReturnType<typeof climaParaElInicio> = null;
     let pruebaDelClima: { hasta: Date } | null = null;
-    if (esAdministrador) {
+    // Si la lectura del clima falla, el Inicio sigue sin su tarjeta: el resto no depende de ella. El error queda en el
+    // registro del sistema, para que no sea un silencio (§8.3); la petición responde 200.
+    if (esAdministrador) try {
       const desdeClima = ventana.claves7[0];
       const hastaClima = ventana.claves7[6];
       const [cap, pruebas, resumenClima, casosEnLaBase] = await Promise.all([
@@ -426,6 +437,11 @@ export default async function dashboardRoutes(app: FastifyInstance) {
         resumen: resumenClima, prueba: { ...prueba, dias: DIAS_DE_PRUEBA },
         casosAbiertosEnLaBase: casosEnLaBase,
       });
+    } catch (err) {
+      clima = null;
+      pruebaDelClima = null;
+      request.log.error({ err }, 'INICIO: no se pudo leer el clima');
+      registrarError(err, request, 200);
     }
 
     // ===== Próximos días =====

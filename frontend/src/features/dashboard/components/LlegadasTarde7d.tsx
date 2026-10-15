@@ -10,10 +10,15 @@ import type { Dash } from '../types';
 // sobre grafito sí se distingue (más de 9:1). Reemplaza a la lista «Llegadas tarde hoy»; por eso la fila
 // de hoy abre sola, y lo que esa lista mostraba sigue a la vista.
 
-const TEXTO_SIN_TARDE: Record<Exclude<FilaDeLlegadas['estado'], 'TARDE'>, { texto: string; clase: string }> = {
-  A_TIEMPO: { texto: 'todos a tiempo', clase: 'text-green-300' },
-  SIN_TURNOS: { texto: 'sin turnos', clase: 'text-white/40' },
-  FESTIVO: { texto: 'festivo', clase: 'text-white/60' },
+// El color acompaña al texto (`textoDeFila` en semana.ts), que es el que dice qué pasó ese día.
+const CLASE_SIN_TARDE: Record<Exclude<FilaDeLlegadas['estado'], 'TARDE'>, string> = {
+  A_TIEMPO: 'text-green-300',
+  SIN_TARDES: 'text-green-300',
+  NADIE: 'text-red-300',
+  AUN_NO: 'text-white/60',
+  CON_NOVEDAD: 'text-amber-300',
+  SIN_TURNOS: 'text-white/40',
+  FESTIVO: 'text-white/60',
 };
 
 function Barra({ f }: { f: FilaDeLlegadas }) {
@@ -29,7 +34,7 @@ function Barra({ f }: { f: FilaDeLlegadas }) {
           {f.mas > 0 && <span className="ml-3 text-[10px] font-bold text-ink bg-white rounded-full px-1.5 py-0.5">+{f.mas}</span>}
         </span>
       ) : (
-        <span className={`absolute inset-0 flex items-center px-3 text-xs ${TEXTO_SIN_TARDE[f.estado].clase}`}>{TEXTO_SIN_TARDE[f.estado].texto}</span>
+        <span className={`absolute inset-0 flex items-center px-3 text-xs ${CLASE_SIN_TARDE[f.estado]}`}>{f.texto}</span>
       )}
     </span>
   );

@@ -172,6 +172,21 @@ async function main() {
     marca(!recorreUnaTabla(plan), `${tabla}: ${recorreUnaTabla(plan) ? 'Table scan' : 'por índice'}`);
     console.log(plan.split('\n').map(l => `          ${l}`).join('\n'));
   }
+  // El costo con un historial PROPIO grande (revisión adversarial): «necesita atención» lee todo el historial de la
+  // empresa, sin fechas, en cada carga del Inicio. El relleno es de una empresa con 30.000 calificaciones suyas.
+  const { resumenDelPanel } = await import('../src/utils/lecturasDelClima');
+  const ventanaHoy = (await import('../src/utils/semanaDelInicio')).ventanaDelInicio(new Date());
+  let t = performance.now();
+  await resumenDelPanel(relleno.id, ventanaHoy.claves7[0], ventanaHoy.claves7[6], null, false);
+  const msResumen = performance.now() - t;
+  const appRelleno = await appDe(relleno.id, 'ADMIN');
+  t = performance.now();
+  const rr = await appRelleno.inject({ method: 'GET', url: '/dashboard/empresa' });
+  const msInicio = performance.now() - t;
+  await appRelleno.close();
+  console.log(`\nCon 30.000 calificaciones propias: el resumen del clima tarda ${msResumen.toFixed(0)} ms y el Inicio entero ${msInicio.toFixed(0)} ms.`);
+  marca(rr.statusCode === 200, `el Inicio de esa empresa responde ${rr.statusCode}`);
+
   const { borrarEmpresaEnCascada } = await import('../src/utils/borrarEmpresaEnCascada');
   await prisma.$transaction(tx => borrarEmpresaEnCascada(tx, relleno.id), { timeout: 120000 });
   const sobras = await prisma.empresa.count({ where: { id: relleno.id } });

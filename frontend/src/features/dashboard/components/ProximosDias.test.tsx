@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent, within } from '@testing-library/react';
 import { MemoryRouter, Routes, Route, useLocation } from 'react-router-dom';
 import ProximosDias from './ProximosDias';
@@ -53,7 +53,7 @@ describe('ProximosDias', () => {
   });
 
   it('lo que pide hacer algo lleva a donde se hace', () => {
-    montar([{ tipo: 'CONTRATO_VENCE', dia: dia(30), enDias: 15, colaboradorId: 'c7', nombre: 'Luis Mora' }]);
+    montar([{ tipo: 'CONTRATO_SE_PRORROGA', dia: dia(30), enDias: 15, colaboradorId: 'c7', nombre: 'Luis Mora' }]);
     fireEvent.click(screen.getByRole('button', { name: /Luis Mora/ }));
     expect(screen.getByText('Llegó a /app/colaboradores/c7?tab=contratos')).toBeInTheDocument();
   });
@@ -61,6 +61,17 @@ describe('ProximosDias', () => {
   it('un festivo o un cumpleaños no es un botón', () => {
     montar([festivo(16, 1), { tipo: 'CUMPLEANOS', dia: dia(17), enDias: 2, colaboradorId: 'c1', nombre: 'Ana Ruiz' }]);
     expect(screen.queryByRole('button')).not.toBeInTheDocument();
+  });
+
+  // Dos eventos iguales no pueden compartir la llave de React (revisión adversarial): con la misma llave, React avisa y
+  // puede dejar de pintar uno.
+  it('dos eventos del mismo tipo, día y nombre salen los dos, sin llaves repetidas', () => {
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+    montar([festivo(16, 1, 'Igual'), festivo(16, 1, 'Igual')]);
+    const avisos = error.mock.calls.map(c => c.map(String).join(' ')).join('\n');
+    error.mockRestore();
+    expect(filas()).toHaveLength(2);
+    expect(avisos).not.toMatch(/same key/);
   });
 
   it('sin eventos lo dice', () => {

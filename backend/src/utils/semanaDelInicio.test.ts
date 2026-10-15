@@ -64,13 +64,24 @@ describe('armarSemanaDelInicio', () => {
     expect(sinLuis.sinMarcarHoy.find(p => p.id === 'luis')).toMatchObject({ horario: 'Turno programado', horaEntrada: '09:00', novedad: null });
   });
 
+  // Reingresada hoy a las 10, después de su hora de entrada (08:00): no es una falta de hoy, ni en la barra ni en
+  // «Aún no han marcado» (verificación adversarial: el reingreso se contaba desde la medianoche).
+  it('quien reingresó hoy después de su hora no aparece como que no ha marcado', () => {
+    const vinculo = [{ tipo: 'RETIRO' as const, fecha: bog(1), creadoEn: bog(1) }, { tipo: 'REINGRESO' as const, fecha: bog(15), creadoEn: bog(15, 10) }];
+    const hoy = armarSemanaDelInicio({ ...ENTRADA, ahora: bog(15, 11), colaboradores: [{ ...persona('rosa'), vinculo }], marcas: [], novedades: [] });
+    expect(hoy.sinMarcarHoy).toEqual([]);
+    expect(hoy.asistenciaSemana.dias.find(d => d.esHoy)).toMatchObject({ debian: 0 });
+  });
+
   it('la barra de hoy cuadra con las filas rojas: debían menos llegaron = los que faltan', () => {
     const hoy = s.asistenciaSemana.dias.find(d => d.esHoy)!;
     expect(hoy).toMatchObject({ debian: 2, llegaron: 1, conNovedad: 1 });
     expect(hoy.debian - hoy.llegaron).toBe(s.sinMarcarHoy.filter(p => !p.novedad).length);
   });
 
-  it('las llegadas tarde de los 7 días suman lo mismo que la regla del reporte para cada persona', () => {
+  // Arma lo esperado con las mismas funciones, así que no prueba que la ruta lea los mismos datos que el reporte:
+  // eso lo comprueba prisma/verificar-inicio-semana.ts contra la base. Lo que sí prueba es la cifra a mano (15 + 25).
+  it('las llegadas tarde de los 7 días son las de calcularTardanzas con los días de diasParaMedir: 15 + 25 minutos', () => {
     const v = ventanaDelInicio(AHORA);
     const delReporte = ['ana', 'luis'].reduce((total, id) => {
       const c = ENTRADA.colaboradores.find(x => x.id === id)!;
@@ -89,6 +100,37 @@ describe('armarSemanaDelInicio', () => {
     expect(vie).toMatchObject({ clave: '2026-10-09', debian: 2, totalMinutos: 0 });
     expect(sab.debian + dom.debian).toBe(0);
     expect(lun).toMatchObject({ debian: 1, totalMinutos: 0 });
+  });
+
+  // Revisión adversarial (15 de octubre de 2026): con solo `debian`, un día en que nadie vino decía «todos a tiempo»,
+  // y a primera hora, con todos todavía dentro de su tolerancia, «sin turnos». Cada día lleva también cuántos llegaron,
+  // cuántos siguen dentro de su hora y cuántos tienen novedad, contados con la misma regla que la asistencia.
+  it('cada día de las llegadas tarde dice además cuántos llegaron, cuántos siguen en su hora y cuántos con novedad', () => {
+    const [vie, , , lun] = s.llegadasTarde7d.dias;
+    // El viernes faltaron Ana y Sofía (sus vacaciones empiezan el lunes); el lunes llegó Ana y Sofía tenía novedad.
+    expect(vie).toMatchObject({ debian: 2, llegaron: 0, enTiempo: 0, conNovedad: 0 });
+    expect(lun).toMatchObject({ debian: 1, llegaron: 1, conNovedad: 1 });
+    // A las 6 a. m. de hoy Ana (08:00) y Luis (09:00) siguen dentro de su hora: nadie debía haber llegado todavía.
+    const temprano = armarSemanaDelInicio({ ...ENTRADA, ahora: bog(15, 6), marcas: ENTRADA.marcas.filter(m => m.entrada <= bog(15, 6)) });
+    expect(temprano.llegadasTarde7d.dias[6]).toMatchObject({ clave: '2026-10-15', debian: 0, enTiempo: 2, llegaron: 0 });
+    const martes = s.llegadasTarde7d.dias.find(d => d.clave === '2026-10-13')!;
+    expect(martes).toMatchObject({ debian: 1, llegaron: 1 });
+  });
+
+  // Quien se retiró el viernes 9 y volvió el miércoles 14 no debía venir el lunes 12 ni el martes 13, pero sí el
+  // viernes 9, su último día (revisiones adversariales).
+  it('quien reingresó a mitad de semana no falta en los días en que estuvo retirado, y sí antes', () => {
+    const vinculo = [{ tipo: 'RETIRO' as const, fecha: bog(9), creadoEn: bog(9, 18) }, { tipo: 'REINGRESO' as const, fecha: bog(14), creadoEn: bog(14, 7) }];
+    const conReingreso = armarSemanaDelInicio({
+      ...ENTRADA,
+      colaboradores: [{ ...persona('rosa'), vinculo }],
+      marcas: [marca('rosa', 14, 8), marca('rosa', 15, 8)],
+      novedades: [],
+    });
+    const dia = (clave: string) => conReingreso.asistenciaSemana.dias.find(d => d.clave === clave)!;
+    expect(dia('2026-10-13')).toMatchObject({ debian: 0, llegaron: 0 });
+    expect(dia('2026-10-14')).toMatchObject({ debian: 1, llegaron: 1 });
+    expect(conReingreso.llegadasTarde7d.dias.find(d => d.clave === '2026-10-09')).toMatchObject({ debian: 1, llegaron: 0 });
   });
 
   it('las llegadas tarde de hoy siguen viajando para el Inicio anterior, derivadas del mismo cálculo', () => {

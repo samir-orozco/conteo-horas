@@ -27,7 +27,8 @@ export function textoDeEvento(e: EventoDeAgenda): TextoDeEvento {
     case 'FESTIVO': return { titulo: e.nombre, detalle: e.propio ? 'Festivo de la empresa' : 'Festivo', destino: null };
     case 'CUMPLEANOS': return { titulo: e.nombre, detalle: 'Cumpleaños', destino: null };
     case 'CONTRATO_PREAVISO': return { titulo: e.nombre, detalle: 'Último día para avisar si no se renueva el contrato', destino: AL_CONTRATO(e.colaboradorId) };
-    case 'CONTRATO_VENCE': return { titulo: e.nombre, detalle: 'Vence su contrato', destino: AL_CONTRATO(e.colaboradorId) };
+    // El preaviso ya venció: lo mismo que dicen los pendientes.
+    case 'CONTRATO_SE_PRORROGA': return { titulo: e.nombre, detalle: 'Vence y se prorroga solo', destino: AL_CONTRATO(e.colaboradorId) };
     case 'SUSCRIPCION_VENCE': return {
       titulo: e.eraPrueba ? 'Último día de tu prueba gratis' : 'Último día del mes pagado',
       detalle: 'Registra el pago para seguir usando HoraPro', destino: '/app/configuracion?tab=suscripcion',

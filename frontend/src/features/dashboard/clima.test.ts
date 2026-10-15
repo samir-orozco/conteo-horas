@@ -18,7 +18,9 @@ describe('invitacionDelClima', () => {
     });
   });
 
-  it('sin prueba que pedir ni prueba terminada (la quitó el super admin), solo el plan', () => {
+  // Por si acaso: el servidor no manda este caso a una empresa sin el plan (una prueba quitada trae `terminada`), pero
+  // sin prueba que ofrecer lo único que queda es el plan.
+  it('sin prueba que pedir ni prueba terminada, solo el plan', () => {
     expect(invitacionDelClima(PRUEBA)).toEqual({ boton: 'Subir de plan', destino: '/app/configuracion?tab=suscripcion', nota: null });
   });
 });

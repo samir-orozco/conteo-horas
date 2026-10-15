@@ -15,7 +15,7 @@ function colorDeLaFecha(tipo: EventoDeAgenda['tipo']): string {
   switch (tipo) {
     case 'CUMPLEANOS': return 'bg-pink-100 text-pink-700';
     case 'CONTRATO_PREAVISO':
-    case 'CONTRATO_VENCE': return 'bg-orange-100 text-orange-800';
+    case 'CONTRATO_SE_PRORROGA': return 'bg-orange-100 text-orange-800';
     case 'SUSCRIPCION_VENCE':
     case 'PRUEBA_CLIMA_TERMINA': return 'bg-ink text-white';
     case 'FESTIVO':
@@ -35,7 +35,7 @@ export default function ProximosDias({ eventos }: { eventos: EventoDeAgenda[] })
       </h2>
       {eventos.length === 0 ? <p className="text-sm text-muted">Nada en los próximos 30 días.</p> : (
         <ul aria-label="Próximos días" className="space-y-2">
-          {visibles.map(e => {
+          {visibles.map((e, i) => {
             const t = textoDeEvento(e);
             const { dia, mes } = diaDelEvento(e.dia);
             const contenido = (
@@ -53,7 +53,9 @@ export default function ProximosDias({ eventos }: { eventos: EventoDeAgenda[] })
               </>
             );
             return (
-              <li key={`${e.tipo}-${e.dia}-${'colaboradorId' in e ? e.colaboradorId : 'nombre' in e ? e.nombre : ''}`}>
+              // Con la posición: dos eventos pueden coincidir en tipo, día y nombre, y una llave repetida le hace
+              // perder la cuenta a React. La lista no se reordena mientras está pintada.
+              <li key={`${i}-${e.tipo}-${e.dia}`}>
                 {t.destino ? (
                   <button type="button" onClick={() => navigate(t.destino!)}
                     className="w-full flex items-center gap-3 rounded-xl bg-gray-50 px-3 py-2 text-left hover:bg-gray-100 transition-colors">

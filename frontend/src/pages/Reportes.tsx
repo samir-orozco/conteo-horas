@@ -15,6 +15,9 @@ import { TIPO_PERMISO_LABEL } from './ColaboradorDetalle';
 import VistaDeAdjunto from '../components/VistaDeAdjunto';
 import IconoDeAdjunto from '../components/IconoDeAdjunto';
 import { nombreParaDescargar } from '../lib/archivos';
+import { contraQueSeMide, type HorarioDelReporte } from '../features/reportes/horarioDeLasTardanzas';
+
+const mayuscula = (t: string) => t.charAt(0).toUpperCase() + t.slice(1);
 
 const TZ = 'America/Bogota';
 
@@ -44,7 +47,7 @@ type Novedad = { id: string; tipo: string; descripcion?: string | null; aprobado
 type RegistroDia = { id: string; fecha: string; entrada: string | null; salida: string | null; tipo: string; minutosTarde: number | null; observacion?: string | null };
 type Tardanzas = {
   sinHorario: boolean;
-  horario?: { nombre: string; toleranciaMin: number };
+  horario?: HorarioDelReporte;
   detalle: { fecha: string; horaEsperada: string; horaLlegada: string; minutosTarde: number }[];
   totalMinutos: number;
   diasTarde: number;
@@ -501,12 +504,12 @@ export default function Reportes() {
             </p>
           ) : tardanzas.diasTarde === 0 ? (
             <p className="text-sm text-green-700 mt-2">
-              Sin llegadas tarde en el período ✓ (horario {tardanzas.horario?.nombre}, {tardanzas.horario?.toleranciaMin} min de tolerancia)
+              Sin llegadas tarde en el período ✓ ({contraQueSeMide(tardanzas.horario)})
             </p>
           ) : (
             <>
               <p className="text-sm text-muted mb-3">
-                Horario {tardanzas.horario?.nombre} ({tardanzas.horario?.toleranciaMin} min de tolerancia sobre la hora de cada día):{' '}
+                {mayuscula(contraQueSeMide(tardanzas.horario))}:{' '}
                 <b className="text-orange-600">{tardanzas.diasTarde} día{tardanzas.diasTarde === 1 ? '' : 's'} tarde · {fmtMin(tardanzas.totalMinutos)} en total</b>
               </p>
               <div className="overflow-x-auto">

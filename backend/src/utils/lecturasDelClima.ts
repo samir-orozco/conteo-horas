@@ -2,7 +2,7 @@ import { prisma } from '../prisma';
 import { rangoReporte } from './fechas';
 import { sedesPorDefecto } from './sedesDeEmpresa';
 import { atencionDeLaEmpresa, comoLista } from './atencionClima';
-import { casosPorAbrir, promedioPorSede, resumenDelClima, variacionDelPromedio, type CalificacionDelDia, type EnAtencion } from './clima';
+import { casoDeLaAtencion, casosPorAbrir, promedioPorSede, resumenDelClima, variacionDelPromedio, type CalificacionDelDia, type EnAtencion } from './clima';
 import { SALIDAS_QUE_ABREN_LA_VENTANA } from './climaDelKiosco';
 import { FUNCION_DE_PRUEBA } from './pruebaClima';
 
@@ -112,9 +112,8 @@ export async function resumenDelPanel(empresaId: string, desde: string, hasta: s
     select: { id: true, colaboradorId: true, desde: true, estado: true },
   });
   const atencion = atencionTodas.filter(a => enLaSede(a.colaboradorId)).map(a => {
-    // El caso de esta racha; si no hay, el que siga abierto.
-    const suyos = casos.filter(c => c.colaboradorId === a.colaboradorId);
-    const caso = suyos.find(c => c.desde.getTime() === a.desde.getTime()) ?? suyos.find(c => c.estado !== 'CERRADO') ?? null;
+    // El caso de esta racha; si no hay, el que siga abierto (`casoDeLaAtencion`, la misma regla de Seguimiento).
+    const caso = casoDeLaAtencion(a, casos.filter(c => c.colaboradorId === a.colaboradorId));
     return {
       ...a,
       nombre: nombreDe(a.colaboradorId),

@@ -7,6 +7,10 @@ import api from '../lib/api';
 import SedesDeFila from '../components/SedesDeFila';
 import ResumenPorSede, { type ColumnaResumen, type Resumen } from '../components/ResumenPorSede';
 import type { SedeDeFila } from '../lib/sedesDeReporte';
+import { referenciaDeLaMedicion, type HorarioDelReporte } from '../features/reportes/horarioDeLasTardanzas';
+
+// «yyyy-MM-dd» → «dd/MM/yyyy», de la cadena: con `new Date` cae a medianoche UTC y se pinta el día anterior.
+const diaMesAnio = (f: string) => `${f.slice(8, 10)}/${f.slice(5, 7)}/${f.slice(0, 4)}`;
 
 // `sedes` es opcional solo para no romper si esta pantalla llega antes que el
 // servidor que lo manda.
@@ -15,7 +19,7 @@ type ClaveTardanzas = 'diasTarde' | 'totalMinutos' | 'montoTardanzas';
 type DetalleTardanza = { fecha: string; horaEsperada: string; horaLlegada: string; minutosTarde: number };
 type Drill = {
   colaborador: { nombre: string; apellido: string };
-  sinHorario: boolean; horario?: { nombre: string; toleranciaMin: number };
+  sinHorario: boolean; horario?: HorarioDelReporte;
   // La tolerancia que se APLICÓ en el período, que sale de los días
   // materializados. No es la de `horario`: esa es la de hoy, y si el admin la
   // cambió después mostraría un número que no se usó para calcular nada.
@@ -194,8 +198,8 @@ export default function ReporteLlegadasTarde() {
               <div>
                 <h3 className="font-bold text-lg text-ink">{drill.colaborador.nombre} {drill.colaborador.apellido}</h3>
                 <p className="text-xs text-muted">
-                  {format(new Date(desde), 'dd/MM/yyyy')} — {format(new Date(hasta), 'dd/MM/yyyy')}
-                  {drill.horario && ` · Horario ${drill.horario.nombre}`}
+                  {diaMesAnio(desde)} — {diaMesAnio(hasta)}
+                  {!drillLoading && !drill.sinHorario && ` · ${referenciaDeLaMedicion(drill.horario)}`}
                   {drill.toleranciaMin != null && ` (${drill.toleranciaMin} min de tolerancia)`}
                 </p>
               </div>

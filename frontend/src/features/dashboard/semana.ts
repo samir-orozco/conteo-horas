@@ -54,9 +54,11 @@ export function columnasDeAsistencia(dias: DiaAsistencia[]): ColumnaDeAsistencia
   });
 }
 
-export type EstadoDeFila = 'TARDE' | 'A_TIEMPO' | 'SIN_TURNOS' | 'FESTIVO';
+// Sin tardanzas no quiere decir que todos llegaron a tiempo (revisión del 15 de octubre de 2026): un día en que
+// nadie vino decía «todos a tiempo», y a primera hora, con todos dentro de su hora, «sin turnos».
+export type EstadoDeFila = 'TARDE' | 'A_TIEMPO' | 'SIN_TARDES' | 'NADIE' | 'AUN_NO' | 'CON_NOVEDAD' | 'SIN_TURNOS' | 'FESTIVO';
 export type FilaDeLlegadas = {
-  clave: string; etiqueta: string; esHoy: boolean; estado: EstadoDeFila; ancho: number; minutos: string;
+  clave: string; etiqueta: string; esHoy: boolean; estado: EstadoDeFila; texto: string; ancho: number; minutos: string;
   caras: { id: string; nombre: string; foto: string | null }[]; mas: number;
   detalle: { id: string; nombre: string; texto: string }[];
   nombreAccesible: string;
@@ -69,8 +71,27 @@ const ANCHO_MINIMO = 4;
 function estadoDeFila(d: DiasLlegadas[number]): EstadoDeFila {
   if (d.festivo) return 'FESTIVO';
   if (d.totalMinutos > 0) return 'TARDE';
-  if (d.debian > 0) return 'A_TIEMPO';
+  // «Todos a tiempo» solo cuando llegaron todos los que debían y no queda nadie dentro de su hora.
+  if (d.debian > 0) return d.llegaron === 0 ? 'NADIE' : d.llegaron < d.debian || d.enTiempo > 0 ? 'SIN_TARDES' : 'A_TIEMPO';
+  if (d.enTiempo > 0) return 'AUN_NO';
+  if (d.conNovedad > 0) return 'CON_NOVEDAD';
   return 'SIN_TURNOS';
+}
+
+// Lo que dice la fila cuando no hay barra. Un caso por estado (CLAUDE.md §9.4).
+function textoDeFila(estado: EstadoDeFila, d: DiasLlegadas[number]): string {
+  switch (estado) {
+    case 'TARDE': return `${cuantos(d.personas.length, 'llegó', 'llegaron')} tarde, ${fmtMin(d.totalMinutos)} en total`;
+    case 'A_TIEMPO': return 'todos a tiempo';
+    case 'SIN_TARDES': return d.esHoy ? 'sin llegadas tarde hasta ahora' : 'sin llegadas tarde';
+    // «De turno»: quien vino sin turno ese día no entra en la cuenta.
+    case 'NADIE': return d.esHoy ? 'no ha llegado nadie de turno' : 'no llegó nadie de turno';
+    case 'AUN_NO': return 'todavía no es hora';
+    case 'CON_NOVEDAD': return 'todos con novedad';
+    case 'SIN_TURNOS': return 'sin turnos';
+    case 'FESTIVO': return 'festivo';
+    default: { const nunca: never = estado; return nunca; }
+  }
 }
 
 export function filasDeLlegadas(dias: DiasLlegadas, personas: Personas): FilaDeLlegadas[] {
@@ -80,16 +101,9 @@ export function filasDeLlegadas(dias: DiasLlegadas, personas: Personas): FilaDeL
     const estado = estadoDeFila(d);
     const ancho = d.totalMinutos > 0 && maximo > 0 ? Math.max(ANCHO_MINIMO, Math.round((d.totalMinutos / maximo) * 100)) : 0;
     const quien = `${d.esHoy ? 'Hoy, ' : ''}${diaDeLaSemana(d.fecha)}`;
-    let lectura: string;
-    switch (estado) {
-      case 'TARDE': lectura = `${cuantos(d.personas.length, 'llegó', 'llegaron')} tarde, ${fmtMin(d.totalMinutos)} en total`; break;
-      case 'A_TIEMPO': lectura = 'todos a tiempo'; break;
-      case 'SIN_TURNOS': lectura = 'sin turnos'; break;
-      case 'FESTIVO': lectura = 'festivo'; break;
-      default: { const nunca: never = estado; lectura = nunca; }
-    }
+    const lectura = textoDeFila(estado, d);
     return {
-      clave: d.clave, etiqueta: d.esHoy ? 'Hoy' : diaCorto(d.fecha), esHoy: d.esHoy, estado, ancho,
+      clave: d.clave, etiqueta: d.esHoy ? 'Hoy' : diaCorto(d.fecha), esHoy: d.esHoy, estado, texto: lectura, ancho,
       minutos: d.totalMinutos > 0 ? fmtMin(d.totalMinutos) : '',
       caras: d.personas.slice(0, CARAS).map(p => ({ id: p.id, nombre: nombre(p.id), foto: personas[p.id]?.fotoMini ?? null })),
       mas: Math.max(0, d.personas.length - CARAS),

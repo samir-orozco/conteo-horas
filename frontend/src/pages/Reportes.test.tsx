@@ -38,11 +38,13 @@ const reporteDe = (quien: typeof JULIAN, diasCont: number | undefined, registros
   auxilioTransporte: 58_122.17,
 });
 
-function montar(reporte: ReturnType<typeof reporteDe>) {
+const SIN_HORARIO = { sinHorario: true, detalle: [], totalMinutos: 0 };
+
+function montar(reporte: ReturnType<typeof reporteDe>, tardanzas: Record<string, unknown> = SIN_HORARIO) {
   get.mockImplementation((url: string) => {
     if (url === '/colaboradores') return Promise.resolve({ data: [JULIAN, SOFIA] });
     if (url === '/reportes/liquidacion') return Promise.resolve({ data: reporte });
-    if (url === '/reportes/tardanzas') return Promise.resolve({ data: { sinHorario: true, detalle: [], totalMinutos: 0 } });
+    if (url === '/reportes/tardanzas') return Promise.resolve({ data: tardanzas });
     if (url === '/permisos') return Promise.resolve({ data: [] });
     if (url === '/registros') return Promise.resolve({ data: [] });
     return Promise.reject(new Error('url inesperada: ' + url));
@@ -54,9 +56,9 @@ function montar(reporte: ReturnType<typeof reporteDe>) {
 
 // El selector no es un <select> nativo: es un botón que despliega un buscador. Se usa como lo usa
 // una persona, por el texto del botón y por el nombre de quien elige.
-const calcularPara = async (reporte: ReturnType<typeof reporteDe>, quien: typeof JULIAN) => {
+const calcularPara = async (reporte: ReturnType<typeof reporteDe>, quien: typeof JULIAN, tardanzas?: Record<string, unknown>) => {
   const usuario = userEvent.setup();
-  montar(reporte);
+  montar(reporte, tardanzas);
   await usuario.click(await screen.findByRole('button', { name: /Seleccionar colaborador/ }));
   await usuario.click(await screen.findByRole('button', { name: `${quien.nombre} ${quien.apellido}` }));
   await usuario.click(screen.getByRole('button', { name: 'Calcular' }));
@@ -326,5 +328,20 @@ describe('el período de pago en el reporte por persona', () => {
     const filas = (exportar.mock.calls.at(-1)![1] as { nombre: string; filas: (string | number)[][] }[])
       .find(h => h.nombre === 'Liquidación')!.filas;
     expect(filas.find(f => String(f[1]) === 'Salario de la primera quincena de septiembre de 2026')?.[5]).toBe(875_000);
+  });
+});
+
+// CONTRA QUÉ SE MIDEN LAS LLEGADAS TARDE (15 de octubre de 2026). Con turnos pintados y sin horario activo, el servidor
+// manda `horario: null` y la pantalla decía «(horario , min de tolerancia)» (revisión adversarial).
+describe('las llegadas tarde del reporte por persona', () => {
+  it('sin horario activo dicen que se midieron contra los turnos programados', async () => {
+    await calcularPara(reporteDe(JULIAN, 7, 7), JULIAN, { sinHorario: false, horario: null, detalle: [], totalMinutos: 0, diasTarde: 0 });
+    expect(await screen.findByText(/turnos programados, con la tolerancia de cada día/)).toBeInTheDocument();
+    expect(screen.queryByText(/horario ,/)).not.toBeInTheDocument();
+  });
+
+  it('con horario activo, su nombre y su tolerancia', async () => {
+    await calcularPara(reporteDe(JULIAN, 7, 7), JULIAN, { sinHorario: false, horario: { nombre: 'Oficina', toleranciaMin: 5, activo: true }, detalle: [], totalMinutos: 0, diasTarde: 0 });
+    expect(await screen.findByText(/horario Oficina, 5 min de tolerancia/)).toBeInTheDocument();
   });
 });

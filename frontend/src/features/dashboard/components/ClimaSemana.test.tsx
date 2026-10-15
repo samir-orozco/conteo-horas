@@ -49,16 +49,31 @@ describe('ClimaSemana', () => {
       .toEqual(['Muy mal: 2', 'Mal: 3', 'Normal: 10', 'Bien: 15', 'Muy bien: 10']);
   });
 
-  it('con la función: las personas que necesitan atención llevan al panel del clima', () => {
+  // A la pestaña Seguimiento y no al resumen: el resumen del panel las esconde si el mes no tiene respuestas, y
+  // Seguimiento las muestra siempre, con su caso (verificación adversarial del 15 de octubre de 2026).
+  it('con la función: las personas que necesitan atención llevan al seguimiento del clima', () => {
     montar(ACTIVO);
     fireEvent.click(screen.getByRole('button', { name: /3 personas necesitan atención/ }));
-    expect(screen.getByText('Llegó a /app/clima')).toBeInTheDocument();
+    expect(screen.getByText('Llegó a /app/clima?tab=seguimiento')).toBeInTheDocument();
   });
 
   it('con la función y nadie en atención, lo dice sin botón', () => {
     montar({ ...ACTIVO, vistazo: { ...VISTAZO, atencion: 0 } });
     expect(screen.queryByRole('button', { name: /necesita/ })).not.toBeInTheDocument();
     expect(screen.getByText('Nadie lleva tres respuestas malas seguidas')).toBeInTheDocument();
+  });
+
+  // «Necesita atención» no depende de los 7 días: es cómo está cada uno hoy. Una semana sin respuestas (vacaciones
+  // colectivas, la pregunta apagada) no puede esconder a quien ya la necesitaba (revisión adversarial).
+  it('sin respuestas en los 7 días, quien necesita atención sigue a la vista', () => {
+    montar({ ...ACTIVO, vistazo: { ...VISTAZO, total: 0, personas: 0, promedio: null, variacion: null, atencion: 2 }, distribucion: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 } });
+    expect(screen.getByText('Nadie calificó su día en los últimos 7 días.')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /2 personas necesitan atención/ })).toBeInTheDocument();
+  });
+
+  it('sin la función y sin respuestas en los 7 días, también dice cuántos necesitan atención', () => {
+    montar({ ...SIN_PLAN, vistazo: { ...VISTAZO, total: 0, personas: 0, promedio: null, variacion: null, atencion: 2 } });
+    expect(screen.getByText(/2 personas necesitan atención/)).toBeInTheDocument();
   });
 
   it('con la prueba gratis en curso, dice hasta cuándo', () => {

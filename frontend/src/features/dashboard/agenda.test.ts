@@ -34,8 +34,12 @@ describe('textoDeEvento', () => {
     expect(textoDeEvento(ev({ tipo: 'CONTRATO_PREAVISO', colaboradorId: 'c1', nombre: 'Ana Ruiz' }))).toEqual({
       titulo: 'Ana Ruiz', detalle: 'Último día para avisar si no se renueva el contrato', destino: '/app/colaboradores/c1?tab=contratos',
     });
-    expect(textoDeEvento(ev({ tipo: 'CONTRATO_VENCE', colaboradorId: 'c2', nombre: 'Luis Mora' }))).toEqual({
-      titulo: 'Luis Mora', detalle: 'Vence su contrato', destino: '/app/colaboradores/c2?tab=contratos',
+  });
+
+  // Con el preaviso vencido, el contrato se prorroga solo: lo mismo que dicen los pendientes (revisión adversarial).
+  it('un contrato con el preaviso vencido dice que se prorroga solo', () => {
+    expect(textoDeEvento(ev({ tipo: 'CONTRATO_SE_PRORROGA', colaboradorId: 'c2', nombre: 'Luis Mora' }))).toEqual({
+      titulo: 'Luis Mora', detalle: 'Vence y se prorroga solo', destino: '/app/colaboradores/c2?tab=contratos',
     });
   });
 

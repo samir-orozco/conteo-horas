@@ -76,6 +76,13 @@ describe('quienesNoHanLlegado: a quién no', () => {
     expect(ids(bog(10), [persona('Luis', {}, { creadoEn: bog(9, 30) })])).toEqual([]);
     expect(ids(bog(10), [persona('Ana', {}, { creadoEn: bog(7, 0) })])).toEqual(['ana']);
   });
+
+  // La misma regla que el Inicio (15 de octubre de 2026, verificación adversarial): quien reingresó hoy a las 9:30
+  // estaba retirado a las 8, su hora de entrada. El grupo no puede recibir un «no ha marcado entrada» suyo.
+  it('a quien reingresó hoy después de su hora de entrada: estaba retirado cuando tenía que llegar', () => {
+    expect(ids(bog(10), [persona('Luis', {}, { huecos: [[bog(0, 0, 1), bog(9, 30)]] })])).toEqual([]);
+    expect(ids(bog(10), [persona('Ana', {}, { huecos: [[bog(0, 0, 1), bog(7, 0)]] })])).toEqual(['ana']);
+  });
 });
 
 describe('quienesNoHanLlegado: el orden', () => {

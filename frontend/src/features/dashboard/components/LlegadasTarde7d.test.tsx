@@ -10,7 +10,8 @@ import type { Dash } from '../types';
 type Dias = NonNullable<Dash['llegadasTarde7d']>['dias'];
 const tarde = (id: string, minutosTarde: number, horaLlegada: string) => ({ id, horaEsperada: '08:00', horaLlegada, minutosTarde });
 const dia = (d: number, over: Partial<Dias[number]> = {}): Dias[number] => ({
-  clave: `2026-10-${String(d).padStart(2, '0')}`, fecha: `2026-10-${String(d).padStart(2, '0')}T05:00:00.000Z`, esHoy: false, festivo: false, debian: 0, totalMinutos: 0, personas: [], ...over,
+  clave: `2026-10-${String(d).padStart(2, '0')}`, fecha: `2026-10-${String(d).padStart(2, '0')}T05:00:00.000Z`, esHoy: false, festivo: false,
+  debian: 0, llegaron: over.debian ?? 0, enTiempo: 0, conNovedad: 0, totalMinutos: 0, personas: [], ...over,
 });
 const DATOS: NonNullable<Dash['llegadasTarde7d']> = {
   dias: [

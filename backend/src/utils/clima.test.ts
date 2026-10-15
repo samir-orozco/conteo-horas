@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import {
+import { casoDeLaAtencion,
   MOTIVO_OTRO, MOTIVOS_PREDETERMINADOS, CATALOGO_DE_MOTIVOS, MAX_MOTIVOS, MAX_OBSERVACION,
   debePreguntarClima, calificacionDelDiaEncendida, leerMotivosDeEmpresa, validarMotivosDeEmpresa, leerCalificacion, leerObservacion,
   necesitanAtencion, semanaDe, visibleDesde, ordenRevuelto,
@@ -473,5 +473,28 @@ describe('calificacionDelDiaEncendida', () => {
   it('«1» la enciende y «0» la apaga', () => {
     expect(calificacionDelDiaEncendida('1')).toBe(true);
     expect(calificacionDelDiaEncendida('0')).toBe(false);
+  });
+});
+
+// QUÉ CASO REPRESENTA A QUIEN NECESITA ATENCIÓN (15 de octubre de 2026, verificación adversarial). El resumen del panel
+// le asignaba el caso de su racha o, si no hay, el que siga abierto; la pestaña Seguimiento solo miraba el de su racha y
+// rotulaba «Ya salió de "Necesitan atención"» a quien hoy la necesita con el caso abierto de una racha anterior (que
+// `casosPorAbrir` no reemplaza mientras siga abierto). Una sola regla para las dos.
+describe('casoDeLaAtencion', () => {
+  const d = (dia: number) => new Date(Date.UTC(2026, 9, dia, 5));
+  const caso = (id: string, desde: Date, estado: 'SIN_REVISAR' | 'EN_SEGUIMIENTO' | 'CERRADO') => ({ id, desde, estado });
+  const ana = { colaboradorId: 'ana', desde: d(8) };
+
+  it('el caso de su racha, esté como esté', () => {
+    expect(casoDeLaAtencion(ana, [caso('viejo', d(1), 'EN_SEGUIMIENTO'), caso('suyo', d(8), 'CERRADO')])?.id).toBe('suyo');
+  });
+
+  it('sin caso de su racha, el que siga abierto de una racha anterior', () => {
+    expect(casoDeLaAtencion(ana, [caso('viejo', d(1), 'EN_SEGUIMIENTO')])?.id).toBe('viejo');
+  });
+
+  it('sin caso de su racha y con los anteriores cerrados, ninguno', () => {
+    expect(casoDeLaAtencion(ana, [caso('viejo', d(1), 'CERRADO')])).toBeNull();
+    expect(casoDeLaAtencion(ana, [])).toBeNull();
   });
 });

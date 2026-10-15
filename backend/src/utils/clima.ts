@@ -301,6 +301,16 @@ export const MAX_COMENTARIO = 2000;
 // Los casos que hay que abrir. Una racha se reconoce por su comienzo (`desde`): mientras dura, el
 // comienzo no cambia. Por eso cerrar el caso de una racha que sigue no lo reabre (ya se atendió), y una
 // racha NUEVA, que empieza después de un buen día, sí abre otro.
+// Qué caso representa a quien hoy necesita atención (15 de octubre de 2026): el de su racha, esté como esté; si no hay,
+// el que siga abierto de una racha anterior, que `casosPorAbrir` no reemplaza mientras siga abierto. Una sola regla
+// para el resumen del panel y la pestaña Seguimiento: esta rotulaba «Ya salió de "Necesitan atención"» a quien la
+// necesitaba con el caso abierto de antes (verificación adversarial).
+export function casoDeLaAtencion<C extends { desde: Date; estado: string }>(a: { desde: Date }, casosDeLaPersona: C[]): C | null {
+  return casosDeLaPersona.find(c => c.desde.getTime() === a.desde.getTime())
+    ?? casosDeLaPersona.find(c => c.estado !== 'CERRADO')
+    ?? null;
+}
+
 export function casosPorAbrir(
   atencion: { colaboradorId: string; desde: Date }[],
   casos: { colaboradorId: string; desde: Date; estado: EstadoDeSeguimiento }[],

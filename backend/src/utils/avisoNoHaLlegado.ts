@@ -7,6 +7,7 @@ import type { HorarioConFranjas } from './tardanzas';
 import {
   quienesNoHanLlegado, mensajeNoHanLlegado, mensajeYaLlego, cuerpoYaLlego, horaLegible, CLAVE_NO_HA_LLEGADO, type PersonaDelDia,
 } from './noHaLlegado';
+import { huecosDelVinculo } from './asistencia';
 
 // LA PLOMERÍA DE «NO HA LLEGADO» (11 de octubre de 2026).
 //
@@ -54,7 +55,7 @@ async function avisarEmpresa(empresaId: string, chat: string, ahora: Date, log?:
   if (!colaboradores.length) return 0;
   const ids = colaboradores.map(c => c.id);
 
-  const [materializados, marcaron, novedades, festivos, avisados] = await Promise.all([
+  const [materializados, marcaron, novedades, festivos, avisados, vinculo] = await Promise.all([
     prisma.diaEsperado.findMany({
       where: { colaboradorId: { in: ids }, fecha: { gte: inicioDia, lt: finDia } },
       select: {
@@ -83,12 +84,20 @@ async function avisarEmpresa(empresaId: string, chat: string, ahora: Date, log?:
       where: { empresaId, tipo: TIPO_NO_HA_LLEGADO, creadoEn: { gte: inicioDia } },
       select: { entidadId: true },
     }),
+    // Los retiros y reingresos: quien reingresó hoy después de su hora no es un «no ha llegado» (`huecosDelVinculo`).
+    prisma.vinculacionEvento.findMany({
+      where: { colaboradorId: { in: ids }, tipo: { in: ['RETIRO', 'REINGRESO'] }, fecha: { lt: finDia } },
+      select: { colaboradorId: true, tipo: true, fecha: true, creadoEn: true },
+    }),
   ]);
 
   const diaDe = new Map(materializados.map(d => [d.colaboradorId, d]));
   const personas: PersonaDelDia[] = colaboradores.map(c => {
     const [dia] = combinarDiasEsperados(inicioDia, finDia, diaDe.has(c.id) ? [diaDe.get(c.id)!] : [], c.horario as HorarioConFranjas | null);
-    return { colaboradorId: c.id, nombre: c.nombre, apellido: c.apellido, creadoEn: c.creadoEn, dia: dia ?? null };
+    return {
+      colaboradorId: c.id, nombre: c.nombre, apellido: c.apellido, creadoEn: c.creadoEn, dia: dia ?? null,
+      huecos: huecosDelVinculo(vinculo.filter(v => v.colaboradorId === c.id)),
+    };
   });
 
   const lista = quienesNoHanLlegado(ahora, personas, {

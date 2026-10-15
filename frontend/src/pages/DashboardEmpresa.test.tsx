@@ -56,7 +56,7 @@ describe('DashboardEmpresa', () => {
   // «Llegadas tarde hoy» se va porque la fila de hoy de la tarjeta de 7 días la reemplaza.
   it('con la semana, la asistencia y las llegadas tarde de 7 días reemplazan a la lista de hoy', () => {
     const dd = (d: number) => String(d).padStart(2, '0');
-    const dia = (d: number, esHoy = false) => ({ clave: `2026-10-${dd(d)}`, fecha: `2026-10-${dd(d)}T05:00:00.000Z`, esHoy, festivo: false, debian: 1, totalMinutos: 0, personas: [] });
+    const dia = (d: number, esHoy = false) => ({ clave: `2026-10-${dd(d)}`, fecha: `2026-10-${dd(d)}T05:00:00.000Z`, esHoy, festivo: false, debian: 1, llegaron: 1, enTiempo: 0, conNovedad: 0, totalMinutos: 0, personas: [] });
     montar({
       ...BASE, pendientes: { novedades: [], contratos: [] }, primerosPasos: null,
       asistenciaSemana: { dias: [12, 13, 14, 15, 16, 17, 18].map(d => ({ ...dia(d, d === 15), futuro: d > 15, llegaron: 1, llegaronSinTurno: 0, conNovedad: 0, enTiempo: 0, conTurno: 1 })) },

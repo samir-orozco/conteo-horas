@@ -86,8 +86,9 @@ async function main() {
   for (let i = 0; i < 30000; i += 5000) {
     await prisma.permiso.createMany({ data: Array.from({ length: 5000 }, (_, k) => ({ colaboradorId: otro.id, tipo: 'OTRO' as const, fechaInicio: new Date(base - ((i + k) % 900) * 86400000), fechaFin: new Date(base - ((i + k) % 900) * 86400000), aprobado: k % 2 === 0 })) });
     await prisma.registro.createMany({ data: Array.from({ length: 5000 }, (_, k) => ({ colaboradorId: otro.id, fecha: new Date(base - (i + k) * 86400000), entrada: new Date(base - (i + k) * 86400000 + 3 * 3600000) })) });
+    await prisma.vinculacionEvento.createMany({ data: Array.from({ length: 5000 }, (_, k) => ({ colaboradorId: otro.id, tipo: 'REINGRESO' as const, fecha: new Date(base - (i + k) * 86400000) })) });
   }
-  await prisma.$executeRawUnsafe('ANALYZE TABLE permisos, registros, dias_esperados');
+  await prisma.$executeRawUnsafe('ANALYZE TABLE permisos, registros, dias_esperados, vinculacion_eventos');
   const app = Fastify();
   app.decorate('requireEmpresa', async (request: { user?: unknown; empresaId?: string }) => { request.user = { rol: 'ADMIN', empresaId: masGrande.id }; request.empresaId = masGrande.id; });
   await app.register(dashboardRoutes, { prefix: '/dashboard' });
@@ -100,13 +101,16 @@ async function main() {
     ['novedades aprobadas de la ventana', q => q.includes('FROM `conteo_horas`.`permisos`') && q.includes('`aprobado` = ?') && q.includes('`fechaFin` >=')],
     ['días esperados de la ventana', q => q.includes('FROM `conteo_horas`.`dias_esperados`') && q.includes('`toleranciaSalidaMin`')],
     ['entradas de la ventana', q => q.includes('FROM `conteo_horas`.`registros`') && q.includes('`entrada` IS NOT NULL') && !q.includes('`salida`')],
+    ['reingresos', q => q.includes('FROM `conteo_horas`.`vinculacion_eventos`')],
   ];
   for (const [nombre, es] of nuevas) {
     const c = consultas.find(x => es(x.query));
     if (!c) { marca(false, `${nombre}: no se encontró la consulta`); continue; }
     const filas = await prisma.$queryRawUnsafe<Record<string, string>[]>(`EXPLAIN FORMAT=TREE ${conParametros(c)}`);
     const plan = Object.values(filas[0] ?? {}).join('');
-    marca(!/Table scan/i.test(plan), `${nombre}: ${/Table scan/i.test(plan) ? 'Table scan' : 'por índice'}`);
+    // «Table scan on <temporary>» es la tabla temporal de un GROUP BY, no la tabla.
+    const recorre = /Table scan on (?!<temporary>)/i.test(plan);
+    marca(!recorre, `${nombre}: ${recorre ? 'Table scan' : 'por índice'}`);
     console.log(plan.split('\n').map(l => `          ${l}`).join('\n'));
   }
   const { borrarEmpresaEnCascada } = await import('../src/utils/borrarEmpresaEnCascada');

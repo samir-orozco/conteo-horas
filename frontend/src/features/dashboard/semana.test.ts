@@ -47,8 +47,10 @@ describe('columnasDeAsistencia', () => {
 });
 
 type DiaLlegadas = NonNullable<Dash['llegadasTarde7d']>['dias'][number];
+// Sin decir otra cosa, llegaron todos los que debían.
 const diaL = (dia: number, over: Partial<DiaLlegadas> = {}): DiaLlegadas => ({
-  clave: `2026-10-${dia}`, fecha: `2026-10-${dia}T05:00:00.000Z`, esHoy: false, festivo: false, debian: 0, totalMinutos: 0, personas: [], ...over,
+  clave: `2026-10-${dia}`, fecha: `2026-10-${dia}T05:00:00.000Z`, esHoy: false, festivo: false, debian: 0, llegaron: over.debian ?? 0,
+  enTiempo: 0, conNovedad: 0, totalMinutos: 0, personas: [], ...over,
 });
 const tarde = (id: string, minutosTarde: number, horaLlegada = '08:20') => ({ id, horaEsperada: '08:00', horaLlegada, minutosTarde });
 const PERSONAS = {
@@ -79,6 +81,32 @@ describe('filasDeLlegadas', () => {
   it('distingue llegó tarde, todos a tiempo, sin turnos y festivo', () => {
     expect(filas.map(f => f.estado)).toEqual(['TARDE', 'A_TIEMPO', 'TARDE', 'FESTIVO']);
     expect(filasDeLlegadas([diaL(11)], PERSONAS)[0].estado).toBe('SIN_TURNOS');
+  });
+
+  // Revisión adversarial (15 de octubre de 2026): sin tardanzas no quiere decir que todos llegaron a tiempo.
+  const leer = (d: DiaLlegadas) => { const [f] = filasDeLlegadas([d], PERSONAS); return [f.estado, f.texto]; };
+  // «De turno»: quien vino sin turno ese día no está en la cuenta, y la fila no puede decir que no vino nadie.
+  it('un día en que nadie de turno llegó no dice «todos a tiempo»', () => {
+    expect(leer(diaL(14, { debian: 3, llegaron: 0 }))).toEqual(['NADIE', 'no llegó nadie de turno']);
+    expect(leer(diaL(15, { esHoy: true, debian: 3, llegaron: 0 }))).toEqual(['NADIE', 'no ha llegado nadie de turno']);
+  });
+
+  // Hoy, con gente todavía dentro de su hora, «todos a tiempo» se adelanta (verificación adversarial).
+  it('hoy, con gente que todavía no es su hora, no dice «todos a tiempo» sino «hasta ahora»', () => {
+    expect(leer(diaL(15, { esHoy: true, debian: 2, llegaron: 2, enTiempo: 5 }))).toEqual(['SIN_TARDES', 'sin llegadas tarde hasta ahora']);
+    expect(leer(diaL(15, { esHoy: true, debian: 2, llegaron: 2 }))).toEqual(['A_TIEMPO', 'todos a tiempo']);
+  });
+
+  it('si llegaron solo algunos, y ninguno tarde: sin llegadas tarde', () => {
+    expect(leer(diaL(14, { debian: 3, llegaron: 2 }))).toEqual(['SIN_TARDES', 'sin llegadas tarde']);
+  });
+
+  it('a primera hora, con todos todavía dentro de su hora, no dice «sin turnos»', () => {
+    expect(leer(diaL(15, { esHoy: true, debian: 0, enTiempo: 4 }))).toEqual(['AUN_NO', 'todavía no es hora']);
+  });
+
+  it('un día en que todos los de turno tenían novedad lo dice', () => {
+    expect(leer(diaL(14, { debian: 0, conNovedad: 2 }))).toEqual(['CON_NOVEDAD', 'todos con novedad']);
   });
 
   it('muestra hasta tres caras y cuenta el resto', () => {

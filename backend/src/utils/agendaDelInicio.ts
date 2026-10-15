@@ -9,21 +9,24 @@ import type { ContratoPorRevisar } from './contratosPorRevisar';
 // desde hoy en Bogotá: así la pantalla no depende del reloj de quien la mira para decir «hoy» o «mañana».
 
 export const DIAS_DE_LA_AGENDA = 30;
-// Lo comercial (el vencimiento de la suscripción, el fin de la prueba del clima) se anuncia en su última semana.
+// Lo comercial (el vencimiento de la suscripción, el fin de la prueba del clima) se anuncia en su última semana: hoy
+// y los seis días siguientes.
 export const DIAS_DEL_AVISO_COMERCIAL = 7;
 
 const DIA_MS = 24 * 60 * 60 * 1000;
 
 type QueEs =
   | { tipo: 'FESTIVO'; nombre: string; propio: boolean }
-  | { tipo: 'CUMPLEANOS' | 'CONTRATO_PREAVISO' | 'CONTRATO_VENCE'; colaboradorId: string; nombre: string }
+  // CONTRATO_SE_PRORROGA: vence con el preaviso ya vencido, así que se prorroga solo (lo mismo que dicen los
+  // pendientes). El vencimiento de uno por vencer no sale: con 30 días de preaviso cae siempre fuera de la ventana.
+  | { tipo: 'CUMPLEANOS' | 'CONTRATO_PREAVISO' | 'CONTRATO_SE_PRORROGA'; colaboradorId: string; nombre: string }
   | { tipo: 'SUSCRIPCION_VENCE'; eraPrueba: boolean }
   | { tipo: 'PRUEBA_CLIMA_TERMINA' };
 export type EventoDeAgenda = { dia: Date; enDias: number } & QueEs;
 
 // El mismo día, lo que pide hacer algo antes que lo que se celebra.
 const ORDEN: Record<EventoDeAgenda['tipo'], number> = {
-  SUSCRIPCION_VENCE: 0, PRUEBA_CLIMA_TERMINA: 1, CONTRATO_PREAVISO: 2, CONTRATO_VENCE: 3, FESTIVO: 4, CUMPLEANOS: 5,
+  SUSCRIPCION_VENCE: 0, PRUEBA_CLIMA_TERMINA: 1, CONTRATO_PREAVISO: 2, CONTRATO_SE_PRORROGA: 3, FESTIVO: 4, CUMPLEANOS: 5,
 };
 
 export function armarAgenda(e: {
@@ -49,7 +52,15 @@ export function armarAgenda(e: {
     if (enDias >= 0 && enDias <= hasta) eventos.push({ dia, enDias, ...ev });
   };
 
-  for (const f of e.festivos) agregar(diaDe(f.fecha), { tipo: 'FESTIVO', nombre: f.nombre, propio: f.empresaId !== null });
+  // Un festivo propio con el mismo nombre y día que uno nacional sale una sola vez, como de la empresa: la base no lo
+  // impide, porque el nacional no tiene empresa (revisión adversarial del 15 de octubre de 2026).
+  const festivos = new Map<string, { dia: Date; nombre: string; propio: boolean }>();
+  for (const f of e.festivos) {
+    const dia = diaDe(f.fecha);
+    const clave = `${dia.getTime()}|${f.nombre}`;
+    festivos.set(clave, { dia, nombre: f.nombre, propio: (festivos.get(clave)?.propio ?? false) || f.empresaId !== null });
+  }
+  for (const f of festivos.values()) agregar(f.dia, { tipo: 'FESTIVO', nombre: f.nombre, propio: f.propio });
 
   const anioHoy = hoy.getUTCFullYear();
   for (const p of e.personas) {
@@ -70,11 +81,11 @@ export function armarAgenda(e: {
     // Un caso por estado y un default explícito (§9.4): el motor de contratos puede sumar estados.
     switch (c.estado) {
       case 'POR_VENCER':
+        // Su vencimiento cae 30 días después de este último día para avisar: siempre fuera de la ventana.
         agregar(diaDe(c.limitePreaviso), { tipo: 'CONTRATO_PREAVISO', colaboradorId: c.colaboradorId, nombre: c.colaborador });
-        agregar(diaDe(c.vence), { tipo: 'CONTRATO_VENCE', colaboradorId: c.colaboradorId, nombre: c.colaborador });
         break;
       case 'PREAVISO_VENCIDO':
-        agregar(diaDe(c.vence), { tipo: 'CONTRATO_VENCE', colaboradorId: c.colaboradorId, nombre: c.colaborador });
+        agregar(diaDe(c.vence), { tipo: 'CONTRATO_SE_PRORROGA', colaboradorId: c.colaboradorId, nombre: c.colaborador });
         break;
       case 'VENCIDO': // ya pasó: está en los pendientes
       default:
@@ -89,11 +100,11 @@ export function armarAgenda(e: {
     if (s && !e.exentaPago && s.estado !== 'CANCELADA') {
       const vence = s.pagadoHasta ?? s.finPrueba;
       if (e.ahora < vence) {
-        agregar(diaDe(new Date(vence.getTime() - 1)), { tipo: 'SUSCRIPCION_VENCE', eraPrueba: !s.pagadoHasta }, DIAS_DEL_AVISO_COMERCIAL);
+        agregar(diaDe(new Date(vence.getTime() - 1)), { tipo: 'SUSCRIPCION_VENCE', eraPrueba: !s.pagadoHasta }, DIAS_DEL_AVISO_COMERCIAL - 1);
       }
     }
     if (e.pruebaDelClima && e.ahora < e.pruebaDelClima.hasta) {
-      agregar(diaDe(new Date(e.pruebaDelClima.hasta.getTime() - 1)), { tipo: 'PRUEBA_CLIMA_TERMINA' }, DIAS_DEL_AVISO_COMERCIAL);
+      agregar(diaDe(new Date(e.pruebaDelClima.hasta.getTime() - 1)), { tipo: 'PRUEBA_CLIMA_TERMINA' }, DIAS_DEL_AVISO_COMERCIAL - 1);
     }
   }
 
