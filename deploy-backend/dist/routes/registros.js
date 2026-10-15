@@ -21,6 +21,7 @@ const descansos_1 = require("../utils/descansos");
 const jornada_1 = require("../utils/jornada");
 const avisoFueraDeGeocerca_1 = require("../utils/avisoFueraDeGeocerca");
 const motivoSinSede_1 = require("../utils/motivoSinSede");
+const reportesDeEmpresa_1 = require("../utils/reportesDeEmpresa");
 const TZ = 'America/Bogota';
 const TIPOS_REGISTRO = new Set(['NORMAL', 'PERMISO', 'FESTIVO']);
 function leerCuerpoDeJornada(body) {
@@ -228,9 +229,11 @@ async function registroRoutes(app) {
     }
     app.get('/', auth, async (request) => {
         const { colaboradorId, desde, hasta } = request.query;
-        const where = { colaborador: { empresaId: request.empresaId } };
-        if (colaboradorId)
-            where.colaboradorId = colaboradorId;
+        // Por la lista de personas de la empresa y no por `colaborador: { empresaId }`, que MySQL resolvía recorriendo
+        // `registros` entera (prisma/medir-filtros-por-empresa.ts, 15 de octubre de 2026). Una persona que no está en la
+        // lista (de otra empresa) no trae nada, como antes.
+        const ids = await (0, reportesDeEmpresa_1.idsDeLaEmpresa)(request.empresaId);
+        const where = { colaboradorId: { in: colaboradorId ? ids.filter(id => id === colaboradorId) : ids } };
         if (desde || hasta) {
             where.fecha = {};
             if (desde)

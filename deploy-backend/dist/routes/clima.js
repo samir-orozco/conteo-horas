@@ -3,17 +3,22 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = climaRoutes;
 const prisma_1 = require("../prisma");
 const capacidades_1 = require("../utils/capacidades");
+const notificaciones_1 = require("../utils/notificaciones");
 const fechas_1 = require("../utils/fechas");
-const sedesDeEmpresa_1 = require("../utils/sedesDeEmpresa");
 const clima_1 = require("../utils/clima");
+const pruebaClima_1 = require("../utils/pruebaClima");
+const climaSinPlan_1 = require("../utils/climaSinPlan");
+const atencionClima_1 = require("../utils/atencionClima");
+const sedesDeEmpresa_1 = require("../utils/sedesDeEmpresa");
+const clima_2 = require("../utils/clima");
 const climaDelKiosco_1 = require("../utils/climaDelKiosco");
+const lecturasDelClima_1 = require("../utils/lecturasDelClima");
 // EL PANEL DEL CLIMA LABORAL (4 de octubre de 2026). docs/CLIMA_LABORAL.md §3.6.
 // Las cuentas están en utils/clima.ts, con sus pruebas; esto lee la base y las conecta.
 const DIA_MS = 24 * 60 * 60 * 1000;
 const SEMANAS_DEL_BUZON = 12;
 // Las últimas respuestas de una persona en su historial: unos tres meses de jornadas.
 const HISTORIAL = 60;
-const RECIENTES = 30;
 // SOLO EL ADMINISTRADOR (decisión del dueño del 3 de octubre de 2026). Las calificaciones van con
 // nombre, así que un supervisor no las ve hasta que se trabaje el tema de usuarios y permisos.
 async function soloAdministrador(request, reply) {
@@ -22,138 +27,61 @@ async function soloAdministrador(request, reply) {
         return reply.status(403).send({ error: 'Solo el administrador ve el clima laboral.', codigo: 'SOLO_ADMIN' });
     }
 }
-const comoLista = (v) => (Array.isArray(v) ? v.filter((m) => typeof m === 'string') : []);
 const fechaValida = (v) => typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v);
 async function climaRoutes(app) {
     const auth = { preHandler: [app.requireEmpresa, (0, capacidades_1.exigeFuncion)('clima'), soloAdministrador] };
-    // La sede de cada persona, atribuida al LEER con la regla de los reportes: sus sedes asignadas, o la
-    // principal si es presencial y no tiene ninguna. Null («Sin sede») solo para híbridos y remotos.
-    async function sedesDeLaGente(empresaId) {
-        const [colaboradores, asignadas, sedes, defecto] = await Promise.all([
-            prisma_1.prisma.colaborador.findMany({ where: { empresaId }, select: { id: true, nombre: true, apellido: true, cargo: true, modalidad: true, activo: true } }),
-            prisma_1.prisma.colaboradorSede.findMany({ where: { sede: { empresaId, activa: true } }, select: { colaboradorId: true, sedeId: true } }),
-            prisma_1.prisma.sede.findMany({ where: { empresaId, activa: true }, select: { id: true, nombre: true }, orderBy: { creadoEn: 'asc' } }),
-            (0, sedesDeEmpresa_1.sedesPorDefecto)(prisma_1.prisma, empresaId),
-        ]);
-        const sedesDe = new Map();
-        for (const a of asignadas)
-            sedesDe.set(a.colaboradorId, [...(sedesDe.get(a.colaboradorId) ?? []), a.sedeId]);
-        for (const c of colaboradores) {
-            if (sedesDe.has(c.id))
-                continue;
-            sedesDe.set(c.id, [c.modalidad === 'PRESENCIAL' ? defecto(c.id) : null]);
-        }
-        return { colaboradores, sedes, sedesDe };
-    }
-    // Quién necesita atención HOY en toda la empresa, entre las personas activas: lo malo que vino después
-    // del último buen día de cada una, por viejo que sea. Una ventana fija de fechas dejaba fuera a quien
-    // responde poco (revisión adversarial del 4 de octubre de 2026).
-    async function atencionDeLaEmpresa(empresaId, activos) {
-        const [buenos, malas] = await Promise.all([
-            prisma_1.prisma.calificacionClima.groupBy({ by: ['colaboradorId'], where: { empresaId, carita: { gt: clima_1.CARITA_MAX_DE_ATENCION } }, _max: { fecha: true } }),
-            prisma_1.prisma.calificacionClima.findMany({
-                where: { empresaId, carita: { lte: clima_1.CARITA_MAX_DE_ATENCION } },
-                select: { colaboradorId: true, fecha: true, carita: true, motivos: true },
-            }),
-        ]);
-        const ultimoBueno = new Map(buenos.filter(b => b._max.fecha).map(b => [b.colaboradorId, b._max.fecha]));
-        return (0, clima_1.necesitanAtencion)((0, clima_1.filasParaLaRacha)(malas.map(m => ({ ...m, motivos: comoLista(m.motivos) })), ultimoBueno).filter(c => activos.has(c.colaboradorId)));
-    }
-    // EL SEGUIMIENTO (4 de octubre de 2026): cada persona que entra a «Necesitan atención» recibe su caso,
-    // con las reglas de `casosPorAbrir`. Se abren al leer la lista, y la llave única (persona, comienzo de
-    // la racha) impide que dos lecturas simultáneas abran el mismo caso dos veces.
-    async function sincronizarSeguimientos(empresaId, atencion) {
-        if (atencion.length === 0)
-            return;
-        const casos = await prisma_1.prisma.seguimientoClima.findMany({
-            where: { empresaId, colaboradorId: { in: atencion.map(a => a.colaboradorId) } },
-            select: { colaboradorId: true, desde: true, estado: true },
-        });
-        const nuevos = (0, clima_1.casosPorAbrir)(atencion, casos);
-        if (nuevos.length > 0) {
-            await prisma_1.prisma.seguimientoClima.createMany({
-                data: nuevos.map(n => ({ empresaId, colaboradorId: n.colaboradorId, desde: n.desde })),
-                skipDuplicates: true,
-            });
-        }
-    }
-    // Quién puede ser responsable de un caso: los usuarios activos de la empresa.
-    const responsablesDe = (empresaId) => prisma_1.prisma.usuario.findMany({ where: { empresaId, activo: true }, select: { id: true, nombre: true }, orderBy: { nombre: 'asc' } });
-    app.get('/resumen', auth, async (request, reply) => {
+    // Las rutas que NO exigen el plan de clima, porque son para quien no lo tiene: la prueba gratis (fase 3) y la vista
+    // sin el plan (fase 4), PENDIENTES nº 39. Sí exigen al administrador, que es quien ve el clima.
+    const authSinPlan = { preHandler: [app.requireEmpresa, soloAdministrador] };
+    // ===== LA PRUEBA GRATIS (14 de octubre de 2026, PENDIENTES nº 39, fase 3) =====
+    // Qué se decide está en utils/pruebaClima.ts; las pruebas se leen con `pruebasDe` (utils/lecturasDelClima.ts).
+    app.get('/prueba', authSinPlan, async (request) => {
+        return { ...(0, pruebaClima_1.estadoDePrueba)(await (0, lecturasDelClima_1.pruebasDe)(request.empresaId), new Date()), dias: pruebaClima_1.DIAS_DE_PRUEBA };
+    });
+    app.post('/prueba', authSinPlan, async (request, reply) => {
         const empresaId = request.empresaId;
-        const { desde, hasta, sedeId } = request.query;
-        if (!fechaValida(desde) || !fechaValida(hasta) || desde > hasta) {
-            return reply.status(400).send({ error: 'El rango de fechas no es válido.' });
-        }
-        const sede = typeof sedeId === 'string' && sedeId !== '' ? sedeId : null;
-        const { desdeF, finExclusivo } = (0, fechas_1.rangoReporte)(desde, hasta);
-        // El período anterior, del mismo largo, para la variación del promedio.
-        const desdeAnterior = new Date(desdeF.getTime() - (finExclusivo.getTime() - desdeF.getTime()));
-        const { colaboradores, sedes, sedesDe } = await sedesDeLaGente(empresaId);
-        const enLaSede = (colaboradorId) => sede === null || (sedesDe.get(colaboradorId) ?? []).includes(sede);
-        const persona = new Map(colaboradores.map(c => [c.id, c]));
-        const nombreDe = (id) => { const c = persona.get(id); return c ? `${c.nombre} ${c.apellido}` : 'Persona eliminada'; };
-        const nombreDeSede = new Map([...sedes.map(s => [s.id, s.nombre]), [null, 'Sin sede']]);
-        const filas = await prisma_1.prisma.calificacionClima.findMany({
-            where: { empresaId, fecha: { gte: desdeAnterior, lt: finExclusivo } },
-            select: { colaboradorId: true, fecha: true, carita: true, motivos: true, observacion: true, actualizadoEn: true },
-        });
-        const todas = filas.map(f => ({ ...f, motivos: comoLista(f.motivos) }));
-        const delPeriodo = (d, h) => (c) => c.fecha >= d && c.fecha < h;
-        const actualTodas = todas.filter(delPeriodo(desdeF, finExclusivo));
-        const actual = actualTodas.filter(c => enLaSede(c.colaboradorId));
-        const anterior = todas.filter(delPeriodo(desdeAnterior, desdeF)).filter(c => enLaSede(c.colaboradorId));
-        const resumen = (0, clima_1.resumenDelClima)(actual);
-        const resumenAnterior = (0, clima_1.resumenDelClima)(anterior);
-        // Cuántas JORNADAS (persona y día) se cerraron en el kiosco en el período: es contra qué se compara
-        // «respondieron». Por jornadas y no por personas: por personas, en un rango largo casi todos responden
-        // alguna vez y el porcentaje se quedaba en 100. Solo las salidas que abren la ventana: ni pausas, ni
-        // el cierre automático, ni las cargadas a mano (revisión adversarial del 4 de octubre de 2026). Un
-        // turno partido son dos salidas pero una sola jornada, por eso se agrupa por persona y día.
-        //
-        // Se leen las de TODA la empresa: con ellas sale también la participación de cada sede.
-        const ids = colaboradores.map(c => c.id);
-        const jornadasTodas = ids.length === 0 ? [] : await prisma_1.prisma.registro.groupBy({
-            by: ['colaboradorId', 'fecha'],
-            where: {
-                colaboradorId: { in: ids }, fecha: { gte: desdeF, lt: finExclusivo },
-                ...climaDelKiosco_1.SALIDAS_QUE_ABREN_LA_VENTANA,
+        const [cap, previas] = await Promise.all([(0, capacidades_1.capacidadesEmpresa)(empresaId), (0, lecturasDelClima_1.pruebasDe)(empresaId)]);
+        const d = (0, pruebaClima_1.decidirPrueba)({ tieneClima: !!cap.features.clima, pruebasPrevias: previas.length });
+        if (!d.ok)
+            return reply.status(409).send({ error: d.error, codigo: d.codigo });
+        const prueba = await prisma_1.prisma.concesionFuncion.create({
+            data: {
+                empresaId, funcion: pruebaClima_1.FUNCION_DE_PRUEBA, hasta: (0, pruebaClima_1.finDePrueba)((0, fechas_1.hoyEnBogota)()), origen: 'PRUEBA',
+                otorgadaPorId: request.usuarioId ?? null, otorgadaPorNombre: request.usuarioNombre ?? null,
             },
         });
-        const jornadas = jornadasTodas.filter(j => enLaSede(j.colaboradorId));
-        // «Necesitan atención» es cómo está cada uno HOY, no en el período. Los casos de seguimiento se abren
-        // con TODA la empresa, no solo con la sede del filtro: filtrar la vista no puede dejar a nadie sin caso.
-        const activos = new Set(colaboradores.filter(c => c.activo).map(c => c.id));
-        const atencionTodas = await atencionDeLaEmpresa(empresaId, activos);
-        await sincronizarSeguimientos(empresaId, atencionTodas);
-        const casos = atencionTodas.length === 0 ? [] : await prisma_1.prisma.seguimientoClima.findMany({
-            where: { empresaId, colaboradorId: { in: atencionTodas.map(a => a.colaboradorId) } },
-            select: { id: true, colaboradorId: true, desde: true, estado: true },
+        // Para probar el clima hace falta que el kiosco pregunte: si la empresa había apagado la calificación del
+        // día, la prueba la vuelve a encender (fase 1).
+        await prisma_1.prisma.configuracion.upsert({
+            where: { empresaId_clave: { empresaId, clave: clima_1.CLAVE_CALIFICACION_DIA } },
+            create: { empresaId, clave: clima_1.CLAVE_CALIFICACION_DIA, valor: '1' },
+            update: { valor: '1' },
         });
-        const atencion = atencionTodas.filter(a => enLaSede(a.colaboradorId)).map(a => {
-            // El caso de esta racha; si no hay, el que siga abierto.
-            const suyos = casos.filter(c => c.colaboradorId === a.colaboradorId);
-            const caso = suyos.find(c => c.desde.getTime() === a.desde.getTime()) ?? suyos.find(c => c.estado !== 'CERRADO') ?? null;
-            return {
-                ...a,
-                nombre: nombreDe(a.colaboradorId),
-                cargo: persona.get(a.colaboradorId)?.cargo ?? null,
-                sedes: (sedesDe.get(a.colaboradorId) ?? []).map(s => nombreDeSede.get(s) ?? 'Sin sede'),
-                seguimiento: caso ? { id: caso.id, estado: caso.estado } : null,
-            };
-        });
-        const recientes = [...actual]
-            .sort((a, b) => b.fecha.getTime() - a.fecha.getTime() || b.actualizadoEn.getTime() - a.actualizadoEn.getTime())
-            .slice(0, RECIENTES)
-            .map(c => ({ colaboradorId: c.colaboradorId, nombre: nombreDe(c.colaboradorId), fecha: c.fecha, carita: c.carita, motivos: c.motivos, observacion: c.observacion }));
-        return {
-            ...resumen,
-            variacion: (0, clima_1.variacionDelPromedio)(resumen.promedio, resumenAnterior.promedio),
-            jornadas: jornadas.length,
-            porSede: (0, clima_1.promedioPorSede)(actualTodas, jornadasTodas, sedesDe, sedes),
-            atencion,
-            recientes,
-        };
+        const aviso = (0, pruebaClima_1.textoDeAviso)('INICIO', { hasta: prueba.hasta });
+        (0, notificaciones_1.notificar)(empresaId, { tipo: aviso.tipo, titulo: aviso.titulo, cuerpo: aviso.cuerpo, entidad: 'clima', entidadId: prueba.id });
+        return reply.status(201).send({ hasta: prueba.hasta });
+    });
+    // Quién puede ser responsable de un caso: los usuarios activos de la empresa.
+    const responsablesDe = (empresaId) => prisma_1.prisma.usuario.findMany({ where: { empresaId, activo: true }, select: { id: true, nombre: true }, orderBy: { nombre: 'asc' } });
+    // El rango y la sede de la consulta, o null si el rango no vale.
+    const leerRango = (query) => {
+        const { desde, hasta, sedeId } = query;
+        if (!fechaValida(desde) || !fechaValida(hasta) || desde > hasta)
+            return null;
+        return { desde, hasta, sede: typeof sedeId === 'string' && sedeId !== '' ? sedeId : null };
+    };
+    app.get('/resumen', auth, async (request, reply) => {
+        const r = leerRango(request.query);
+        if (!r)
+            return reply.status(400).send({ error: 'El rango de fechas no es válido.' });
+        return (0, lecturasDelClima_1.resumenDelPanel)(request.empresaId, r.desde, r.hasta, r.sede, true);
+    });
+    // LA VISTA SIN EL PLAN (14 de octubre de 2026, PENDIENTES nº 39, fase 4): cifras sin nombres de toda la empresa.
+    app.get('/vistazo', authSinPlan, async (request, reply) => {
+        const r = leerRango(request.query);
+        if (!r)
+            return reply.status(400).send({ error: 'El rango de fechas no es válido.' });
+        return (0, climaSinPlan_1.vistazoDelClima)(await (0, lecturasDelClima_1.resumenDelPanel)(request.empresaId, r.desde, r.hasta, null, false));
     });
     // EL HISTORIAL DE UNA PERSONA, para «Revisar» en «Necesitan atención» (4 de octubre de 2026). Va con
     // nombre, como todo lo del panel salvo el buzón: sus caritas, sus motivos y sus observaciones DIRECTAS.
@@ -198,7 +126,7 @@ async function climaRoutes(app) {
             nombre: `${persona.nombre} ${persona.apellido}`,
             cargo: persona.cargo,
             sedes: sedes.length > 0 ? sedes : ['Sin sede'],
-            respuestas: filas.map(f => ({ fecha: f.fecha, carita: f.carita, motivos: comoLista(f.motivos), observacion: f.observacion })),
+            respuestas: filas.map(f => ({ fecha: f.fecha, carita: f.carita, motivos: (0, atencionClima_1.comoLista)(f.motivos), observacion: f.observacion })),
             seguimiento: caso && {
                 id: caso.id, estado: caso.estado, responsableId: caso.responsableId, desde: caso.desde, abiertoEn: caso.abiertoEn, cerradoEn: caso.cerradoEn,
                 comentarios: caso.comentarios.map(k => ({ id: k.id, autorNombre: k.autorNombre, texto: k.texto, creadoEn: k.creadoEn, editadoEn: k.editadoEn })),
@@ -210,10 +138,10 @@ async function climaRoutes(app) {
     const ORDEN_DE_ESTADO = { SIN_REVISAR: 0, EN_SEGUIMIENTO: 1, CERRADO: 2 };
     app.get('/seguimientos', auth, async (request) => {
         const empresaId = request.empresaId;
-        const { colaboradores, sedes, sedesDe } = await sedesDeLaGente(empresaId);
+        const { colaboradores, sedes, sedesDe } = await (0, lecturasDelClima_1.sedesDeLaGente)(empresaId);
         const activos = new Set(colaboradores.filter(c => c.activo).map(c => c.id));
-        const atencion = await atencionDeLaEmpresa(empresaId, activos);
-        await sincronizarSeguimientos(empresaId, atencion);
+        const atencion = await (0, atencionClima_1.atencionDeLaEmpresa)(empresaId, activos);
+        await (0, lecturasDelClima_1.sincronizarSeguimientos)(empresaId, atencion);
         const [casos, responsables] = await Promise.all([
             prisma_1.prisma.seguimientoClima.findMany({
                 where: { empresaId },
@@ -230,7 +158,10 @@ async function climaRoutes(app) {
                 .sort((a, b) => ORDEN_DE_ESTADO[a.estado] - ORDEN_DE_ESTADO[b.estado] || b.abiertoEn.getTime() - a.abiertoEn.getTime())
                 .map(c => {
                 const p = persona.get(c.colaboradorId);
-                const enLista = atencion.find(a => a.colaboradorId === c.colaboradorId && a.desde.getTime() === c.desde.getTime());
+                // Quien hoy necesita atención y a quien este caso representa: el de su racha o, si no hay, el que siga
+                // abierto (`casoDeLaAtencion`, la misma regla del resumen del panel).
+                const suya = atencion.find(a => a.colaboradorId === c.colaboradorId);
+                const enLista = suya && (0, clima_2.casoDeLaAtencion)(suya, casos.filter(x => x.colaboradorId === c.colaboradorId))?.id === c.id ? suya : undefined;
                 return {
                     id: c.id, colaboradorId: c.colaboradorId,
                     nombre: p ? `${p.nombre} ${p.apellido}` : 'Persona eliminada',
@@ -255,7 +186,7 @@ async function climaRoutes(app) {
         if (!caso)
             return reply.status(404).send({ error: 'Ese caso no existe.' });
         const usuarios = await prisma_1.prisma.usuario.findMany({ where: { empresaId, activo: true }, select: { id: true } });
-        const v = (0, clima_1.leerCambioDeSeguimiento)(request.body, usuarios.map(u => u.id));
+        const v = (0, clima_2.leerCambioDeSeguimiento)(request.body, usuarios.map(u => u.id));
         if (!v.ok)
             return reply.status(400).send({ error: v.error });
         // Cerrar anota cuándo; reabrir lo borra.
@@ -270,7 +201,7 @@ async function climaRoutes(app) {
         const caso = await prisma_1.prisma.seguimientoClima.findFirst({ where: { id, empresaId }, select: { id: true } });
         if (!caso)
             return reply.status(404).send({ error: 'Ese caso no existe.' });
-        const c = (0, clima_1.leerComentario)(request.body);
+        const c = (0, clima_2.leerComentario)(request.body);
         if (!c.ok)
             return reply.status(400).send({ error: c.error });
         const comentario = await prisma_1.prisma.comentarioSeguimientoClima.create({
@@ -283,7 +214,7 @@ async function climaRoutes(app) {
         const { id, cid } = request.params;
         if (!await comentarioDe(request.empresaId, id, cid))
             return reply.status(404).send({ error: 'Ese comentario no existe.' });
-        const c = (0, clima_1.leerComentario)(request.body);
+        const c = (0, clima_2.leerComentario)(request.body);
         if (!c.ok)
             return reply.status(400).send({ error: c.error });
         return prisma_1.prisma.comentarioSeguimientoClima.update({ where: { id: cid }, data: { texto: c.texto, editadoEn: new Date() } });
@@ -295,13 +226,15 @@ async function climaRoutes(app) {
         await prisma_1.prisma.comentarioSeguimientoClima.delete({ where: { id: cid } });
         return { ok: true };
     });
+    // Las notas que se ven hoy: las ya visibles de las últimas SEMANAS_DEL_BUZON semanas.
+    const ventanaDelBuzon = (empresaId, ahora) => ({
+        empresaId, visibleDesde: { lte: ahora },
+        semana: { gte: new Date((0, clima_2.semanaDe)(ahora).getTime() - (SEMANAS_DEL_BUZON - 1) * 7 * DIA_MS) },
+    });
     // EL BUZÓN CONFIDENCIAL: solo el texto, sin nada que diga quién ni cuándo. Ni el id sale de aquí.
     app.get('/buzon', auth, async (request) => {
-        const empresaId = request.empresaId;
-        const ahora = new Date();
-        const desde = new Date((0, clima_1.semanaDe)(ahora).getTime() - (SEMANAS_DEL_BUZON - 1) * 7 * DIA_MS);
         const notas = await prisma_1.prisma.observacionConfidencial.findMany({
-            where: { empresaId, visibleDesde: { lte: ahora }, semana: { gte: desde } },
+            where: ventanaDelBuzon(request.empresaId, new Date()),
             select: { id: true, semana: true, texto: true },
         });
         const porSemana = new Map();
@@ -310,15 +243,27 @@ async function climaRoutes(app) {
         return {
             semanas: [...porSemana]
                 .sort(([a], [b]) => b - a)
-                .map(([semana, lista]) => ({ semana: new Date(semana), notas: (0, clima_1.ordenRevuelto)(lista).map(n => n.texto) })),
+                .map(([semana, lista]) => ({ semana: new Date(semana), notas: (0, clima_2.ordenRevuelto)(lista).map(n => n.texto) })),
+        };
+    });
+    // EL BUZÓN SIN EL PLAN (PENDIENTES nº 39, fase 4): CUÁNTAS notas por semana, nunca el texto. Ni siquiera se lee:
+    // la consulta solo trae la semana. Un desenfoque por CSS se quita desde el inspector; un texto que no viajó, no.
+    app.get('/buzon/conteo', authSinPlan, async (request) => {
+        const grupos = await prisma_1.prisma.observacionConfidencial.groupBy({
+            by: ['semana'], where: ventanaDelBuzon(request.empresaId, new Date()), _count: { _all: true },
+        });
+        return {
+            semanas: grupos
+                .sort((a, b) => b.semana.getTime() - a.semana.getTime())
+                .map(g => ({ semana: g.semana, notas: g._count._all })),
         };
     });
     app.get('/motivos', auth, async (request) => {
         const motivos = await (0, climaDelKiosco_1.motivosDeEmpresa)(request.empresaId);
-        return { motivos, otro: clima_1.MOTIVO_OTRO, predeterminados: clima_1.MOTIVOS_PREDETERMINADOS, catalogo: clima_1.CATALOGO_DE_MOTIVOS, maximo: clima_1.MAX_MOTIVOS };
+        return { motivos, otro: clima_2.MOTIVO_OTRO, predeterminados: clima_2.MOTIVOS_PREDETERMINADOS, catalogo: clima_2.CATALOGO_DE_MOTIVOS, maximo: clima_2.MAX_MOTIVOS };
     });
     app.put('/motivos', auth, async (request, reply) => {
-        const v = (0, clima_1.validarMotivosDeEmpresa)(request.body?.motivos);
+        const v = (0, clima_2.validarMotivosDeEmpresa)(request.body?.motivos);
         if (!v.ok)
             return reply.status(400).send({ error: v.error });
         const empresaId = request.empresaId;

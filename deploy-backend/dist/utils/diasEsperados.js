@@ -2,6 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.calcularDiasEsperados = calcularDiasEsperados;
 exports.combinarDiasEsperados = combinarDiasEsperados;
+exports.diasParaMedir = diasParaMedir;
 const date_fns_tz_1 = require("date-fns-tz");
 const tardanzas_1 = require("./tardanzas");
 const diasDeLaSemana_1 = require("./diasDeLaSemana");
@@ -101,4 +102,13 @@ function combinarDiasEsperados(desde, finExclusivo, materializados, horario) {
         // de la base de datos, aguas abajo se compara por día y no debe arrastrarlos.
         return congelado ? { ...congelado, fecha: dia.fecha } : dia;
     });
+}
+// A quién se le mide la asistencia y la llegada tarde (15 de octubre de 2026). Una sola regla, la de
+// los días esperados: a quien tiene un horario activo, y también a quien no lo tiene pero el
+// planificador le pintó turnos. `null` es «no hay turno que medir», que no es lo mismo que «llegó a
+// tiempo»: las pantallas lo dicen aparte.
+function diasParaMedir(desde, finExclusivo, materializados, horario) {
+    const dias = combinarDiasEsperados(desde, finExclusivo, materializados, horario);
+    const conHorario = !!horario && horario.activo;
+    return conHorario || dias.some(d => d.programado && !!d.horaEntrada) ? dias : null;
 }

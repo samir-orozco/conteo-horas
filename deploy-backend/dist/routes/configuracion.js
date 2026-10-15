@@ -14,7 +14,9 @@ const telegram_1 = require("../utils/telegram");
 const resumenSemanal_1 = require("../utils/resumenSemanal");
 const capacidades_1 = require("../utils/capacidades");
 const climaDelKiosco_1 = require("../utils/climaDelKiosco");
+const clima_1 = require("../utils/clima");
 const saldoTiempo_1 = require("../utils/saldoTiempo");
+const reportesDeEmpresa_1 = require("../utils/reportesDeEmpresa");
 async function configuracionRoutes(app) {
     const auth = { preHandler: [app.requireEmpresa] };
     // Envía un mensaje de prueba al chat de Telegram para verificar la conexión.
@@ -86,6 +88,17 @@ async function configuracionRoutes(app) {
             }
             if (data[resumenSemanal_1.CLAVE_RESUMEN_SEMANAL] !== '0' && data[resumenSemanal_1.CLAVE_RESUMEN_SEMANAL] !== '1') {
                 return reply.status(400).send({ error: 'El resumen semanal solo se enciende o se apaga' });
+            }
+        }
+        // La calificación del día («¿Cómo te fue hoy?» en el kiosco) es de toda la empresa y se les pregunta a
+        // todos los trabajadores: la cambia un administrador, en cualquier plan, y solo a encendido o apagado
+        // (14 de octubre de 2026, PENDIENTES nº 39).
+        if (clima_1.CLAVE_CALIFICACION_DIA in data) {
+            if (request.user?.rol !== 'ADMIN') {
+                return reply.status(403).send({ error: 'Solo el administrador cambia la calificación del día' });
+            }
+            if (data[clima_1.CLAVE_CALIFICACION_DIA] !== '0' && data[clima_1.CLAVE_CALIFICACION_DIA] !== '1') {
+                return reply.status(400).send({ error: 'La calificación del día solo se enciende o se apaga' });
             }
         }
         // La política de permisos remunerados decide descuentos de nómina: solo el
@@ -255,11 +268,12 @@ async function configuracionRoutes(app) {
         const [activos, conRostro, ultima] = await Promise.all([
             prisma_1.prisma.colaborador.count({ where: { empresaId, activo: true } }),
             prisma_1.prisma.colaborador.count({ where: { empresaId, activo: true, rostroEnroladoEn: { not: null } } }),
-            prisma_1.prisma.registro.findFirst({
-                where: { colaborador: { empresaId }, entrada: { not: null } },
+            // Por la lista de personas: por la relación, MySQL recorría `registros` entera (prisma/medir-filtros-por-empresa.ts).
+            (0, reportesDeEmpresa_1.idsDeLaEmpresa)(empresaId).then(ids => prisma_1.prisma.registro.findFirst({
+                where: { colaboradorId: { in: ids }, entrada: { not: null } },
                 orderBy: { entrada: 'desc' },
                 select: { entrada: true },
-            }),
+            })),
         ]);
         return { activos, conRostro, ultimaMarcacion: ultima?.entrada ?? null };
     });

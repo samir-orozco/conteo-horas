@@ -75,6 +75,8 @@ const cierreAlmuerzo_1 = require("./utils/cierreAlmuerzo");
 const materializarDias_1 = require("./utils/materializarDias");
 const programarDiario_1 = require("./utils/programarDiario");
 const avisosDeSuscripcion_1 = require("./utils/avisosDeSuscripcion");
+const avisosDePruebaClima_1 = require("./utils/avisosDePruebaClima");
+const avisoClimaSinPlan_1 = require("./utils/avisoClimaSinPlan");
 const envioResumenSemanal_1 = require("./utils/envioResumenSemanal");
 const avisoNoHaLlegado_1 = require("./utils/avisoNoHaLlegado");
 const avisoPausaSinVolver_1 = require("./utils/avisoPausaSinVolver");
@@ -338,6 +340,12 @@ const start = async () => {
         // «Turnos cerrados solos» por Telegram (13 de octubre de 2026): uno cada mañana a las 7 con los cierres
         // de la madrugada. La fecha del último envío evita repetirlo cuando la app arranca de nuevo.
         (0, programarDiario_1.programarDiario)('turnos-cerrados-telegram', turnosCerradosSolos_1.HORA_TURNOS_CERRADOS, () => (0, avisoTurnosCerrados_1.avisarTurnosCerrados)(app.log), app.log);
+        // Los avisos de la prueba gratis del clima en la campana (14 de octubre de 2026, PENDIENTES nº 39): a los 20 días,
+        // 3 días antes del fin y al terminar. A las 7, como los de cobro: son para que los lea una persona.
+        (0, programarDiario_1.programarDiario)('pruebas-del-clima', 7, () => (0, avisosDePruebaClima_1.avisarPruebasDelClima)(app.log), app.log);
+        // El aviso a las empresas SIN el plan de que alguien entró a «necesita atención» en el clima, sin decir quién
+        // (PENDIENTES nº 39, fase 4). A las 7, con los demás avisos para una persona.
+        (0, programarDiario_1.programarDiario)('clima-sin-plan', 7, () => (0, avisoClimaSinPlan_1.avisarClimaSinPlan)(app.log), app.log);
         // Registra el webhook del bot de Telegram (si hay URL configurada)
         if (process.env.TELEGRAM_WEBHOOK_URL)
             (0, telegram_2.configurarWebhook)(process.env.TELEGRAM_WEBHOOK_URL);

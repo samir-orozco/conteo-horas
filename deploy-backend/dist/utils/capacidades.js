@@ -5,13 +5,22 @@ exports.tieneFuncion = tieneFuncion;
 exports.exigeFuncion = exigeFuncion;
 const prisma_1 = require("../prisma");
 const planes_1 = require("./planes");
-// Capacidades efectivas de una empresa (plan + overrides + acceso ilimitado).
+const concesiones_1 = require("./concesiones");
+// Capacidades efectivas de una empresa (plan + overrides + funciones con fecha vigentes + acceso ilimitado).
 async function capacidadesEmpresa(empresaId) {
+    const ahora = new Date();
     const [empresa, planes] = await Promise.all([
-        prisma_1.prisma.empresa.findUnique({ where: { id: empresaId }, include: { suscripcion: true } }),
+        prisma_1.prisma.empresa.findUnique({
+            where: { id: empresaId },
+            include: {
+                suscripcion: true,
+                // Solo las que pueden estar vigentes: el índice (empresaId, funcion) las encuentra sin recorrer la tabla.
+                concesiones: { where: { revocadaEn: null, hasta: { gt: ahora } }, select: { funcion: true, desde: true, hasta: true, revocadaEn: true } },
+            },
+        }),
         (0, planes_1.obtenerPlanes)(prisma_1.prisma),
     ]);
-    return (0, planes_1.capacidadesDe)(empresa?.suscripcion, empresa?.exentaPago ?? false, planes);
+    return (0, planes_1.capacidadesDe)(empresa?.suscripcion, empresa?.exentaPago ?? false, planes, (0, concesiones_1.funcionesConcedidas)(empresa?.concesiones ?? [], ahora));
 }
 // ¿La empresa tiene activa cierta función según su plan?
 async function tieneFuncion(empresaId, feature) {

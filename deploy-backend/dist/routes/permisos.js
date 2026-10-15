@@ -12,6 +12,7 @@ const saldoTiempo_1 = require("../utils/saldoTiempo");
 const documentos_1 = require("../utils/documentos");
 // Los campos que la empresa puede enviar, revisados antes de pasárselos a Prisma.
 const cuerpoDePermiso_1 = require("../utils/cuerpoDePermiso");
+const reportesDeEmpresa_1 = require("../utils/reportesDeEmpresa");
 // El listado NO trae la evidencia (base64 pesado); solo el tipo/nombre para saber que existe.
 const SELECT_LISTA = {
     id: true, colaboradorId: true, fechaInicio: true, fechaFin: true, tipo: true,
@@ -23,9 +24,11 @@ async function permisoRoutes(app) {
     const auth = { preHandler: [app.requireEmpresa] };
     app.get('/', auth, async (request) => {
         const { colaboradorId } = request.query;
-        const where = { colaborador: { empresaId: request.empresaId } };
-        if (colaboradorId)
-            where.colaboradorId = colaboradorId;
+        // Por la lista de personas de la empresa y no por `colaborador: { empresaId }`, que MySQL resolvía recorriendo
+        // `permisos` entera (prisma/medir-filtros-por-empresa.ts, 15 de octubre de 2026). Una persona que no está en la
+        // lista (de otra empresa) no trae nada, como antes.
+        const ids = await (0, reportesDeEmpresa_1.idsDeLaEmpresa)(request.empresaId);
+        const where = { colaboradorId: { in: colaboradorId ? ids.filter(id => id === colaboradorId) : ids } };
         const [permisos, cfg] = await Promise.all([
             prisma_1.prisma.permiso.findMany({ where, select: SELECT_LISTA, orderBy: { fechaInicio: 'desc' } }),
             prisma_1.prisma.configuracion.findUnique({

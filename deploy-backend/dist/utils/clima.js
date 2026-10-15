@@ -1,6 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.MAX_COMENTARIO = exports.ESTADOS_DE_SEGUIMIENTO = exports.MOTIVOS_PREDETERMINADOS = exports.CATALOGO_DE_MOTIVOS = exports.CARITA_MAX_DE_ATENCION = exports.RACHA_DE_ATENCION = exports.CARITA_MAX_CON_MOTIVOS = exports.MAX_OBSERVACION = exports.MAX_LARGO_MOTIVO = exports.MAX_MOTIVOS = exports.MOTIVO_OTRO = void 0;
+exports.MAX_COMENTARIO = exports.ESTADOS_DE_SEGUIMIENTO = exports.CLAVE_CALIFICACION_DIA = exports.MOTIVOS_PREDETERMINADOS = exports.CATALOGO_DE_MOTIVOS = exports.CARITA_MAX_DE_ATENCION = exports.RACHA_DE_ATENCION = exports.CARITA_MAX_CON_MOTIVOS = exports.MAX_OBSERVACION = exports.MAX_LARGO_MOTIVO = exports.MAX_MOTIVOS = exports.MOTIVO_OTRO = void 0;
+exports.calificacionDelDiaEncendida = calificacionDelDiaEncendida;
 exports.debePreguntarClima = debePreguntarClima;
 exports.yaSePreguntoHoy = yaSePreguntoHoy;
 exports.leerMotivosDeEmpresa = leerMotivosDeEmpresa;
@@ -15,6 +16,7 @@ exports.ordenRevuelto = ordenRevuelto;
 exports.resumenDelClima = resumenDelClima;
 exports.variacionDelPromedio = variacionDelPromedio;
 exports.promedioPorSede = promedioPorSede;
+exports.casoDeLaAtencion = casoDeLaAtencion;
 exports.casosPorAbrir = casosPorAbrir;
 exports.leerCambioDeSeguimiento = leerCambioDeSeguimiento;
 exports.leerComentario = leerComentario;
@@ -43,10 +45,17 @@ exports.CATALOGO_DE_MOTIVOS = [
 exports.MOTIVOS_PREDETERMINADOS = [
     'Mucho trabajo', 'Jefe o supervisor', 'Compañeros', 'Me tocó quedarme más tiempo', 'Algo personal',
 ];
+// EL INTERRUPTOR «CALIFICACIÓN DEL DÍA» (14 de octubre de 2026, PENDIENTES nº 39). La pregunta del kiosco ya
+// no depende del plan: todos los planes califican, y el plan decide quién ve los resultados completos. La
+// empresa la apaga en Configuración › Marcación. Sin la clave guardada está encendida (decisión del dueño).
+exports.CLAVE_CALIFICACION_DIA = 'CLIMA_CALIFICACION_DIA';
+function calificacionDelDiaEncendida(valor) {
+    return valor !== '0';
+}
 // ¿La salida que se acaba de marcar abre la ventana de las caritas? Solo la que
 // cierra la jornada, y una vez por día: en un turno partido, la primera.
 function debePreguntarClima(p) {
-    return p.accion === 'SALIDA' && !p.pausa && p.tieneModulo && !p.yaSePreguntoHoy;
+    return p.accion === 'SALIDA' && !p.pausa && p.calificacionEncendida && !p.yaSePreguntoHoy;
 }
 // En un turno partido se pregunta solo en la PRIMERA salida, la responda o no. Mirar solo si calificó
 // no alcanza: quien toca «Omitir» no deja fila, y la segunda salida volvía a preguntar (revisión
@@ -138,7 +147,9 @@ function necesitanAtencion(calificaciones) {
         const racha = rachaFinal([...lista].sort((a, b) => a.fecha.getTime() - b.fecha.getTime()));
         if (racha.length < exports.RACHA_DE_ATENCION)
             continue;
-        resultado.push({ colaboradorId, dias: racha.length, desde: racha[0].fecha, motivo: motivoMasRepetido(racha) });
+        resultado.push({
+            colaboradorId, dias: racha.length, desde: racha[0].fecha, entro: racha[exports.RACHA_DE_ATENCION - 1].fecha, motivo: motivoMasRepetido(racha),
+        });
     }
     return resultado.sort((a, b) => b.dias - a.dias);
 }
@@ -268,6 +279,15 @@ exports.MAX_COMENTARIO = 2000;
 // Los casos que hay que abrir. Una racha se reconoce por su comienzo (`desde`): mientras dura, el
 // comienzo no cambia. Por eso cerrar el caso de una racha que sigue no lo reabre (ya se atendió), y una
 // racha NUEVA, que empieza después de un buen día, sí abre otro.
+// Qué caso representa a quien hoy necesita atención (15 de octubre de 2026): el de su racha, esté como esté; si no hay,
+// el que siga abierto de una racha anterior, que `casosPorAbrir` no reemplaza mientras siga abierto. Una sola regla
+// para el resumen del panel y la pestaña Seguimiento: esta rotulaba «Ya salió de "Necesitan atención"» a quien la
+// necesitaba con el caso abierto de antes (verificación adversarial).
+function casoDeLaAtencion(a, casosDeLaPersona) {
+    return casosDeLaPersona.find(c => c.desde.getTime() === a.desde.getTime())
+        ?? casosDeLaPersona.find(c => c.estado !== 'CERRADO')
+        ?? null;
+}
 function casosPorAbrir(atencion, casos) {
     return atencion
         .filter(a => {

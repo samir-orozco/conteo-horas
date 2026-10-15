@@ -88,7 +88,9 @@ async function obtenerPlanes(prisma) {
 const TODAS_ON = F(exports.FEATURES.map(f => f.key));
 // Capacidades efectivas de una empresa: plan + overrides. exentaPago = ilimitado
 // (empresas propias): sin límite, todas las funciones, sin costo.
-function capacidadesDe(susc, exentaPago = false, planes = exports.PLANES) {
+// `concedidas`: las funciones que encienden las concesiones con fecha VIGENTES, ya resueltas por quien llama
+// (utils/concesiones.ts, 14 de octubre de 2026). Se suman encima: encienden, nunca apagan.
+function capacidadesDe(susc, exentaPago = false, planes = exports.PLANES, concedidas = {}) {
     if (exentaPago) {
         return {
             plan: 'ILIMITADO', nombrePlan: 'Ilimitado', ciclo: 'MENSUAL',
@@ -103,7 +105,7 @@ function capacidadesDe(susc, exentaPago = false, planes = exports.PLANES) {
         ciclo: susc?.cicloPago === 'ANUAL' ? 'ANUAL' : 'MENSUAL',
         limite: susc?.limiteOverride ?? p.limite,
         ilimitado: false,
-        features: { ...p.features, ...overrides },
+        features: { ...p.features, ...overrides, ...concedidas },
         precioMensual: p.precioMensual,
         precioAnual: p.precioAnual,
     };

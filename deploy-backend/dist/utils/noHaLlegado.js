@@ -9,6 +9,7 @@ exports.mensajeYaLlego = mensajeYaLlego;
 exports.cuerpoYaLlego = cuerpoYaLlego;
 const fechas_1 = require("./fechas");
 const tardanzas_1 = require("./tardanzas");
+const asistencia_1 = require("./asistencia");
 const correo_1 = require("./correo");
 // «NO HA LLEGADO» POR TELEGRAM (11 de octubre de 2026).
 //
@@ -27,28 +28,27 @@ const MIN = 60 * 1000;
 // condición es para no avisar: sin turno hoy, festivo, ya marcó, tiene novedad, ya se avisó, todavía
 // está en tiempo, su turno ya terminó, o no existía en el sistema cuando tenía que llegar.
 function quienesNoHanLlegado(ahora, personas, c) {
-    if (c.festivo)
-        return [];
     const { inicioDia } = (0, fechas_1.rangoDiaBogota)(ahora);
     const instante = (hhmm) => new Date(inicioDia.getTime() + (0, tardanzas_1.minutosDe)(hhmm) * MIN);
     return personas
         .filter(p => {
+        // Si debía venir y no ha llegado lo decide la regla de todo el producto (utils/asistencia.ts),
+        // la misma de «Aún no han marcado entrada» en el Inicio. Aquí, con todas las novedades,
+        // aprobadas o no: si avisó que tenía cita, «no ha llegado» en el grupo es ruido.
+        const estado = (0, asistencia_1.estadoDeAsistencia)({
+            dia: p.dia, inicioDia, llego: c.conEntrada.has(p.colaboradorId), creadoEn: p.creadoEn, festivo: c.festivo,
+            novedades: c.novedades.filter(n => n.colaboradorId === p.colaboradorId), ahora, huecos: p.huecos,
+        });
+        if (estado !== 'FALTA' || c.yaAvisados.has(p.colaboradorId))
+            return false;
+        // Lo propio del aviso: los 15 minutos de espera después de la tolerancia, y no avisar de un
+        // turno que ya terminó (a las 6 p. m., de alguien que entraba a las 8, no sirve para nada). Un
+        // turno que cruza la medianoche (salida antes que entrada) no termina hoy.
         const d = p.dia;
-        if (!d || !d.programado || !d.horaEntrada)
-            return false;
-        if (c.conEntrada.has(p.colaboradorId) || c.yaAvisados.has(p.colaboradorId))
-            return false;
         const entrada = instante(d.horaEntrada);
         if (ahora.getTime() < entrada.getTime() + (d.toleranciaMin + exports.MINUTOS_DE_ESPERA) * MIN)
             return false;
-        // Su turno ya terminó: un aviso a las 6 p. m. de alguien que entraba a las 8 no sirve para nada.
-        // Un turno que cruza la medianoche (salida antes que entrada) no termina hoy.
-        if (d.horaSalida && (0, tardanzas_1.minutosDe)(d.horaSalida) > (0, tardanzas_1.minutosDe)(d.horaEntrada) && ahora >= instante(d.horaSalida))
-            return false;
-        if (p.creadoEn > entrada)
-            return false;
-        const horaEntrada = d.horaEntrada;
-        return !c.novedades.some(n => n.colaboradorId === p.colaboradorId && (0, tardanzas_1.excusaLaTardanza)(n, inicioDia, horaEntrada));
+        return !(d.horaSalida && (0, tardanzas_1.minutosDe)(d.horaSalida) > (0, tardanzas_1.minutosDe)(d.horaEntrada) && ahora >= instante(d.horaSalida));
     })
         .map(p => ({ colaboradorId: p.colaboradorId, nombre: p.nombre, apellido: p.apellido, horaEntrada: p.dia.horaEntrada }))
         .sort((a, b) => a.horaEntrada.localeCompare(b.horaEntrada) || a.nombre.localeCompare(b.nombre, 'es'));

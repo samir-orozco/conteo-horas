@@ -1,11 +1,13 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.TIPO_RESUMEN_SEMANAL = exports.CLAVE_RESUMEN_SEMANAL = void 0;
+exports.entradaDe = entradaDe;
 exports.enviarResumenesSemanales = enviarResumenesSemanales;
 const prisma_1 = require("../prisma");
 const correo_1 = require("./correo");
 const contratos_1 = require("./contratos");
 const fechas_1 = require("./fechas");
+const atencionClima_1 = require("./atencionClima");
 const reportesDeEmpresa_1 = require("./reportesDeEmpresa");
 const resumenSemanal_1 = require("./resumenSemanal");
 Object.defineProperty(exports, "CLAVE_RESUMEN_SEMANAL", { enumerable: true, get: function () { return resumenSemanal_1.CLAVE_RESUMEN_SEMANAL; } });
@@ -20,17 +22,19 @@ async function periodo(empresaId, s) {
 // Todo lo que el resumen necesita de una empresa, leído de la base.
 async function entradaDe(empresaId, semana, ahora) {
     const { desdeF, finExclusivo } = (0, fechas_1.rangoReporte)(semana.desde, semana.hasta);
-    const [actual, anterior, cerrados, novedadesPorAprobar, contratos] = await Promise.all([
+    const [actual, anterior, cerrados, novedadesPorAprobar, contratos, atencionClimaSinPlan] = await Promise.all([
         periodo(empresaId, semana),
         periodo(empresaId, semana.anterior),
-        // Las salidas que puso el auto-cierre. Por (colaboradorId, fecha), igual que los resúmenes:
-        // ver el EXPLAIN en el commit (§8.4).
-        prisma_1.prisma.registro.findMany({
-            where: { colaborador: { empresaId }, fecha: { gte: desdeF, lt: finExclusivo }, salidaEstimada: true },
+        // Las salidas que puso el auto-cierre, por la lista de personas: con `colaborador: { empresaId }` MySQL
+        // recorría `registros` entera (medido el 15 de octubre de 2026, ver `idsDeLaEmpresa`).
+        (0, reportesDeEmpresa_1.idsDeLaEmpresa)(empresaId).then(ids => prisma_1.prisma.registro.findMany({
+            where: { colaboradorId: { in: ids }, fecha: { gte: desdeF, lt: finExclusivo }, salidaEstimada: true },
             select: { fecha: true, colaborador: { select: { nombre: true, apellido: true } } },
             orderBy: { fecha: 'asc' },
-        }),
-        prisma_1.prisma.permiso.count({ where: { aprobado: false, colaborador: { empresaId, activo: true } } }),
+        })),
+        // Las personas activas primero y la cuenta por su lista: por la relación, MySQL recorría `permisos` entera.
+        prisma_1.prisma.colaborador.findMany({ where: { empresaId, activo: true }, select: { id: true } })
+            .then(activos => prisma_1.prisma.permiso.count({ where: { aprobado: false, colaboradorId: { in: activos.map(a => a.id) } } })),
         prisma_1.prisma.contrato.findMany({
             where: { estado: 'VIGENTE', colaborador: { empresaId, activo: true } },
             select: {
@@ -39,6 +43,8 @@ async function entradaDe(empresaId, semana, ahora) {
                 prorrogas: { select: { desde: true, hasta: true } },
             },
         }),
+        // Cuántas personas necesitan atención en el clima, solo si la empresa NO tiene el plan (PENDIENTES nº 39, fase 4).
+        (0, atencionClima_1.esClimaSinPlan)(empresaId).then(async (sinPlan) => (sinPlan ? (await (0, atencionClima_1.atencionDeLaEmpresa)(empresaId)).length : 0)),
     ]);
     return {
         semana, actual, anterior,
@@ -48,6 +54,7 @@ async function entradaDe(empresaId, semana, ahora) {
             fecha: r.fecha.toISOString().slice(0, 10),
         })),
         novedadesPorAprobar,
+        atencionClimaSinPlan,
         contratos: contratos.flatMap(c => {
             const { alertas } = (0, contratos_1.estadoDelContrato)({ tipo: c.tipo, fechaInicio: c.fechaInicio, fechaFin: c.fechaFin, fechaInicioPractica: c.fechaInicioPractica }, c.prorrogas, ahora);
             const nombre = `${c.colaborador.nombre} ${c.colaborador.apellido}`;

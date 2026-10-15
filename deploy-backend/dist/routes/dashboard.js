@@ -16,20 +16,34 @@ const fechas_1 = require("../utils/fechas");
 const estadoContratoResumen_1 = require("../utils/estadoContratoResumen");
 const contratosPorRevisar_1 = require("../utils/contratosPorRevisar");
 const primerosPasos_1 = require("../utils/primerosPasos");
-const diasDeLaSemana_1 = require("../utils/diasDeLaSemana");
+const semanaDelInicio_1 = require("../utils/semanaDelInicio");
+const capacidades_1 = require("../utils/capacidades");
+const lecturasDelClima_1 = require("../utils/lecturasDelClima");
+const pruebaClima_1 = require("../utils/pruebaClima");
+const climaDelInicio_1 = require("../utils/climaDelInicio");
+const agendaDelInicio_1 = require("../utils/agendaDelInicio");
+const registrarEvento_1 = require("../utils/registrarEvento");
+const reportesDeEmpresa_1 = require("../utils/reportesDeEmpresa");
+const extrasDelInicio_1 = require("../utils/extrasDelInicio");
 const TZ = 'America/Bogota';
 const CODIGOS_EXTRA = new Set(['HED', 'HEN', 'HEDD', 'HEND']);
 function semanaKey(fecha) {
     const z = (0, date_fns_tz_1.toZonedTime)(fecha, TZ);
     return `${(0, date_fns_1.getISOWeekYear)(z)}-W${String((0, date_fns_1.getISOWeek)(z)).padStart(2, '0')}`;
 }
-function minutosDe(hhmm) {
-    const [h, m] = hhmm.split(':').map(Number);
-    return h * 60 + m;
-}
 // Panel de inicio de la empresa: foto del día + del mes.
 async function dashboardRoutes(app) {
     const auth = { preHandler: [app.requireEmpresa] };
+    // LAS EXTRAS Y LOS RECARGOS DE LA QUINCENA (15 de octubre de 2026), en pesos. Aparte del Inicio porque liquida a
+    // toda la empresa: el resto del Inicio no espera por esto, y la tarjeta lo pide al pintarse. Las fechas las pone la
+    // pantalla, que sabe qué quincena es; la cuenta es la del reporte de extras (utils/extrasDelInicio.ts).
+    app.get('/quincena', auth, async (request, reply) => {
+        const r = (0, extrasDelInicio_1.leerRangoDelInicio)(request.query);
+        if (!r.ok)
+            return reply.status(400).send({ error: r.error });
+        const { filas } = await (0, reportesDeEmpresa_1.liquidarEmpresa)(request.empresaId, r.desde, r.hasta);
+        return { desde: r.desde, hasta: r.hasta, ...(0, extrasDelInicio_1.resumenDeLaQuincena)(filas) };
+    });
     app.get('/empresa', auth, async (request) => {
         const empresaId = request.empresaId;
         const ahora = new Date();
@@ -42,14 +56,18 @@ async function dashboardRoutes(app) {
         // que cruzan el límite de mes quedan completas para los KPIs semanales/extra.
         const inicioSemanaMes = (0, date_fns_tz_1.fromZonedTime)((0, date_fns_1.startOfISOWeek)((0, date_fns_tz_1.toZonedTime)(inicioMes, TZ)), TZ);
         const claveHoy = (0, fechas_1.claveDiaBogota)(ahora);
-        const diaHoy = diasDeLaSemana_1.DIAS_SEMANA[ahoraBog.getDay()];
-        const [colaboradores, festivos, jornadas, tiposHoraTodos, permisos, empresa] = await Promise.all([
+        // Los días que piden la asistencia de la semana y las llegadas tarde de los últimos 7 días.
+        const ventana = (0, semanaDelInicio_1.ventanaDelInicio)(ahora);
+        const [colaboradores, festivos, jornadas, tiposHoraTodos, empresa] = await Promise.all([
             prisma_1.prisma.colaborador.findMany({
                 where: { empresaId, activo: true },
                 select: {
                     id: true, nombre: true, apellido: true, cargo: true, fechaNacimiento: true,
-                    horario: { select: { id: true, activo: true, nombre: true, toleranciaMin: true, almuerzoMin: true,
-                            franjas: { select: { dias: true, horaEntrada: true, horaSalida: true, tieneAlmuerzo: true } } } },
+                    // Desde cuándo existe: quien no estaba cuando tenía que entrar no faltó (utils/asistencia.ts).
+                    creadoEn: true,
+                    // El horario entero con sus franjas: con él se completan los días que no estén materializados
+                    // (`diasParaMedir`), igual que en los reportes.
+                    horario: { include: { franjas: true } },
                     // Para «Primeros pasos»: si ya hay alguien con su rostro registrado.
                     rostroEnroladoEn: true,
                     // Para «Pendientes por resolver»: el mismo contrato que pinta la lista de Colaboradores.
@@ -57,17 +75,18 @@ async function dashboardRoutes(app) {
                 },
                 orderBy: { nombre: 'asc' },
             }),
-            // Solo festivos relevantes: del mes en curso (para el cálculo) hasta +45 días (próximos).
-            prisma_1.prisma.diaFestivo.findMany({ where: { OR: [{ empresaId: null }, { empresaId }], fecha: { gte: inicioSemanaMes, lte: en45 } } }),
+            // Solo festivos relevantes: del mes en curso (para el cálculo) y de la ventana de la semana, hasta
+            // +45 días (próximos). Sin el comienzo de la ventana, los primeros días del mes las llegadas tarde
+            // del mes anterior se contaban también en sus festivos.
+            prisma_1.prisma.diaFestivo.findMany({ where: { OR: [{ empresaId: null }, { empresaId }], fecha: { gte: ventana.inicio < inicioSemanaMes ? ventana.inicio : inicioSemanaMes, lte: en45 } } }),
             prisma_1.prisma.jornadaVigencia.findMany(),
             prisma_1.prisma.tipoHora.findMany(),
-            prisma_1.prisma.permiso.findMany({
-                where: { aprobado: true, colaborador: { empresaId }, fechaInicio: { lte: finDia }, fechaFin: { gte: inicioDia } },
-                select: { id: true, colaboradorId: true, fechaInicio: true, fechaFin: true, horaInicio: true, horaFin: true, tipo: true, descripcion: true, aprobado: true, evidenciaTipo: true, evidenciaNombre: true,
-                    colaborador: { select: { nombre: true, apellido: true } } },
+            // Por su llave primaria: la fecha de creación, para saber si sigue arrancando, y la suscripción, para
+            // anunciar su vencimiento en «Próximos días».
+            prisma_1.prisma.empresa.findUnique({
+                where: { id: empresaId },
+                select: { creadoEn: true, exentaPago: true, suscripcion: { select: { estado: true, finPrueba: true, pagadoHasta: true } } },
             }),
-            // Por su llave primaria. Solo hace falta la fecha de creación, para saber si sigue arrancando.
-            prisma_1.prisma.empresa.findUnique({ where: { id: empresaId }, select: { creadoEn: true } }),
         ]);
         const colIds = colaboradores.map(c => c.id);
         // «Primeros pasos» solo existe durante el primer mes: fuera de él no se pregunta nada más a la base.
@@ -84,7 +103,7 @@ async function dashboardRoutes(app) {
             salidaAlmuerzo: true, salidaDescanso: true,
             colaborador: { select: { id: true, nombre: true, apellido: true, cargo: true } },
         };
-        const [registrosHoy, turnosAbiertos, registrosMes, salidasConFoto, diasCongelados, porAprobar, horariosActivos, marcacionDelKiosco] = await Promise.all([
+        const [registrosHoy, turnosAbiertos, registrosMes, salidasConFoto, diasCongelados, porAprobar, horariosActivos, marcacionDelKiosco, permisos, diasDeLaVentana, marcasDeLaVentana, vinculo] = await Promise.all([
             prisma_1.prisma.registro.findMany({
                 where: { colaboradorId: { in: colIds }, fecha: { gte: inicioDia, lt: finDia } },
                 select: SEL_REG,
@@ -128,6 +147,34 @@ async function dashboardRoutes(app) {
             arrancando
                 ? prisma_1.prisma.colaborador.findMany({ where: { empresaId }, select: { id: true } }).then(todos => prisma_1.prisma.registro.findFirst({ where: { colaboradorId: { in: todos.map(c => c.id) }, metodoEntrada: { in: ['ROSTRO', 'CEDULA'] } }, select: { id: true } }))
                 : Promise.resolve(null),
+            // Las novedades APROBADAS que tocan la ventana: las de hoy van a su tarjeta, y todas excusan en la
+            // asistencia y en las llegadas tarde, como en el reporte. Por los ids de los activos, para entrar
+            // por el índice de `colaboradorId`.
+            prisma_1.prisma.permiso.findMany({
+                where: { aprobado: true, colaboradorId: { in: colIds }, fechaInicio: { lt: ventana.fin }, fechaFin: { gte: ventana.inicio } },
+                select: { id: true, colaboradorId: true, fechaInicio: true, fechaFin: true, horaInicio: true, horaFin: true, tipo: true, descripcion: true, aprobado: true, evidenciaTipo: true, evidenciaNombre: true,
+                    colaborador: { select: { nombre: true, apellido: true } } },
+            }),
+            // Lo que el horario o el planificador exigían cada día de la ventana, congelado.
+            prisma_1.prisma.diaEsperado.findMany({
+                where: { colaboradorId: { in: colIds }, fecha: { gte: ventana.inicio, lt: ventana.fin } },
+                select: {
+                    colaboradorId: true, fecha: true, programado: true, horaEntrada: true, horaSalida: true,
+                    toleranciaMin: true, almuerzoMin: true, minutosEsperados: true, toleranciaSalidaMin: true, ajustaEntrada: true,
+                    almuerzoInicio: true, almuerzoFin: true, descansos: true,
+                },
+            }),
+            // Las entradas de la ventana, con la fecha de su jornada (no la del reloj: un nocturno).
+            prisma_1.prisma.registro.findMany({
+                where: { colaboradorId: { in: colIds }, fecha: { gte: ventana.inicio, lt: finDia }, entrada: { not: null } },
+                select: { colaboradorId: true, fecha: true, entrada: true },
+            }),
+            // Los retiros y reingresos: no debía venir mientras estuvo retirada (`huecosDelVinculo`). Por el índice
+            // (colaboradorId, fecha) de vinculacion_eventos.
+            prisma_1.prisma.vinculacionEvento.findMany({
+                where: { colaboradorId: { in: colIds }, tipo: { in: ['RETIRO', 'REINGRESO'] }, fecha: { lte: finDia } },
+                select: { colaboradorId: true, tipo: true, fecha: true, creadoEn: true },
+            }),
         ]);
         const conFotoSalida = new Set(salidasConFoto.map(r => r.id));
         // Un turno abierto de un día anterior aún puede estar EN CURSO (turno nocturno
@@ -194,72 +241,33 @@ async function dashboardRoutes(app) {
             salida: r.salida,
             tieneFotoSalida: conFotoSalida.has(r.id),
         }));
-        // Novedades que cubren HOY. Se calculan las claves de día UNA sola vez por permiso
-        // y se reutilizan para 'sin marcar' y para el listado de novedades.
+        // Novedades que cubren HOY, para su tarjeta. Las de toda la ventana las usa la semana, más abajo.
         const permisosHoy = permisos.filter(p => (0, fechas_1.claveDiaBogota)(p.fechaInicio) <= claveHoy && claveHoy <= (0, fechas_1.claveDiaBogota)(p.fechaFin));
-        // Tipo de novedad activa hoy por colaborador (para explicar por qué no marcó)
-        const novedadHoyTipo = new Map();
-        for (const p of permisosHoy) {
-            if (!novedadHoyTipo.has(p.colaboradorId))
-                novedadHoyTipo.set(p.colaboradorId, p.tipo);
-        }
-        // ===== Llegadas tarde hoy (según horario) =====
-        const llegadasTardeHoy = [];
-        // Primera entrada de hoy por colaborador
-        const primeraEntradaHoy = new Map();
-        for (const r of registrosHoy) {
-            if (!r.entrada)
-                continue;
-            const prev = primeraEntradaHoy.get(r.colaboradorId);
-            if (!prev || r.entrada < prev)
-                primeraEntradaHoy.set(r.colaboradorId, r.entrada);
-        }
-        // ===== Sin marcar hoy (deberían haber entrado y no lo han hecho) =====
-        const sinMarcarHoy = [];
-        for (const c of colaboradores) {
-            if (!c.horario || !c.horario.activo)
-                continue;
-            // La franja que aplica hoy (un horario puede variar por día, ej. sábados más corto)
-            const franjaHoy = (0, tardanzas_1.franjaDelDia)(c.horario, diaHoy);
-            if (!franjaHoy || hoyEsFestivo)
-                continue;
-            const entrada = primeraEntradaHoy.get(c.id);
-            if (entrada) {
-                // Llegó tarde: la tardanza solo aplica si no tiene una novedad que la
-                // justifique, con la misma regla del reporte de tardanzas.
-                if (permisosHoy.some(p => p.colaboradorId === c.id && (0, tardanzas_1.excusaLaTardanza)(p, ahora, franjaHoy.horaEntrada)))
-                    continue;
-                const z = (0, date_fns_tz_1.toZonedTime)(entrada, TZ);
-                const llegadaMin = z.getHours() * 60 + z.getMinutes();
-                const tarde = llegadaMin - (minutosDe(franjaHoy.horaEntrada) + c.horario.toleranciaMin);
-                if (tarde > 0) {
-                    llegadasTardeHoy.push({
-                        id: c.id,
-                        nombre: `${c.nombre} ${c.apellido}`,
-                        horaLlegada: `${String(z.getHours()).padStart(2, '0')}:${String(z.getMinutes()).padStart(2, '0')}`,
-                        minutosTarde: tarde,
-                    });
-                }
-            }
-            else {
-                // No ha marcado. Si tiene novedad hoy (ej. médico), lo mostramos con el
-                // distintivo de su novedad para saber por qué no marcó. Si no, solo lo
-                // marcamos "sin marcar" cuando ya pasó su hora de entrada + tolerancia.
-                const novedad = novedadHoyTipo.get(c.id) ?? null;
-                const ahoraMin = ahoraBog.getHours() * 60 + ahoraBog.getMinutes();
-                const yaPasoEntrada = ahoraMin > minutosDe(franjaHoy.horaEntrada) + c.horario.toleranciaMin;
-                if (novedad || yaPasoEntrada) {
-                    sinMarcarHoy.push({
-                        id: c.id,
-                        nombre: `${c.nombre} ${c.apellido}`,
-                        cargo: c.cargo,
-                        horario: c.horario.nombre,
-                        horaEntrada: franjaHoy.horaEntrada,
-                        novedad,
-                    });
-                }
-            }
-        }
+        // ===== La semana: asistencia, llegadas tarde de 7 días y «Aún no han marcado» =====
+        // Una sola regla, la de los días esperados (decisión del dueño, 15 de octubre de 2026): la del
+        // reporte de llegadas tarde y la del aviso de Telegram. Antes este tablero miraba el horario de hoy
+        // y no veía los turnos pintados en el planificador ni los días libres de la programación.
+        const vinculoDe = new Map();
+        for (const v of vinculo)
+            vinculoDe.set(v.colaboradorId, [...(vinculoDe.get(v.colaboradorId) ?? []), v]);
+        const semana = (0, semanaDelInicio_1.armarSemanaDelInicio)({
+            ahora,
+            colaboradores: colaboradores.map(c => ({ ...c, vinculo: vinculoDe.get(c.id) ?? [] })),
+            materializados: diasDeLaVentana,
+            marcas: marcasDeLaVentana,
+            novedades: permisos,
+            festivos,
+        });
+        const { sinMarcarHoy, llegadasTardeHoy } = semana;
+        // Las fotos chicas de quienes llegaron tarde en los 7 días, una vez cada una y por su llave primaria.
+        // La miniatura no va en la consulta de todos los activos: la traería de toda la empresa.
+        const tardeEnLaSemana = [...new Set(semana.llegadasTarde7d.dias.flatMap(d => d.personas.map(p => p.id)))];
+        const fotos = tardeEnLaSemana.length
+            ? await prisma_1.prisma.colaborador.findMany({ where: { id: { in: tardeEnLaSemana } }, select: { id: true, fotoMini: true } })
+            : [];
+        const fotoDe = new Map(fotos.map(f => [f.id, f.fotoMini]));
+        const nombreCompleto = new Map(colaboradores.map(c => [c.id, `${c.nombre} ${c.apellido}`]));
+        const personasDeLaSemana = Object.fromEntries(tardeEnLaSemana.map(id => [id, { nombre: nombreCompleto.get(id) ?? '', fotoMini: fotoDe.get(id) ?? null }]));
         // ===== Horas extra y horas de la semana (toda la empresa) =====
         const festivosDates = festivos.map(f => new Date(f.fecha));
         const porColSemana = new Map();
@@ -382,6 +390,49 @@ async function dashboardRoutes(app) {
             })),
             contratos: (0, contratosPorRevisar_1.contratosPorRevisar)(colaboradores.map(c => ({ id: c.id, nombre: `${c.nombre} ${c.apellido}`, contrato: c.contratos[0] ?? null })), ahora),
         };
+        // ===== El clima de los últimos 7 días =====
+        // Solo el ADMINISTRADOR, como el panel (`soloAdministrador` en routes/clima.ts): al supervisor no se le lee nada.
+        // Con o sin la función: sin ella salen las cifras sin nombres de la vista sin el plan. El resumen se lee SIN
+        // abrir casos: un GET que se carga a cada rato no escribe.
+        const esAdministrador = request.user?.rol === 'ADMIN';
+        let clima = null;
+        let pruebaDelClima = null;
+        // Si la lectura del clima falla, el Inicio sigue sin su tarjeta: el resto no depende de ella. El error queda en el
+        // registro del sistema, para que no sea un silencio (§8.3); la petición responde 200.
+        if (esAdministrador)
+            try {
+                const desdeClima = ventana.claves7[0];
+                const hastaClima = ventana.claves7[6];
+                const [cap, pruebas, resumenClima, casosEnLaBase] = await Promise.all([
+                    (0, capacidades_1.capacidadesEmpresa)(empresaId),
+                    (0, lecturasDelClima_1.pruebasDe)(empresaId),
+                    (0, lecturasDelClima_1.resumenDelPanel)(empresaId, desdeClima, hastaClima, null, false),
+                    prisma_1.prisma.seguimientoClima.count({ where: { empresaId, estado: { in: ['SIN_REVISAR', 'EN_SEGUIMIENTO'] } } }),
+                ]);
+                const prueba = (0, pruebaClima_1.estadoDePrueba)(pruebas, ahora);
+                pruebaDelClima = prueba.vigente;
+                clima = (0, climaDelInicio_1.climaParaElInicio)({
+                    esAdministrador, tieneClima: !!cap.features.clima, desde: desdeClima, hasta: hastaClima,
+                    resumen: resumenClima, prueba: { ...prueba, dias: pruebaClima_1.DIAS_DE_PRUEBA },
+                    casosAbiertosEnLaBase: casosEnLaBase,
+                });
+            }
+            catch (err) {
+                clima = null;
+                pruebaDelClima = null;
+                request.log.error({ err }, 'INICIO: no se pudo leer el clima');
+                (0, registrarEvento_1.registrarError)(err, request, 200);
+            }
+        // ===== Próximos días =====
+        // Festivos, cumpleaños, contratos y, solo al administrador, el vencimiento de la suscripción y el fin de la
+        // prueba del clima en su última semana (utils/agendaDelInicio.ts). `proximosFestivos` y `cumpleanos` siguen
+        // viajando para el Inicio anterior, mientras dure la ventana del despliegue.
+        const agenda = (0, agendaDelInicio_1.armarAgenda)({
+            ahora, festivos,
+            personas: colaboradores.map(c => ({ id: c.id, nombre: `${c.nombre} ${c.apellido}`, fechaNacimiento: c.fechaNacimiento })),
+            contratos: pendientes.contratos,
+            esAdministrador, suscripcion: empresa?.suscripcion ?? null, exentaPago: empresa?.exentaPago ?? false, pruebaDelClima,
+        });
         // ===== Primeros pasos =====
         // null es «no aplica» (la empresa ya pasó su primer mes o completó los pasos). Un backend anterior no
         // manda el campo, y la pantalla tampoco pinta nada.
@@ -405,14 +456,19 @@ async function dashboardRoutes(app) {
             enPlanta,
             enDescanso,
             salidasRecientes,
-            llegadasTardeHoy: llegadasTardeHoy.sort((a, b) => b.minutosTarde - a.minutosTarde),
+            llegadasTardeHoy,
             sinMarcarHoy,
             turnosOlvidados,
             novedadesHoy,
             proximosFestivos,
             cumpleanos,
-            pendientes,
+            // Los casos de clima abiertos van con los demás pendientes, solo si el administrador tiene la función.
+            pendientes: clima?.estado === 'ACTIVO' ? { ...pendientes, casosClima: clima.casosAbiertos } : pendientes,
             primerosPasos: pasos,
+            clima,
+            agenda,
+            asistenciaSemana: semana.asistenciaSemana,
+            llegadasTarde7d: { dias: semana.llegadasTarde7d.dias, personas: personasDeLaSemana },
         };
     });
 }

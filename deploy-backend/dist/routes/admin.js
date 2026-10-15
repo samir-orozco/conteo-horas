@@ -13,6 +13,9 @@ const eliminarEmpresa_1 = require("../utils/eliminarEmpresa");
 const borrarEmpresaEnCascada_1 = require("../utils/borrarEmpresaEnCascada");
 const sedesDeEmpresa_1 = require("../utils/sedesDeEmpresa");
 const vigenciaDelAuxilio_1 = require("../utils/vigenciaDelAuxilio");
+const concesiones_1 = require("../utils/concesiones");
+const fechas_1 = require("../utils/fechas");
+const reportesDeEmpresa_1 = require("../utils/reportesDeEmpresa");
 const DIA_MS = 24 * 60 * 60 * 1000;
 async function adminRoutes(app) {
     const auth = { preHandler: [app.requireSuperAdmin] };
@@ -51,6 +54,8 @@ async function adminRoutes(app) {
                 suscripcion: { include: { pagos: { orderBy: { creadoEn: 'desc' } } } },
                 usuarios: { select: { id: true, email: true, nombre: true, rol: true, activo: true, emailVerificado: true } },
                 _count: { select: { colaboradores: { where: { activo: true } } } },
+                // Todas, también las vencidas y las quitadas: la pantalla muestra el historial (PENDIENTES nº 39).
+                concesiones: { orderBy: { creadoEn: 'desc' } },
             },
         });
         if (!empresa)
@@ -61,7 +66,7 @@ async function adminRoutes(app) {
             ...empresa,
             colaboradoresActivos,
             tarifaMensual: (0, suscripcion_1.tarifaEmpresa)(colaboradoresActivos, precios, susc, empresa.exentaPago, planes),
-            capacidades: (0, planes_1.capacidadesDe)(susc, empresa.exentaPago, planes),
+            capacidades: (0, planes_1.capacidadesDe)(susc, empresa.exentaPago, planes, (0, concesiones_1.funcionesConcedidas)(empresa.concesiones, new Date())),
             suscripcion: susc
                 ? { ...susc, estadoEfectivo: (0, suscripcion_1.estadoEfectivo)(susc), diasMora: (0, suscripcion_1.diasDeMora)(susc), pagos: empresa.suscripcion.pagos }
                 : null,
@@ -253,7 +258,8 @@ async function adminRoutes(app) {
             return null;
         const [colaboradores, registros, resenas, pagos, comisiones] = await Promise.all([
             prisma_1.prisma.colaborador.count({ where: { empresaId: id } }),
-            prisma_1.prisma.registro.count({ where: { colaborador: { empresaId: id } } }),
+            // Por la lista de personas, que entra por el índice (prisma/medir-filtros-por-empresa.ts).
+            (0, reportesDeEmpresa_1.idsDeLaEmpresa)(id).then(ids => prisma_1.prisma.registro.count({ where: { colaboradorId: { in: ids } } })),
             // Su reseña (0 o 1): se va con ella, y si estaba publicada sale de la landing.
             prisma_1.prisma.resena.count({ where: { empresaId: id } }),
             // Solo los APROBADO: son los que suma /admin/ingresos.
@@ -390,6 +396,52 @@ async function adminRoutes(app) {
             },
         });
         return empresaConEstado(id);
+    });
+    // ===== FUNCIONES CON FECHA (14 de octubre de 2026, PENDIENTES nº 39, fase 2) =====
+    //
+    // El super admin le da a una empresa una función por un tiempo. Qué vale lo decide utils/concesiones.ts; aquí
+    // se aplica y se deja escrito quién la dio. Una concesión no se borra: se marca quitada, y queda el historial.
+    const quienConcede = (request) => {
+        const u = request.user;
+        return { otorgadaPorId: u?.id ?? null, otorgadaPorNombre: u?.nombre ?? null };
+    };
+    app.post('/empresas/:id/concesiones', auth, async (request, reply) => {
+        const { id } = request.params;
+        if (!(await prisma_1.prisma.empresa.findUnique({ where: { id }, select: { id: true } }))) {
+            return reply.status(404).send({ error: 'Empresa no encontrada' });
+        }
+        const c = (0, concesiones_1.leerConcesion)(request.body, (0, fechas_1.hoyEnBogota)());
+        if (!c.ok)
+            return reply.status(400).send({ error: c.error });
+        // Una sola vigente por función: si ya la tiene, se le cambia la fecha a la que tiene. Apilarlas haría que
+        // quitar una dejara la función encendida por la otra sin que la pantalla lo explicara.
+        const vigente = await prisma_1.prisma.concesionFuncion.findFirst({
+            where: { empresaId: id, funcion: c.funcion, revocadaEn: null, hasta: { gt: new Date() } }, select: { id: true },
+        });
+        if (vigente)
+            return reply.status(409).send({ error: 'Ya tiene esa función por un tiempo. Cámbiale la fecha.' });
+        const creada = await prisma_1.prisma.concesionFuncion.create({
+            data: { empresaId: id, funcion: c.funcion, hasta: c.hasta, origen: 'SUPER_ADMIN', ...quienConcede(request) },
+        });
+        return reply.status(201).send(creada);
+    });
+    // La concesión se busca POR SU EMPRESA: desde la URL de una empresa no se toca la de otra.
+    const concesionDe = (empresaId, concesionId) => prisma_1.prisma.concesionFuncion.findFirst({ where: { id: concesionId } })
+        .then(c => (c && c.empresaId === empresaId && c.revocadaEn === null ? c : null));
+    app.put('/empresas/:id/concesiones/:concesionId', auth, async (request, reply) => {
+        const { id, concesionId } = request.params;
+        if (!(await concesionDe(id, concesionId)))
+            return reply.status(404).send({ error: 'Concesión no encontrada' });
+        const fin = (0, concesiones_1.leerNuevoFin)(request.body, (0, fechas_1.hoyEnBogota)());
+        if (!fin.ok)
+            return reply.status(400).send({ error: fin.error });
+        return prisma_1.prisma.concesionFuncion.update({ where: { id: concesionId }, data: { hasta: fin.hasta } });
+    });
+    app.delete('/empresas/:id/concesiones/:concesionId', auth, async (request, reply) => {
+        const { id, concesionId } = request.params;
+        if (!(await concesionDe(id, concesionId)))
+            return reply.status(404).send({ error: 'Concesión no encontrada' });
+        return prisma_1.prisma.concesionFuncion.update({ where: { id: concesionId }, data: { revocadaEn: new Date() } });
     });
     // Precio personalizado del cliente: GLOBAL (usa el del plan) o FIJO
     app.put('/empresas/:id/precio', auth, async (request, reply) => {

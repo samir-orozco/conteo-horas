@@ -9,6 +9,7 @@ const fechas_1 = require("./fechas");
 const diasEsperados_1 = require("./diasEsperados");
 const suscripcion_1 = require("./suscripcion");
 const noHaLlegado_1 = require("./noHaLlegado");
+const asistencia_1 = require("./asistencia");
 // LA PLOMERÍA DE «NO HA LLEGADO» (11 de octubre de 2026).
 //
 // El barrido cada 5 minutos y el «ya llegó» que dispara el kiosco. La decisión de a quién se le
@@ -50,7 +51,7 @@ async function avisarEmpresa(empresaId, chat, ahora, log) {
     if (!colaboradores.length)
         return 0;
     const ids = colaboradores.map(c => c.id);
-    const [materializados, marcaron, novedades, festivos, avisados] = await Promise.all([
+    const [materializados, marcaron, novedades, festivos, avisados, vinculo] = await Promise.all([
         prisma_1.prisma.diaEsperado.findMany({
             where: { colaboradorId: { in: ids }, fecha: { gte: inicioDia, lt: finDia } },
             select: {
@@ -79,11 +80,19 @@ async function avisarEmpresa(empresaId, chat, ahora, log) {
             where: { empresaId, tipo: exports.TIPO_NO_HA_LLEGADO, creadoEn: { gte: inicioDia } },
             select: { entidadId: true },
         }),
+        // Los retiros y reingresos: quien reingresó hoy después de su hora no es un «no ha llegado» (`huecosDelVinculo`).
+        prisma_1.prisma.vinculacionEvento.findMany({
+            where: { colaboradorId: { in: ids }, tipo: { in: ['RETIRO', 'REINGRESO'] }, fecha: { lt: finDia } },
+            select: { colaboradorId: true, tipo: true, fecha: true, creadoEn: true },
+        }),
     ]);
     const diaDe = new Map(materializados.map(d => [d.colaboradorId, d]));
     const personas = colaboradores.map(c => {
         const [dia] = (0, diasEsperados_1.combinarDiasEsperados)(inicioDia, finDia, diaDe.has(c.id) ? [diaDe.get(c.id)] : [], c.horario);
-        return { colaboradorId: c.id, nombre: c.nombre, apellido: c.apellido, creadoEn: c.creadoEn, dia: dia ?? null };
+        return {
+            colaboradorId: c.id, nombre: c.nombre, apellido: c.apellido, creadoEn: c.creadoEn, dia: dia ?? null,
+            huecos: (0, asistencia_1.huecosDelVinculo)(vinculo.filter(v => v.colaboradorId === c.id)),
+        };
     });
     const lista = (0, noHaLlegado_1.quienesNoHanLlegado)(ahora, personas, {
         festivo: festivos.some(f => (0, fechas_1.claveDiaBogota)(f.fecha) === hoy),

@@ -5,7 +5,6 @@ exports.motivosDeEmpresa = motivosDeEmpresa;
 exports.climaDeLaSalida = climaDeLaSalida;
 const crypto_1 = require("crypto");
 const prisma_1 = require("../prisma");
-const capacidades_1 = require("./capacidades");
 const clima_1 = require("./clima");
 const fechas_1 = require("./fechas");
 // La plomería del clima laboral en el kiosco (4 de octubre de 2026). Las decisiones están en
@@ -36,17 +35,20 @@ async function motivosDeEmpresa(empresaId) {
 // Lo que la respuesta de la salida le manda al kiosco para abrir la ventana, o null si no toca.
 async function climaDeLaSalida(p, firmar) {
     // Las consultas se saltan cuando ya se sabe la respuesta: una pausa no pregunta nunca.
-    const tieneModulo = !p.pausa && await (0, capacidades_1.tieneFuncion)(p.empresaId, 'clima');
+    // El interruptor de la empresa, no el plan (PENDIENTES nº 39): todos los planes califican.
+    const calificacionEncendida = !p.pausa && (0, clima_1.calificacionDelDiaEncendida)((await prisma_1.prisma.configuracion.findUnique({
+        where: { empresaId_clave: { empresaId: p.empresaId, clave: clima_1.CLAVE_CALIFICACION_DIA } },
+    }))?.valor);
     const { inicioDia, finDia } = (0, fechas_1.rangoDiaBogota)(p.fechaJornada);
     const delDia = { colaboradorId: p.colaboradorId, fecha: { gte: inicioDia, lt: finDia } };
-    const [calificada, otrasSalidas] = tieneModulo
+    const [calificada, otrasSalidas] = calificacionEncendida
         ? await Promise.all([
             prisma_1.prisma.calificacionClima.findFirst({ where: delDia, select: { id: true } }),
             prisma_1.prisma.registro.count({ where: { ...delDia, ...exports.SALIDAS_QUE_ABREN_LA_VENTANA, id: { not: p.registroId } } }),
         ])
         : [null, 0];
     const preguntado = (0, clima_1.yaSePreguntoHoy)({ calificoHoy: !!calificada, otrasSalidasDelKioscoHoy: otrasSalidas });
-    if (!(0, clima_1.debePreguntarClima)({ accion: 'SALIDA', pausa: p.pausa, tieneModulo, yaSePreguntoHoy: preguntado }))
+    if (!(0, clima_1.debePreguntarClima)({ accion: 'SALIDA', pausa: p.pausa, calificacionEncendida, yaSePreguntoHoy: preguntado }))
         return null;
     const token = firmar({ rol: exports.ROL_CLIMA, id: p.colaboradorId, empresaId: p.empresaId, fecha: inicioDia.toISOString(), jti: (0, crypto_1.randomUUID)() });
     return { token, motivos: await motivosDeEmpresa(p.empresaId) };

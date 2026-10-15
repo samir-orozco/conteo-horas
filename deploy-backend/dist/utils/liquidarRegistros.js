@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.desdeDeLaCuentaSemanal = void 0;
 exports.almuerzoDelRegistro = almuerzoDelRegistro;
 exports.cobroDePausas = cobroDePausas;
 exports.liquidarRegistros = liquidarRegistros;
@@ -9,13 +10,14 @@ const horasColombiana_1 = require("./horasColombiana");
 const vigencias_1 = require("./vigencias");
 const tardanzas_1 = require("./tardanzas");
 const diasDeLaSemana_1 = require("./diasDeLaSemana");
+const fechas_1 = require("./fechas");
 const ajusteJornada_1 = require("./ajusteJornada");
 const almuerzo_1 = require("./almuerzo");
 const descansos_1 = require("./descansos");
 const jornada_1 = require("./jornada");
 // La clave "YYYY-MM-DD" de los minutos por día. No es la `claveDiaBogota` local de abajo, que tiene
 // otro formato y es solo de uso interno.
-const fechas_1 = require("./fechas");
+const fechas_2 = require("./fechas");
 // El núcleo de la liquidación, que vivía dentro de routes/reportes.ts. Salió de ahí
 // el 12 de septiembre de 2026 para poder probarlo sin base de datos: es lo que
 // calcula la plata de /liquidacion y de /extras-resumen (CLAUDE.md 8.2).
@@ -66,6 +68,12 @@ function debidoHastaCadaFila(reparto, total) {
 // registros agrupados por semana ISO (el tope de 42h/sem se resetea cada semana),
 // aplica el motor de horas colombianas registro por registro, y opcionalmente
 // arma el desglose día a día (para el drill-down de "Extras y recargos").
+// Desde dónde hay que traer las marcaciones (y los días esperados) para liquidar un período que
+// empieza en `desde`: el lunes de su semana (15 de octubre de 2026). El tope de horas es semanal, y
+// sin los días de esa semana anteriores al período sus extras no salían en ninguna de las dos
+// mitades del corte. Se pasan al motor con `pagarDesde = desde`: cuentan, pero no se pagan.
+const desdeDeLaCuentaSemanal = (desde) => (0, fechas_1.rangoSemanaBogota)(desde).lunes;
+exports.desdeDeLaCuentaSemanal = desdeDeLaCuentaSemanal;
 function liquidarRegistros(registros, horario, extraConfig, festivosDates, tiposHoraTodos, jornadas, salarioMensual, horasMes, incluirDetalle, 
 // Días materializados del rango: de ahí sale la hora de salida programada para
 // la tolerancia. Si no llegan, la tolerancia sencillamente no se aplica.
@@ -73,7 +81,15 @@ diasEsperados = [],
 // DE DÓNDE SALE EL DESCANSO DE ESA PERSONA: su horario si tiene, la programación si no. Es el
 // respaldo para las fechas sin fila congelada. Ausente = presunción legal, o sea el domingo, que es
 // lo que el sistema calculó siempre: por eso los llamadores que no lo pasen no ven cambio.
-fuenteDelDescanso) {
+fuenteDelDescanso, 
+// EL PRIMER DÍA QUE SE PAGA (15 de octubre de 2026). El tope de horas es semanal: para clasificar
+// bien las horas de un período que empieza a mitad de semana, el llamador manda también las
+// marcaciones de esa semana ANTERIORES al período, y este motor las usa solo para la cuenta de la
+// semana. No se pagan, ni cuentan como días ni como marcaciones. Sin él, todo lo que llega se paga,
+// como siempre. Sin las marcaciones anteriores, la semana empezaba en cero y sus extras no salían
+// en ninguna de las dos mitades del corte.
+pagarDesde) {
+    const sePaga = (fecha) => !pagarDesde || fecha.getTime() >= pagarDesde.getTime();
     const diaPorClave = new Map(diasEsperados.map(d => [claveDiaBogota(d.fecha), d]));
     // EL CABLE ENTRE EL DÍA CONGELADO Y EL MOTOR DE HORAS (20 de septiembre de 2026).
     //
@@ -164,6 +180,9 @@ fuenteDelDescanso) {
     // Lo trabajado de cada día, con las pausas ya cobradas: la suma es minutosOrdinarios + minutosExtra.
     // Lo usa el correo semanal para sus barras (11 de octubre de 2026). No cambia ningún otro número.
     const minutosPorDia = {};
+    // Las ordinarias de los días de antes del corte, que gastaron tope semanal sin pagarse. El saldo las necesita para
+    // gastar el mismo tope del lado de lo exigido (`calcularHorasEsperadas`, 15 de octubre de 2026).
+    let ordinariosAntesDelCorte = 0;
     for (const [, regsDeUnaSemana] of porSemana) {
         const jornadaSemanal = (0, vigencias_1.jornadaVigente)(regsDeUnaSemana[0].fecha, jornadas);
         let minutosOrdSemana = 0;
@@ -192,6 +211,11 @@ fuenteDelDescanso) {
             const descansoCobrado = cobrarDescanso(claveDia, debido?.descanso ?? 0, m => (0, horasColombiana_1.descontarAlmuerzoOrdinarias)(resultado, m));
             const ordDelRegistro = Math.max(0, minutosOrdinariosTrabajados - almuerzoCobrado - descansoCobrado);
             minutosOrdSemana += ordDelRegistro;
+            // Antes del período: ya sumó a la cuenta de la semana, que es para lo único que vino.
+            if (!sePaga(registro.fecha)) {
+                ordinariosAntesDelCorte += ordDelRegistro;
+                continue;
+            }
             if (incluirDetalle) {
                 // Solo lo que genera pago adicional (excluye HOD, que ya está en el salario)
                 const filas = (0, horasColombiana_1.calcularLiquidacion)(salarioMensual, horasMes, resultado)
@@ -207,7 +231,7 @@ fuenteDelDescanso) {
                 else
                     acumulado[p.codigo].minutos += p.minutos;
             }
-            const dia = (0, fechas_1.claveDiaBogota)(registro.fecha);
+            const dia = (0, fechas_2.claveDiaBogota)(registro.fecha);
             minutosPorDia[dia] = (minutosPorDia[dia] ?? 0) + resultado.reduce((s, p) => s + p.minutos, 0);
         }
     }
@@ -232,12 +256,18 @@ fuenteDelDescanso) {
     const minutosExtra = horasPorTipo
         .filter(t => horasColombiana_1.CODIGOS_EXTRA.has(t.codigo))
         .reduce((s, t) => s + t.minutos, 0);
+    // Las ordinarias que se pagan con recargo (nocturnas, dominicales, festivas), crudas por lo mismo. Las extras
+    // no cuentan aquí aunque sean nocturnas: van en `minutosExtra`. Para el Inicio (15 de octubre de 2026).
+    const minutosConRecargo = horasPorTipo
+        .filter(t => !horasColombiana_1.CODIGOS_EXTRA.has(t.codigo) && t.recargo > 1)
+        .reduce((s, t) => s + t.minutos, 0);
     // Las abiertas viajan solo para medir las pausas: el conteo sigue siendo el de las cerradas.
-    const registrosCont = registros.filter(r => r.salida).length;
+    const delPeriodo = registros.filter(r => sePaga(r.fecha));
+    const registrosCont = delPeriodo.filter(r => r.salida).length;
     // Los DÍAS con marcación, que no son lo mismo (15 de septiembre de 2026). Quien sale a almorzar y
     // vuelve marca dos veces el mismo día, y quien nunca marca la salida no suma ninguna cerrada
     // aunque haya trabajado. Medido contra la base del dueño: 11 cerradas en 5 días, y otra persona
     // con 0 cerradas y 2 días trabajados. Un día sin hora de entrada no es una marcación.
-    const diasCont = new Set(registros.filter(r => r.entrada).map(r => claveDiaBogota(r.fecha))).size;
-    return { liquidacion, totalRecargos, totalExtra, totalAdicional, registrosCont, diasCont, detalleRegistros, minutosOrdinarios, minutosExtra, minutosPorDia };
+    const diasCont = new Set(delPeriodo.filter(r => r.entrada).map(r => claveDiaBogota(r.fecha))).size;
+    return { liquidacion, totalRecargos, totalExtra, totalAdicional, registrosCont, diasCont, detalleRegistros, minutosOrdinarios, minutosExtra, minutosConRecargo, minutosPorDia, ordinariosAntesDelCorte };
 }
