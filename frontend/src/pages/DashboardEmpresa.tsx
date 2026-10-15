@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { Users, UserCheck, Clock, TrendingUp, PartyPopper, AlertTriangle, ArrowRight } from 'lucide-react';
+import { Users, UserCheck, Clock, TrendingUp, PartyPopper } from 'lucide-react';
 import { useDashboard } from '../features/dashboard/useDashboard';
 import Kpi from '../features/dashboard/components/Kpi';
 import {
@@ -10,6 +10,8 @@ import {
 import ModalCerrarTurno from '../features/dashboard/components/ModalCerrarTurno';
 import ModalNovedad from '../features/dashboard/components/ModalNovedad';
 import ModalFotos from '../features/dashboard/components/ModalFotos';
+import Pendientes from '../features/dashboard/components/Pendientes';
+import PrimerosPasos from '../features/dashboard/components/PrimerosPasos';
 import type { Salida, TurnoOlvidado, Novedad } from '../features/dashboard/types';
 
 export default function DashboardEmpresa() {
@@ -38,6 +40,13 @@ export default function DashboardEmpresa() {
         )}
       </div>
 
+      {/* Lo que espera a que alguien haga algo. Los turnos sin cerrar, que antes iban en un recuadro
+          naranja más abajo, son uno de estos avisos. */}
+      <Pendientes turnos={d.turnosOlvidados} pendientes={d.pendientes} onCerrarTurno={setCerrarTurno} />
+
+      {/* Solo en el primer mes de la empresa y mientras falte algún paso: el servidor manda null si no. */}
+      {d.primerosPasos && <PrimerosPasos pasos={d.primerosPasos} />}
+
       {/* KPIs */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {/* El número cuenta solo a quien está en su puesto. Quien almuerza sale
@@ -53,28 +62,6 @@ export default function DashboardEmpresa() {
         <Kpi icon={TrendingUp} titulo="Horas extra del mes" valor={`${d.totales.horasExtraMes}h`} acento="text-orange-500"
           detalle="acumuladas en el equipo" />
       </div>
-
-      {/* Alerta de turnos sin cerrar */}
-      {d.turnosOlvidados.length > 0 && (
-        <div className="bg-orange-50 border border-orange-200 rounded-card p-5">
-          <p className="font-semibold text-orange-800 mb-2 flex items-center gap-2">
-            <AlertTriangle size={17} /> Turnos sin cerrar ({d.turnosOlvidados.length})
-          </p>
-          <p className="text-sm text-orange-700 mb-3">
-            Estos colaboradores marcaron entrada en días anteriores pero no registraron salida. Corrige el registro para que la liquidación sea correcta.
-          </p>
-          <div className="flex flex-wrap gap-2">
-            {d.turnosOlvidados.map(t => (
-              <button key={t.id} onClick={() => setCerrarTurno(t)}
-                className="flex items-center gap-2 bg-white border border-orange-200 rounded-xl px-3 py-2 text-sm hover:border-orange-400">
-                <span className="font-medium text-ink">{t.colaborador}</span>
-                <span className="text-xs text-orange-700">{format(new Date(t.entrada), "d MMM · HH:mm", { locale: es })}</span>
-                <ArrowRight size={13} className="text-orange-500" />
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
 
       <div className="grid lg:grid-cols-2 gap-4">
         <EnPlantaCard items={d.enPlanta} enDescanso={d.enDescanso ?? []} />

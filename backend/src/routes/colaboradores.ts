@@ -8,7 +8,7 @@ import { esListaDescriptoresValida, cuantasMuestras } from '../utils/rostro';
 import { normalizarModalidad, normalizarPermisoOtraSede } from '../utils/modalidad';
 import { normalizarAuxilio, AUXILIO_INVALIDO } from '../utils/auxilioDeLaFicha';
 import { fotoPerfilValida, fotoParaEnrolar, miniValida } from '../utils/fotoPerfil';
-import { resumenDeContrato } from '../utils/estadoContratoResumen';
+import { resumenDeContrato, CONTRATO_QUE_LA_REPRESENTA } from '../utils/estadoContratoResumen';
 import { validarImportacion, COLUMNAS_FORMATO } from '../utils/importarColaboradores';
 import { medianocheBogota, hoyEnBogota } from '../utils/fechas';
 import { documentoValido, tipoDeDocumento, nombreDeDocumento, cambioDeDocumento } from '../utils/documentos';
@@ -93,17 +93,9 @@ export default async function colaboradorRoutes(app: FastifyInstance) {
         // pedir los nombres aparte sería una consulta por cada carga.
         sedes: { select: { sedeId: true, sede: { select: { nombre: true } } } },
         // El contrato vigente, para poder decir en la lista quién tiene el
-        // preaviso encima sin abrir ficha por ficha. Solo el más reciente:
-        // vigente debería haber uno, y si hubiera dos manda el nuevo.
-        contratos: {
-          where: { estado: 'VIGENTE' },
-          select: {
-            tipo: true, fechaInicio: true, fechaFin: true, fechaInicioPractica: true,
-            prorrogas: { select: { desde: true, hasta: true } },
-          },
-          orderBy: { fechaInicio: 'desc' },
-          take: 1,
-        },
+        // preaviso encima sin abrir ficha por ficha. El Inicio elige con el
+        // mismo trozo de consulta, para que sus pendientes coincidan con esta lista.
+        contratos: CONTRATO_QUE_LA_REPRESENTA,
       },
       orderBy: { nombre: 'asc' },
     });

@@ -11,6 +11,9 @@ import { almuerzoDelRegistro, cobroDePausas } from '../utils/liquidarRegistros';
 import { minutosAlmuerzoADescontar } from '../utils/almuerzo';
 // Con el nombre de siempre: la copia local salió a `utils/fechas.ts` y ninguna línea de uso cambia.
 import { claveDiaBogota as claveDia } from '../utils/fechas';
+import { CONTRATO_QUE_LA_REPRESENTA } from '../utils/estadoContratoResumen';
+import { contratosPorRevisar } from '../utils/contratosPorRevisar';
+import { enArranque, primerosPasos } from '../utils/primerosPasos';
 
 import { DIAS_SEMANA as DIAS } from '../utils/diasDeLaSemana';
 
@@ -44,13 +47,17 @@ export default async function dashboardRoutes(app: FastifyInstance) {
     const claveHoy = claveDia(ahora);
     const diaHoy = DIAS[ahoraBog.getDay()];
 
-    const [colaboradores, festivos, jornadas, tiposHoraTodos, permisos] = await Promise.all([
+    const [colaboradores, festivos, jornadas, tiposHoraTodos, permisos, empresa] = await Promise.all([
       prisma.colaborador.findMany({
         where: { empresaId, activo: true },
         select: {
           id: true, nombre: true, apellido: true, cargo: true, fechaNacimiento: true,
           horario: { select: { id: true, activo: true, nombre: true, toleranciaMin: true, almuerzoMin: true,
             franjas: { select: { dias: true, horaEntrada: true, horaSalida: true, tieneAlmuerzo: true } } } },
+          // Para «Primeros pasos»: si ya hay alguien con su rostro registrado.
+          rostroEnroladoEn: true,
+          // Para «Pendientes por resolver»: el mismo contrato que pinta la lista de Colaboradores.
+          contratos: CONTRATO_QUE_LA_REPRESENTA,
         },
         orderBy: { nombre: 'asc' },
       }),
@@ -63,9 +70,13 @@ export default async function dashboardRoutes(app: FastifyInstance) {
         select: { id: true, colaboradorId: true, fechaInicio: true, fechaFin: true, horaInicio: true, horaFin: true, tipo: true, descripcion: true, aprobado: true, evidenciaTipo: true, evidenciaNombre: true,
           colaborador: { select: { nombre: true, apellido: true } } },
       }),
+      // Por su llave primaria. Solo hace falta la fecha de creación, para saber si sigue arrancando.
+      prisma.empresa.findUnique({ where: { id: empresaId }, select: { creadoEn: true } }),
     ]);
 
     const colIds = colaboradores.map(c => c.id);
+    // «Primeros pasos» solo existe durante el primer mes: fuera de él no se pregunta nada más a la base.
+    const arrancando = !!empresa && enArranque(empresa.creadoEn, ahora);
     const festSet = new Set(festivos.map(f => claveDia(f.fecha)));
     const hoyEsFestivo = festSet.has(claveHoy);
 
@@ -79,7 +90,7 @@ export default async function dashboardRoutes(app: FastifyInstance) {
       salidaAlmuerzo: true, salidaDescanso: true,
       colaborador: { select: { id: true, nombre: true, apellido: true, cargo: true } },
     };
-    const [registrosHoy, turnosAbiertos, registrosMes, salidasConFoto, diasCongelados] = await Promise.all([
+    const [registrosHoy, turnosAbiertos, registrosMes, salidasConFoto, diasCongelados, porAprobar, horariosActivos, marcacionDelKiosco] = await Promise.all([
       prisma.registro.findMany({
         where: { colaboradorId: { in: colIds }, fecha: { gte: inicioDia, lt: finDia } },
         select: SEL_REG,
@@ -107,6 +118,23 @@ export default async function dashboardRoutes(app: FastifyInstance) {
         where: { colaboradorId: { in: colIds }, fecha: { gte: inicioSemanaMes, lte: finDia } },
         select: { colaboradorId: true, fecha: true, esDescanso: true },
       }),
+      // Las novedades por aprobar: sin aprobar y de alguien activo, sean de la fecha que sean. Es la misma
+      // regla con la que el resumen semanal las cuenta (`envioResumenSemanal.ts`). Va por los ids de los
+      // activos y no por la relación con la empresa, para que entre por el índice de `colaboradorId`.
+      prisma.permiso.findMany({
+        where: { aprobado: false, colaboradorId: { in: colIds } },
+        select: { id: true, colaboradorId: true, tipo: true, fechaInicio: true, fechaFin: true },
+        orderBy: { fechaInicio: 'asc' },
+      }),
+      arrancando ? prisma.horario.count({ where: { empresaId, activo: true } }) : Promise.resolve(0),
+      // Del kiosco: con rostro o con cédula. Una carga a mano (MANUAL) no prueba que el kiosco funcione, y
+      // `not: 'MANUAL'` dejaría fuera las filas en null, así que van los dos métodos con nombre. Se busca
+      // entre TODA la gente de la empresa, también la retirada: la primera marcación es un hecho que ya
+      // pasó, y retirar a quien probó el kiosco no puede volver a pedir el paso (revisión del 14/10/2026).
+      arrancando
+        ? prisma.colaborador.findMany({ where: { empresaId }, select: { id: true } }).then(todos =>
+          prisma.registro.findFirst({ where: { colaboradorId: { in: todos.map(c => c.id) }, metodoEntrada: { in: ['ROSTRO', 'CEDULA'] } }, select: { id: true } }))
+        : Promise.resolve(null),
     ]);
     const conFotoSalida = new Set(salidasConFoto.map(r => r.id));
 
@@ -360,6 +388,32 @@ export default async function dashboardRoutes(app: FastifyInstance) {
       .filter(c => c.mes === mesHoy)
       .sort((a, b) => a.dia - b.dia);
 
+    // ===== Pendientes por resolver =====
+    // Lo que espera a que alguien haga algo. Los turnos sin cerrar ya viajan en `turnosOlvidados`.
+    const nombreDe = new Map(colaboradores.map(c => [c.id, `${c.nombre} ${c.apellido}`]));
+    const pendientes = {
+      novedades: porAprobar.map(p => ({
+        id: p.id, colaboradorId: p.colaboradorId, colaborador: nombreDe.get(p.colaboradorId) ?? '',
+        tipo: p.tipo, fechaInicio: p.fechaInicio, fechaFin: p.fechaFin,
+      })),
+      contratos: contratosPorRevisar(
+        colaboradores.map(c => ({ id: c.id, nombre: `${c.nombre} ${c.apellido}`, contrato: c.contratos[0] ?? null })),
+        ahora,
+      ),
+    };
+
+    // ===== Primeros pasos =====
+    // null es «no aplica» (la empresa ya pasó su primer mes o completó los pasos). Un backend anterior no
+    // manda el campo, y la pantalla tampoco pinta nada.
+    const pasos = arrancando
+      ? primerosPasos({
+        horariosActivos,
+        colaboradoresActivos: colaboradores.length,
+        conRostro: colaboradores.filter(c => c.rostroEnroladoEn).length,
+        marcoEnElKiosco: !!marcacionDelKiosco,
+      })
+      : null;
+
     return {
       fecha: ahora,
       hoyEsFestivo,
@@ -378,6 +432,8 @@ export default async function dashboardRoutes(app: FastifyInstance) {
       novedadesHoy,
       proximosFestivos,
       cumpleanos,
+      pendientes,
+      primerosPasos: pasos,
     };
   });
 }

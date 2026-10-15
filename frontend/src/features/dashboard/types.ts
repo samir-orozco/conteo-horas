@@ -20,6 +20,15 @@ export type Dash = {
   novedadesHoy: { id: string; colaboradorId: string; colaborador: string; tipo: string; descripcion: string | null; aprobado: boolean; fechaInicio: string; fechaFin: string; evidenciaTipo: string | null; evidenciaNombre: string | null }[];
   proximosFestivos: { nombre: string; fecha: string; propio: boolean }[];
   cumpleanos: { id: string; nombre: string; cargo: string | null; dia: number; mes: number; esHoy: boolean }[];
+  // Lo que espera a que alguien haga algo (14 de octubre de 2026). Los turnos sin cerrar van aparte, en
+  // `turnosOlvidados`, que existe desde antes. Opcional por la misma ventana de despliegue de `enDescanso`.
+  pendientes?: {
+    novedades: { id: string; colaboradorId: string; colaborador: string; tipo: string; fechaInicio: string; fechaFin: string }[];
+    contratos: { colaboradorId: string; colaborador: string; estado: 'POR_VENCER' | 'PREAVISO_VENCIDO' | 'VENCIDO'; vence: string; limitePreaviso: string }[];
+  };
+  // null: la empresa ya pasó su primer mes o completó los pasos. Sin el campo: un servidor anterior. La
+  // clave es un texto y no la lista cerrada porque un servidor más nuevo podría mandar un paso más.
+  primerosPasos?: { clave: string; hecho: boolean }[] | null;
 };
 
 export type Salida = Dash['salidasRecientes'][number];

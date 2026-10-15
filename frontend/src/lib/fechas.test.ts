@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { fechaLarga, fechaCorta, mesYAnio, fechaYHora, horaDoce, sinEspaciosRaros, ultimoDiaCubierto } from './fechas';
+import { fechaLarga, fechaCorta, mesYAnio, fechaYHora, horaDoce, sinEspaciosRaros, ultimoDiaCubierto, diaYMes } from './fechas';
 
 // Estas pruebas solo prueban de verdad cuando corren en una zona horaria que
 // NO es la de Bogotá. En Bogotá pasan con o sin el arreglo, porque la hora
@@ -22,6 +22,12 @@ describe('el formato de fechas para la persona que mira la pantalla', () => {
     expect(fechaCorta('2025-09-01T05:00:00.000Z')).toMatch(/2025/);
     // 04:00Z son las 11 p.m. del día anterior en Bogotá.
     expect(fechaCorta('2026-08-25T04:00:00.000Z')).toMatch(/24 de ago/);
+  });
+
+  it('el día y el mes, sin año, para las listas cortas del Inicio, también se anclan', () => {
+    expect(diaYMes('2026-10-31T05:00:00.000Z')).toBe('31 de oct');
+    // 04:00Z son las 11 p.m. del día anterior en Bogotá.
+    expect(diaYMes('2026-11-01T04:00:00.000Z')).toBe('31 de oct');
   });
 
   it('el mes y el año también se anclan', () => {

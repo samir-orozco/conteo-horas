@@ -29,6 +29,10 @@ export const ultimoDiaCubierto = (vence: string | Date, corta = false) => {
   return corta ? fechaCorta(dia) : fechaLarga(dia);
 };
 
+// "31 de oct", para las listas cortas donde el año sobra (los pendientes del Inicio).
+export const diaYMes = (iso: string | Date) =>
+  new Date(iso).toLocaleDateString('es-CO', { timeZone: TZ, day: 'numeric', month: 'short' });
+
 // "agosto de 2026", para decir desde cuándo sin la precisión del día.
 export const mesYAnio = (iso: string | Date) =>
   new Date(iso).toLocaleDateString('es-CO', { timeZone: TZ, month: 'long', year: 'numeric' });
