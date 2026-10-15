@@ -6,19 +6,22 @@ import type { Dash } from '../types';
 // de los que debían venir. La barra va en tinta sobre gris, con el número escrito debajo: el amarillo
 // sobre blanco no se distingue lo suficiente (1,38:1) para cargar sola el dato. Hoy se marca con la
 // palabra «Hoy» y un fondo, no solo con color.
+//
+// Las barras crecen con la tarjeta (el dueño, el mismo día): al lado de las llegadas tarde, que es más alta,
+// quedaba un hueco blanco debajo. En un teléfono, sola en su fila, mide lo de siempre (96 px de barra).
 export default function AsistenciaSemana({ dias }: { dias: NonNullable<Dash['asistenciaSemana']>['dias'] }) {
   const columnas = columnasDeAsistencia(dias);
   const hoy = columnas.find(c => c.esHoy);
   return (
-    <section className="bg-white rounded-card border border-gray-200 p-5">
+    <section className="bg-white rounded-card border border-gray-200 p-5 flex flex-col">
       <p className="font-semibold text-ink mb-4 flex items-center gap-2">
         <CalendarCheck size={16} className="text-green-600" /> Asistencia de la semana
       </p>
-      <ul aria-label="Asistencia de lunes a domingo" className="grid grid-cols-7 gap-1 sm:gap-2">
+      <ul aria-label="Asistencia de lunes a domingo" className="flex-1 grid grid-cols-7 gap-1 sm:gap-2">
         {columnas.map(c => (
           <li key={c.clave} aria-label={c.nombreAccesible} title={c.nota ?? undefined}
             className={`flex flex-col items-center gap-1.5 rounded-xl px-0.5 py-2 ${c.esHoy ? 'bg-primary-light' : ''}`}>
-            <div aria-hidden className={`h-24 w-full max-w-[28px] rounded-md flex items-end overflow-hidden ${
+            <div aria-hidden className={`flex-1 min-h-24 w-full max-w-[28px] rounded-md flex items-end overflow-hidden ${
               c.estado === 'FUTURO' ? 'border border-dashed border-gray-300' : 'bg-gray-100'}`}>
               {c.alto > 0 && <div className="w-full bg-ink rounded-md" style={{ height: `${c.alto}%` }} />}
             </div>
