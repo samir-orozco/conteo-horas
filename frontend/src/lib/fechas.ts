@@ -33,6 +33,23 @@ export const ultimoDiaCubierto = (vence: string | Date, corta = false) => {
 export const diaYMes = (iso: string | Date) =>
   new Date(iso).toLocaleDateString('es-CO', { timeZone: TZ, day: 'numeric', month: 'short' });
 
+// Las partes de una fecha en Bogotá. Se arma el texto a mano en vez de confiar en el formato completo:
+// según el navegador, el día de la semana viene con coma («lun, 12») o sin ella.
+const partesDe = (iso: string | Date, opciones: Intl.DateTimeFormatOptions) =>
+  Object.fromEntries(new Intl.DateTimeFormat('es-CO', { timeZone: TZ, ...opciones }).formatToParts(new Date(iso)).map(p => [p.type, p.value]));
+
+// "lun 12", para las barras de la semana del Inicio.
+export const diaCorto = (iso: string | Date) => {
+  const p = partesDe(iso, { weekday: 'short', day: 'numeric' });
+  return `${p.weekday.replace('.', '')} ${p.day}`;
+};
+
+// "lunes 12 de octubre", para el nombre que lee un lector de pantalla.
+export const diaDeLaSemana = (iso: string | Date) => {
+  const p = partesDe(iso, { weekday: 'long', day: 'numeric', month: 'long' });
+  return `${p.weekday} ${p.day} de ${p.month}`;
+};
+
 // "agosto de 2026", para decir desde cuándo sin la precisión del día.
 export const mesYAnio = (iso: string | Date) =>
   new Date(iso).toLocaleDateString('es-CO', { timeZone: TZ, month: 'long', year: 'numeric' });

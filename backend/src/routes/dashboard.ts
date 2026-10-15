@@ -6,7 +6,7 @@ import { calcularHorasTrabajadas, descontarAlmuerzo, claveDeDescanso, type Desca
 // La guarda legal, igual que en reportes.ts: un día declarado SIN acuerdo escrito no vale.
 import { fuenteDelDescansoDe } from '../utils/descansoDelHorario';
 import { jornadaVigente, tiposVigentes } from '../utils/vigencias';
-import { franjaDelDia, HorarioConFranjas, construirExtraConfig, excusaLaTardanza } from '../utils/tardanzas';
+import { HorarioConFranjas, construirExtraConfig } from '../utils/tardanzas';
 import { almuerzoDelRegistro, cobroDePausas } from '../utils/liquidarRegistros';
 import { minutosAlmuerzoADescontar } from '../utils/almuerzo';
 // Con el nombre de siempre: la copia local salió a `utils/fechas.ts` y ninguna línea de uso cambia.
@@ -14,8 +14,7 @@ import { claveDiaBogota as claveDia } from '../utils/fechas';
 import { CONTRATO_QUE_LA_REPRESENTA } from '../utils/estadoContratoResumen';
 import { contratosPorRevisar } from '../utils/contratosPorRevisar';
 import { enArranque, primerosPasos } from '../utils/primerosPasos';
-
-import { DIAS_SEMANA as DIAS } from '../utils/diasDeLaSemana';
+import { armarSemanaDelInicio, ventanaDelInicio } from '../utils/semanaDelInicio';
 
 const TZ = 'America/Bogota';
 const CODIGOS_EXTRA = new Set(['HED', 'HEN', 'HEDD', 'HEND']);
@@ -23,10 +22,6 @@ const CODIGOS_EXTRA = new Set(['HED', 'HEN', 'HEDD', 'HEND']);
 function semanaKey(fecha: Date): string {
   const z = toZonedTime(fecha, TZ);
   return `${getISOWeekYear(z)}-W${String(getISOWeek(z)).padStart(2, '0')}`;
-}
-function minutosDe(hhmm: string): number {
-  const [h, m] = hhmm.split(':').map(Number);
-  return h * 60 + m;
 }
 
 // Panel de inicio de la empresa: foto del día + del mes.
@@ -45,15 +40,19 @@ export default async function dashboardRoutes(app: FastifyInstance) {
     // que cruzan el límite de mes quedan completas para los KPIs semanales/extra.
     const inicioSemanaMes = fromZonedTime(startOfISOWeek(toZonedTime(inicioMes, TZ)), TZ);
     const claveHoy = claveDia(ahora);
-    const diaHoy = DIAS[ahoraBog.getDay()];
+    // Los días que piden la asistencia de la semana y las llegadas tarde de los últimos 7 días.
+    const ventana = ventanaDelInicio(ahora);
 
-    const [colaboradores, festivos, jornadas, tiposHoraTodos, permisos, empresa] = await Promise.all([
+    const [colaboradores, festivos, jornadas, tiposHoraTodos, empresa] = await Promise.all([
       prisma.colaborador.findMany({
         where: { empresaId, activo: true },
         select: {
           id: true, nombre: true, apellido: true, cargo: true, fechaNacimiento: true,
-          horario: { select: { id: true, activo: true, nombre: true, toleranciaMin: true, almuerzoMin: true,
-            franjas: { select: { dias: true, horaEntrada: true, horaSalida: true, tieneAlmuerzo: true } } } },
+          // Desde cuándo existe: quien no estaba cuando tenía que entrar no faltó (utils/asistencia.ts).
+          creadoEn: true,
+          // El horario entero con sus franjas: con él se completan los días que no estén materializados
+          // (`diasParaMedir`), igual que en los reportes.
+          horario: { include: { franjas: true } },
           // Para «Primeros pasos»: si ya hay alguien con su rostro registrado.
           rostroEnroladoEn: true,
           // Para «Pendientes por resolver»: el mismo contrato que pinta la lista de Colaboradores.
@@ -61,15 +60,12 @@ export default async function dashboardRoutes(app: FastifyInstance) {
         },
         orderBy: { nombre: 'asc' },
       }),
-      // Solo festivos relevantes: del mes en curso (para el cálculo) hasta +45 días (próximos).
-      prisma.diaFestivo.findMany({ where: { OR: [{ empresaId: null }, { empresaId }], fecha: { gte: inicioSemanaMes, lte: en45 } } }),
+      // Solo festivos relevantes: del mes en curso (para el cálculo) y de la ventana de la semana, hasta
+      // +45 días (próximos). Sin el comienzo de la ventana, los primeros días del mes las llegadas tarde
+      // del mes anterior se contaban también en sus festivos.
+      prisma.diaFestivo.findMany({ where: { OR: [{ empresaId: null }, { empresaId }], fecha: { gte: ventana.inicio < inicioSemanaMes ? ventana.inicio : inicioSemanaMes, lte: en45 } } }),
       prisma.jornadaVigencia.findMany(),
       prisma.tipoHora.findMany(),
-      prisma.permiso.findMany({
-        where: { aprobado: true, colaborador: { empresaId }, fechaInicio: { lte: finDia }, fechaFin: { gte: inicioDia } },
-        select: { id: true, colaboradorId: true, fechaInicio: true, fechaFin: true, horaInicio: true, horaFin: true, tipo: true, descripcion: true, aprobado: true, evidenciaTipo: true, evidenciaNombre: true,
-          colaborador: { select: { nombre: true, apellido: true } } },
-      }),
       // Por su llave primaria. Solo hace falta la fecha de creación, para saber si sigue arrancando.
       prisma.empresa.findUnique({ where: { id: empresaId }, select: { creadoEn: true } }),
     ]);
@@ -90,7 +86,7 @@ export default async function dashboardRoutes(app: FastifyInstance) {
       salidaAlmuerzo: true, salidaDescanso: true,
       colaborador: { select: { id: true, nombre: true, apellido: true, cargo: true } },
     };
-    const [registrosHoy, turnosAbiertos, registrosMes, salidasConFoto, diasCongelados, porAprobar, horariosActivos, marcacionDelKiosco] = await Promise.all([
+    const [registrosHoy, turnosAbiertos, registrosMes, salidasConFoto, diasCongelados, porAprobar, horariosActivos, marcacionDelKiosco, permisos, diasDeLaVentana, marcasDeLaVentana] = await Promise.all([
       prisma.registro.findMany({
         where: { colaboradorId: { in: colIds }, fecha: { gte: inicioDia, lt: finDia } },
         select: SEL_REG,
@@ -135,6 +131,28 @@ export default async function dashboardRoutes(app: FastifyInstance) {
         ? prisma.colaborador.findMany({ where: { empresaId }, select: { id: true } }).then(todos =>
           prisma.registro.findFirst({ where: { colaboradorId: { in: todos.map(c => c.id) }, metodoEntrada: { in: ['ROSTRO', 'CEDULA'] } }, select: { id: true } }))
         : Promise.resolve(null),
+      // Las novedades APROBADAS que tocan la ventana: las de hoy van a su tarjeta, y todas excusan en la
+      // asistencia y en las llegadas tarde, como en el reporte. Por los ids de los activos, para entrar
+      // por el índice de `colaboradorId`.
+      prisma.permiso.findMany({
+        where: { aprobado: true, colaboradorId: { in: colIds }, fechaInicio: { lt: ventana.fin }, fechaFin: { gte: ventana.inicio } },
+        select: { id: true, colaboradorId: true, fechaInicio: true, fechaFin: true, horaInicio: true, horaFin: true, tipo: true, descripcion: true, aprobado: true, evidenciaTipo: true, evidenciaNombre: true,
+          colaborador: { select: { nombre: true, apellido: true } } },
+      }),
+      // Lo que el horario o el planificador exigían cada día de la ventana, congelado.
+      prisma.diaEsperado.findMany({
+        where: { colaboradorId: { in: colIds }, fecha: { gte: ventana.inicio, lt: ventana.fin } },
+        select: {
+          colaboradorId: true, fecha: true, programado: true, horaEntrada: true, horaSalida: true,
+          toleranciaMin: true, almuerzoMin: true, minutosEsperados: true, toleranciaSalidaMin: true, ajustaEntrada: true,
+          almuerzoInicio: true, almuerzoFin: true, descansos: true,
+        },
+      }),
+      // Las entradas de la ventana, con la fecha de su jornada (no la del reloj: un nocturno).
+      prisma.registro.findMany({
+        where: { colaboradorId: { in: colIds }, fecha: { gte: ventana.inicio, lt: finDia }, entrada: { not: null } },
+        select: { colaboradorId: true, fecha: true, entrada: true },
+      }),
     ]);
     const conFotoSalida = new Set(salidasConFoto.map(r => r.id));
 
@@ -202,69 +220,31 @@ export default async function dashboardRoutes(app: FastifyInstance) {
         tieneFotoSalida: conFotoSalida.has(r.id),
       }));
 
-    // Novedades que cubren HOY. Se calculan las claves de día UNA sola vez por permiso
-    // y se reutilizan para 'sin marcar' y para el listado de novedades.
+    // Novedades que cubren HOY, para su tarjeta. Las de toda la ventana las usa la semana, más abajo.
     const permisosHoy = permisos.filter(p => claveDia(p.fechaInicio) <= claveHoy && claveHoy <= claveDia(p.fechaFin));
-    // Tipo de novedad activa hoy por colaborador (para explicar por qué no marcó)
-    const novedadHoyTipo = new Map<string, string>();
-    for (const p of permisosHoy) {
-      if (!novedadHoyTipo.has(p.colaboradorId)) novedadHoyTipo.set(p.colaboradorId, p.tipo);
-    }
 
-    // ===== Llegadas tarde hoy (según horario) =====
-    const llegadasTardeHoy: { id: string; nombre: string; horaLlegada: string; minutosTarde: number }[] = [];
-    // Primera entrada de hoy por colaborador
-    const primeraEntradaHoy = new Map<string, Date>();
-    for (const r of registrosHoy) {
-      if (!r.entrada) continue;
-      const prev = primeraEntradaHoy.get(r.colaboradorId);
-      if (!prev || r.entrada < prev) primeraEntradaHoy.set(r.colaboradorId, r.entrada);
-    }
-
-    // ===== Sin marcar hoy (deberían haber entrado y no lo han hecho) =====
-    const sinMarcarHoy: { id: string; nombre: string; cargo: string | null; horario: string; horaEntrada: string; novedad: string | null }[] = [];
-
-    for (const c of colaboradores) {
-      if (!c.horario || !c.horario.activo) continue;
-      // La franja que aplica hoy (un horario puede variar por día, ej. sábados más corto)
-      const franjaHoy = franjaDelDia(c.horario, diaHoy);
-      if (!franjaHoy || hoyEsFestivo) continue;
-
-      const entrada = primeraEntradaHoy.get(c.id);
-      if (entrada) {
-        // Llegó tarde: la tardanza solo aplica si no tiene una novedad que la
-        // justifique, con la misma regla del reporte de tardanzas.
-        if (permisosHoy.some(p => p.colaboradorId === c.id && excusaLaTardanza(p, ahora, franjaHoy.horaEntrada))) continue;
-        const z = toZonedTime(entrada, TZ);
-        const llegadaMin = z.getHours() * 60 + z.getMinutes();
-        const tarde = llegadaMin - (minutosDe(franjaHoy.horaEntrada) + c.horario.toleranciaMin);
-        if (tarde > 0) {
-          llegadasTardeHoy.push({
-            id: c.id,
-            nombre: `${c.nombre} ${c.apellido}`,
-            horaLlegada: `${String(z.getHours()).padStart(2, '0')}:${String(z.getMinutes()).padStart(2, '0')}`,
-            minutosTarde: tarde,
-          });
-        }
-      } else {
-        // No ha marcado. Si tiene novedad hoy (ej. médico), lo mostramos con el
-        // distintivo de su novedad para saber por qué no marcó. Si no, solo lo
-        // marcamos "sin marcar" cuando ya pasó su hora de entrada + tolerancia.
-        const novedad = novedadHoyTipo.get(c.id) ?? null;
-        const ahoraMin = ahoraBog.getHours() * 60 + ahoraBog.getMinutes();
-        const yaPasoEntrada = ahoraMin > minutosDe(franjaHoy.horaEntrada) + c.horario.toleranciaMin;
-        if (novedad || yaPasoEntrada) {
-          sinMarcarHoy.push({
-            id: c.id,
-            nombre: `${c.nombre} ${c.apellido}`,
-            cargo: c.cargo,
-            horario: c.horario.nombre,
-            horaEntrada: franjaHoy.horaEntrada,
-            novedad,
-          });
-        }
-      }
-    }
+    // ===== La semana: asistencia, llegadas tarde de 7 días y «Aún no han marcado» =====
+    // Una sola regla, la de los días esperados (decisión del dueño, 15 de octubre de 2026): la del
+    // reporte de llegadas tarde y la del aviso de Telegram. Antes este tablero miraba el horario de hoy
+    // y no veía los turnos pintados en el planificador ni los días libres de la programación.
+    const semana = armarSemanaDelInicio({
+      ahora,
+      colaboradores,
+      materializados: diasDeLaVentana,
+      marcas: marcasDeLaVentana,
+      novedades: permisos,
+      festivos,
+    });
+    const { sinMarcarHoy, llegadasTardeHoy } = semana;
+    // Las fotos chicas de quienes llegaron tarde en los 7 días, una vez cada una y por su llave primaria.
+    // La miniatura no va en la consulta de todos los activos: la traería de toda la empresa.
+    const tardeEnLaSemana = [...new Set(semana.llegadasTarde7d.dias.flatMap(d => d.personas.map(p => p.id)))];
+    const fotos = tardeEnLaSemana.length
+      ? await prisma.colaborador.findMany({ where: { id: { in: tardeEnLaSemana } }, select: { id: true, fotoMini: true } })
+      : [];
+    const fotoDe = new Map(fotos.map(f => [f.id, f.fotoMini]));
+    const nombreCompleto = new Map(colaboradores.map(c => [c.id, `${c.nombre} ${c.apellido}`]));
+    const personasDeLaSemana = Object.fromEntries(tardeEnLaSemana.map(id => [id, { nombre: nombreCompleto.get(id) ?? '', fotoMini: fotoDe.get(id) ?? null }]));
 
     // ===== Horas extra y horas de la semana (toda la empresa) =====
     const festivosDates = festivos.map(f => new Date(f.fecha));
@@ -426,7 +406,7 @@ export default async function dashboardRoutes(app: FastifyInstance) {
       enPlanta,
       enDescanso,
       salidasRecientes,
-      llegadasTardeHoy: llegadasTardeHoy.sort((a, b) => b.minutosTarde - a.minutosTarde),
+      llegadasTardeHoy,
       sinMarcarHoy,
       turnosOlvidados,
       novedadesHoy,
@@ -434,6 +414,8 @@ export default async function dashboardRoutes(app: FastifyInstance) {
       cumpleanos,
       pendientes,
       primerosPasos: pasos,
+      asistenciaSemana: semana.asistenciaSemana,
+      llegadasTarde7d: { dias: semana.llegadasTarde7d.dias, personas: personasDeLaSemana },
     };
   });
 }

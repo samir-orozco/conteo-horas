@@ -12,6 +12,8 @@ import ModalNovedad from '../features/dashboard/components/ModalNovedad';
 import ModalFotos from '../features/dashboard/components/ModalFotos';
 import Pendientes from '../features/dashboard/components/Pendientes';
 import PrimerosPasos from '../features/dashboard/components/PrimerosPasos';
+import AsistenciaSemana from '../features/dashboard/components/AsistenciaSemana';
+import LlegadasTarde7d from '../features/dashboard/components/LlegadasTarde7d';
 import type { Salida, TurnoOlvidado, Novedad } from '../features/dashboard/types';
 
 export default function DashboardEmpresa() {
@@ -63,12 +65,19 @@ export default function DashboardEmpresa() {
           detalle="acumuladas en el equipo" />
       </div>
 
+      {/* Hoy: quién está junto a quién falta, y debajo las salidas y las novedades. */}
       <div className="grid lg:grid-cols-2 gap-4">
         <EnPlantaCard items={d.enPlanta} enDescanso={d.enDescanso ?? []} />
-        <SalidasCard items={d.salidasRecientes} onVerFotos={setFotosDe} />
-        <LlegadasTardeCard items={d.llegadasTardeHoy} />
         <SinMarcarCard items={d.sinMarcarHoy} />
+        <SalidasCard items={d.salidasRecientes} onVerFotos={setFotosDe} />
         <NovedadesCard items={d.novedadesHoy} onVer={setVerNovedad} />
+      </div>
+
+      {/* La semana. Las llegadas tarde de 7 días reemplazan a la lista de hoy; con un servidor anterior,
+          que no las manda, queda la lista. */}
+      <div className="grid lg:grid-cols-2 gap-4">
+        {d.asistenciaSemana && <AsistenciaSemana dias={d.asistenciaSemana.dias} />}
+        {d.llegadasTarde7d ? <LlegadasTarde7d {...d.llegadasTarde7d} /> : <LlegadasTardeCard items={d.llegadasTardeHoy} />}
       </div>
 
       <div className="grid lg:grid-cols-2 gap-4">

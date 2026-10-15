@@ -29,6 +29,18 @@ export type Dash = {
   // null: la empresa ya pasó su primer mes o completó los pasos. Sin el campo: un servidor anterior. La
   // clave es un texto y no la lista cerrada porque un servidor más nuevo podría mandar un paso más.
   primerosPasos?: { clave: string; hecho: boolean }[] | null;
+  // La asistencia de lunes a domingo y las llegadas tarde de los últimos 7 días (15 de octubre de 2026).
+  // Las fechas son medianoches de Bogotá (05:00Z), nunca un 'YYYY-MM-DD' suelto: el navegador lo leería
+  // a medianoche UTC y pintaría el día anterior. Opcionales, por la ventana de despliegue.
+  asistenciaSemana?: {
+    dias: { clave: string; fecha: string; esHoy: boolean; futuro: boolean; festivo: boolean; debian: number; llegaron: number;
+      llegaronSinTurno: number; conNovedad: number; enTiempo: number; conTurno: number }[];
+  };
+  llegadasTarde7d?: {
+    dias: { clave: string; fecha: string; esHoy: boolean; festivo: boolean; debian: number; totalMinutos: number;
+      personas: { id: string; horaEsperada: string; horaLlegada: string; minutosTarde: number }[] }[];
+    personas: Record<string, { nombre: string; fotoMini: string | null }>;
+  };
 };
 
 export type Salida = Dash['salidasRecientes'][number];

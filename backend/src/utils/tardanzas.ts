@@ -150,7 +150,8 @@ export function calcularTardanzas(
   // entero obligaba a las rutas a traer también las fotos de cada marcación.
   registros: Pick<Registro, 'entrada' | 'fecha'>[],
   dias: DiaEsperadoParaTardanza[],
-  festivos: DiaFestivo[],
+  // Solo la fecha: es lo único que se lee de cada festivo.
+  festivos: Pick<DiaFestivo, 'fecha'>[],
   permisos: NovedadParaDia[]
 ): { detalle: Tardanza[]; totalMinutos: number; diasTarde: number; toleranciaMin: number } {
   const festSet = new Set(festivos.map(f => claveDia(f.fecha)));
