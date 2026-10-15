@@ -27,11 +27,13 @@ Lo mismo pasa con la descripción de una novedad que cargue el administrador (pu
 del seguimiento del clima. Ese registro **no se borra nunca**, ni cuando el dato se corrige o se elimina en el producto.
 
 Había dos salidas: cambiar el producto o declararlo en la política. **El dueño eligió cambiar el producto el 14 de octubre de
-2026, y ya está hecho en develop (sin desplegar):** la auditoría dice quién hizo qué, cuándo, desde qué IP y sobre cuál
+2026, y está en producción desde el 15 de octubre:** la auditoría dice quién hizo qué, cuándo, desde qué IP y sobre cuál
 registro; del contenido guarda los nombres de los campos y los ids, nunca los valores. Solo las rutas cuyo contenido es de la
 empresa (sus sedes, horarios, festivos, configuración, plan y usuarios del panel) guardan los valores. Una ruta nueva nace
-protegida: la lista es de las que sí guardan, no de las que no. Las filas que ya estaban se limpian con un comando en el
-servidor al desplegar, con la misma regla. Así la promesa del punto 4 vuelve a ser cierta.
+protegida: la lista es de las que sí guardan, no de las que no. Las filas que ya estaban se limpiaron el 15 de octubre con un
+comando en el servidor, con la misma regla: 1.565 de 2.367, y después de aplicarlo no quedó ninguna por limpiar. Así la
+promesa del punto 4 vuelve a ser cierta. (Lo que pueda quedar en la copia semanal de la base se va con ella, a los siete
+días como máximo, que es lo que ya dice el punto 7.)
 
 **Lo que queda, y es otra cosa:** el registro de accesos guarda, de un intento rechazado en el kiosco, la cédula que se
 escribió, para detectar a quien prueba cédulas. Si la cédula es de un trabajador (por ejemplo, con un dígito errado), el super
@@ -283,7 +285,7 @@ pregunta a cada colaborador cómo le fue hoy. Los resultados se ven en Clima lab
 
 ## 6. Lo que decide el dueño, no el abogado
 
-- ~~**Punto 0:** salida A o B.~~ Decidido el 14 de octubre de 2026: A, hecha en develop.
+- ~~**Punto 0:** salida A o B.~~ Decidido el 14 de octubre de 2026: A. En producción y con las filas viejas limpias desde el 15.
 - **La cédula de los intentos rechazados del kiosco** (final del punto 0).
 - **El plazo del registro del sistema.**
 - **El texto del kiosco** del punto 4, y si va.

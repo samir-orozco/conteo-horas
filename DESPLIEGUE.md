@@ -329,15 +329,38 @@ clave nueva no descifra lo que cifró la anterior.
 El comando para revelar un autor, que deja constancia en el registro del sistema antes de mostrar el
 nombre. Lleva los dos límites de hilos de 6.1, como todo lo que use Prisma en esta cuenta. El `.env` no
 se carga a mano: lo lee el propio comando desde la carpeta de la app (y cargarlo con `set -a` dañaría
-una contraseña que tenga un `$`).
+una contraseña que tenga un `$`). Con el `node` de la app, como explica 6.4:
 
 ```bash
-cd ~/horapro-co-api && TOKIO_WORKER_THREADS=1 UV_THREADPOOL_SIZE=2 node dist/scripts/revelar-autor-confidencial.js buscar --nit <NIT> --texto "<un pedazo de la nota>"
+cd ~/horapro-co-api && TOKIO_WORKER_THREADS=1 UV_THREADPOOL_SIZE=2 ../nodevenv/horapro-co-api/22/bin/node dist/scripts/revelar-autor-confidencial.js buscar --nit <NIT> --texto "<un pedazo de la nota>"
 ```
 
 ```bash
-cd ~/horapro-co-api && TOKIO_WORKER_THREADS=1 UV_THREADPOOL_SIZE=2 node dist/scripts/revelar-autor-confidencial.js revelar --nota <id> --motivo "<autoridad y radicado>" --quien "<quién lo corre>"
+cd ~/horapro-co-api && TOKIO_WORKER_THREADS=1 UV_THREADPOOL_SIZE=2 ../nodevenv/horapro-co-api/22/bin/node dist/scripts/revelar-autor-confidencial.js revelar --nota <id> --motivo "<autoridad y radicado>" --quien "<quién lo corre>"
 ```
+
+### 6.4 Correr un comando de `dist/scripts` en el servidor
+
+**En la terminal de cPanel `node` no existe** (`bash: node: command not found`, 15 de octubre de 2026): la app corre
+con el Node de su propio entorno, que no está en el camino de la terminal. El binario es
+`~/horapro-co-api/../nodevenv/horapro-co-api/22/bin/node`; la ruta se lee del servidor, no de aquí, con
+`ls ../nodevenv/horapro-co-api/*/bin/node` desde la carpeta de la app.
+
+Como el binario y los límites de hilos no caben en 100 teclas junto al comando, se dejan en la sesión y se llama con `$N`:
+
+```bash
+cd ~/horapro-co-api
+```
+```bash
+export TOKIO_WORKER_THREADS=1 UV_THREADPOOL_SIZE=2 N=../nodevenv/horapro-co-api/22/bin/node
+```
+```bash
+$N dist/scripts/limpiar-auditoria.js
+```
+
+Así se corrió la limpieza de la auditoría el 15 de octubre de 2026: sin `--aplicar` cuenta (1.565 de 2.367 filas), con
+`--aplicar` escribe, y otra vez sin `--aplicar` tiene que dar 0. No se le pone `| head` a una corrida que escribe: el
+resumen sale al final y cortar la salida puede tumbar el proceso mientras imprime.
 
 ## 7. Wompi en producción
 
