@@ -20,6 +20,7 @@ import { leerDescansos, ventanasEnOrden, completarVentanasDeDescanso, MAX_MARCAC
 import { resumirAlmuerzoDelDia, resumirDescansosDelDia, minutosContadosDelDia, partirDiaEnJornadas, tramoQueChoca, marcacionQueCierra, laCerroElSistema, agruparEnJornadas, instantesDeJornada, tramosDeLaJornada, momentosDelDia, jornadaDeCadaMarcacion, sedesDeLaJornada, salidasTrasEditar, leerPausaDelCuerpo, leerDescansosDelCuerpo } from '../utils/jornada';
 import { jornadaFueraDeGeocerca } from '../utils/avisoFueraDeGeocerca';
 import { motivoSinSede } from '../utils/motivoSinSede';
+import { idsDeLaEmpresa } from '../utils/reportesDeEmpresa';
 
 const TZ = 'America/Bogota';
 const TIPOS_REGISTRO = new Set(['NORMAL', 'PERMISO', 'FESTIVO']);
@@ -258,8 +259,11 @@ export default async function registroRoutes(app: FastifyInstance) {
 
   app.get('/', auth, async (request) => {
     const { colaboradorId, desde, hasta } = request.query as any;
-    const where: any = { colaborador: { empresaId: request.empresaId } };
-    if (colaboradorId) where.colaboradorId = colaboradorId;
+    // Por la lista de personas de la empresa y no por `colaborador: { empresaId }`, que MySQL resolvía recorriendo
+    // `registros` entera (prisma/medir-filtros-por-empresa.ts, 15 de octubre de 2026). Una persona que no está en la
+    // lista (de otra empresa) no trae nada, como antes.
+    const ids = await idsDeLaEmpresa(request.empresaId!);
+    const where: any = { colaboradorId: { in: colaboradorId ? ids.filter(id => id === colaboradorId) : ids } };
     if (desde || hasta) {
       where.fecha = {};
       if (desde) where.fecha.gte = new Date(desde);

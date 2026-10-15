@@ -31,6 +31,7 @@ import { diferenciasDeDecision } from '../utils/cambiosDeDescansoTrabajado';
 import {
   opcionesDeCompensacion, revisionDeDecision, decisionValida, claseValida, decisionDelDia,
 } from '../utils/descansoCompensatorio';
+import { idsDeLaEmpresa } from '../utils/reportesDeEmpresa';
 
 // EL CALENDARIO DE TURNOS (20 de septiembre de 2026).
 //
@@ -86,6 +87,11 @@ export default async function turnoRoutes(app: FastifyInstance) {
     const mesHasta = new Date(Date.UTC(anioFin, mesFin, 1, 5, 0, 0)); // el primero del mes siguiente
     const mesDelRango = ultimoDia.slice(0, 7);
 
+    // Las de los días, marcaciones y descansos van por la lista de TODAS las personas de la empresa (también las
+    // retiradas, como el filtro `colaborador: { empresaId }` de antes), que entra por el índice (colaboradorId,
+    // fecha); por la relación, MySQL recorría las tablas enteras (prisma/medir-filtros-por-empresa.ts, 15 de octubre
+    // de 2026).
+    const ids = idsDeLaEmpresa(empresaId);
     const [personas, filasDeDia, jornadas, festivos, diasDelMes, marcasDelMes] = await Promise.all([
       // `select` explícito y corto a propósito: sin él vienen las dos fotos en base64 y el
       // descriptor facial de cada persona, que esta pantalla no pinta. `cargo` sí, que va bajo el
@@ -110,8 +116,8 @@ export default async function turnoRoutes(app: FastifyInstance) {
       }),
       // Los días de toda la empresa en UNA consulta, igual que el resumen de reportes: una por
       // persona serían 35 consultas para pintar una semana.
-      prisma.diaEsperado.findMany({
-        where: { colaborador: { empresaId }, fecha: { gte: desdeF, lt: finExclusivo } },
+      ids.then(ids => prisma.diaEsperado.findMany({
+        where: { colaboradorId: { in: ids }, fecha: { gte: desdeF, lt: finExclusivo } },
         select: {
           colaboradorId: true, fecha: true, programado: true, horaEntrada: true, horaSalida: true,
           toleranciaMin: true, almuerzoMin: true, minutosEsperados: true, toleranciaSalidaMin: true,
@@ -152,7 +158,7 @@ export default async function turnoRoutes(app: FastifyInstance) {
           plantilla: { select: { id: true, nombre: true, color: true, esDescanso: true } },
         },
         orderBy: { fecha: 'asc' },
-      }),
+      })),
       prisma.jornadaVigencia.findMany(),
       prisma.diaFestivo.findMany({
         where: { OR: [{ empresaId: null }, { empresaId }], fecha: { gte: desdeF, lt: finExclusivo } },
@@ -161,20 +167,20 @@ export default async function turnoRoutes(app: FastifyInstance) {
       // Los días del mes o meses que toca el rango, con TRES columnas y no las quince de arriba:
       // el contador solo necesita saber de quién es el día, cuál es, y si era su descanso. Medido
       // el 21 de septiembre de 2026, la ventana mensual son 4,3 veces las filas de la semanal.
-      prisma.diaEsperado.findMany({
-        where: { colaborador: { empresaId }, fecha: { gte: mesDesde, lt: mesHasta } },
+      ids.then(ids => prisma.diaEsperado.findMany({
+        where: { colaboradorId: { in: ids }, fecha: { gte: mesDesde, lt: mesHasta } },
         select: { colaboradorId: true, fecha: true, esDescanso: true },
-      }),
+      })),
       // Qué días tuvieron MARCACIÓN. Es lo que decide si un descanso se trabajó de verdad, y no es
       // lo mismo que tener turno programado encima: medido en la base local los dos conjuntos
       // salieron DISJUNTOS, ni un solo día tenía las dos cosas.
       //
       // Se comprobó además que ningún día con marcación se queda sin su fila de día esperado (0 de
       // 9 en el mes medido), así que contar desde `dias_esperados` no pierde nada.
-      prisma.registro.findMany({
-        where: { colaborador: { empresaId }, fecha: { gte: mesDesde, lt: mesHasta } },
+      ids.then(ids => prisma.registro.findMany({
+        where: { colaboradorId: { in: ids }, fecha: { gte: mesDesde, lt: mesHasta } },
         select: { colaboradorId: true, fecha: true },
-      }),
+      })),
     ]);
 
     // Los horarios de la empresa, para poder nombrar un día por el horario con el que quedó
@@ -204,7 +210,7 @@ export default async function turnoRoutes(app: FastifyInstance) {
     // desestructuración de seis.
     const decisionPorDia = new Map(
       (await prisma.descansoTrabajado.findMany({
-        where: { colaborador: { empresaId }, fecha: { gte: desdeF, lt: finExclusivo } },
+        where: { colaboradorId: { in: await ids }, fecha: { gte: desdeF, lt: finExclusivo } },
         select: { colaboradorId: true, fecha: true, decision: true },
       })).map(d => [`${d.colaboradorId}|${claveDiaBogota(d.fecha)}`, d.decision] as const),
     );

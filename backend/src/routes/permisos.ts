@@ -12,6 +12,7 @@ import { documentoValido } from '../utils/documentos';
 // Los campos que la empresa puede enviar, revisados antes de pasárselos a Prisma.
 import { limpiarPermiso } from '../utils/cuerpoDePermiso';
 import type { Prisma } from '@prisma/client';
+import { idsDeLaEmpresa } from '../utils/reportesDeEmpresa';
 
 // El listado NO trae la evidencia (base64 pesado); solo el tipo/nombre para saber que existe.
 const SELECT_LISTA = {
@@ -26,8 +27,11 @@ export default async function permisoRoutes(app: FastifyInstance) {
 
   app.get('/', auth, async (request) => {
     const { colaboradorId } = request.query as any;
-    const where: any = { colaborador: { empresaId: request.empresaId } };
-    if (colaboradorId) where.colaboradorId = colaboradorId;
+    // Por la lista de personas de la empresa y no por `colaborador: { empresaId }`, que MySQL resolvía recorriendo
+    // `permisos` entera (prisma/medir-filtros-por-empresa.ts, 15 de octubre de 2026). Una persona que no está en la
+    // lista (de otra empresa) no trae nada, como antes.
+    const ids = await idsDeLaEmpresa(request.empresaId!);
+    const where: any = { colaboradorId: { in: colaboradorId ? ids.filter(id => id === colaboradorId) : ids } };
     const [permisos, cfg] = await Promise.all([
       prisma.permiso.findMany({ where, select: SELECT_LISTA, orderBy: { fechaInicio: 'desc' } }),
       prisma.configuracion.findUnique({

@@ -13,6 +13,7 @@ import { crearSedePrincipal } from '../utils/sedesDeEmpresa';
 import { normalizarVigencia, VIGENCIA_INVALIDA } from '../utils/vigenciaDelAuxilio';
 import { funcionesConcedidas, leerConcesion, leerNuevoFin } from '../utils/concesiones';
 import { hoyEnBogota } from '../utils/fechas';
+import { idsDeLaEmpresa } from '../utils/reportesDeEmpresa';
 
 const DIA_MS = 24 * 60 * 60 * 1000;
 
@@ -265,7 +266,8 @@ export default async function adminRoutes(app: FastifyInstance) {
     if (!empresa) return null;
     const [colaboradores, registros, resenas, pagos, comisiones] = await Promise.all([
       prisma.colaborador.count({ where: { empresaId: id } }),
-      prisma.registro.count({ where: { colaborador: { empresaId: id } } }),
+      // Por la lista de personas, que entra por el índice (prisma/medir-filtros-por-empresa.ts).
+      idsDeLaEmpresa(id).then(ids => prisma.registro.count({ where: { colaboradorId: { in: ids } } })),
       // Su reseña (0 o 1): se va con ella, y si estaba publicada sale de la landing.
       prisma.resena.count({ where: { empresaId: id } }),
       // Solo los APROBADO: son los que suma /admin/ingresos.

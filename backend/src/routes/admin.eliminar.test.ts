@@ -31,7 +31,8 @@ const { prisma, borrarEmpresaEnCascada, estado, TX } = vi.hoisted(() => {
   const prisma = {
     empresa: { findUnique: vi.fn(async () => estado.empresa) },
     usuario: { findUnique: vi.fn(async () => estado.usuario) },
-    colaborador: { count: vi.fn(async () => estado.colaboradores) },
+    // `findMany`: el conteo de marcaciones va por la lista de personas de la empresa (15 de octubre de 2026).
+    colaborador: { count: vi.fn(async () => estado.colaboradores), findMany: vi.fn(async () => [{ id: 'c1' }]) },
     registro: { count: vi.fn(async () => estado.registros) },
     resena: { count: vi.fn(async () => estado.resenas) },
     pago: { aggregate: vi.fn(async () => suma(estado.pagos)) },

@@ -14,6 +14,7 @@ import {
   CLAVE_PERMISOS_REMUNERADOS, PERMISOS_CONFIGURABLES, PERMISOS_REMUNERADOS_LEY,
   PERMISOS_NUNCA_REMUNERADOS, normalizarPoliticaPermisos, parsearPoliticaPermisos,
 } from '../utils/saldoTiempo';
+import { idsDeLaEmpresa } from '../utils/reportesDeEmpresa';
 
 export default async function configuracionRoutes(app: FastifyInstance) {
   const auth = { preHandler: [app.requireEmpresa] };
@@ -279,11 +280,12 @@ export default async function configuracionRoutes(app: FastifyInstance) {
     const [activos, conRostro, ultima] = await Promise.all([
       prisma.colaborador.count({ where: { empresaId, activo: true } }),
       prisma.colaborador.count({ where: { empresaId, activo: true, rostroEnroladoEn: { not: null } } }),
-      prisma.registro.findFirst({
-        where: { colaborador: { empresaId }, entrada: { not: null } },
+      // Por la lista de personas: por la relación, MySQL recorría `registros` entera (prisma/medir-filtros-por-empresa.ts).
+      idsDeLaEmpresa(empresaId).then(ids => prisma.registro.findFirst({
+        where: { colaboradorId: { in: ids }, entrada: { not: null } },
         orderBy: { entrada: 'desc' },
         select: { entrada: true },
-      }),
+      })),
     ]);
     return { activos, conRostro, ultimaMarcacion: ultima?.entrada ?? null };
   });

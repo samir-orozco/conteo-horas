@@ -29,7 +29,7 @@ async function periodo(empresaId: string, s: Semana): Promise<Periodo> {
 }
 
 // Todo lo que el resumen necesita de una empresa, leído de la base.
-async function entradaDe(empresaId: string, semana: Semana & { anterior: Semana }, ahora: Date): Promise<EntradaDelResumen> {
+export async function entradaDe(empresaId: string, semana: Semana & { anterior: Semana }, ahora: Date): Promise<EntradaDelResumen> {
   const { desdeF, finExclusivo } = rangoReporte(semana.desde, semana.hasta);
   const [actual, anterior, cerrados, novedadesPorAprobar, contratos, atencionClimaSinPlan] = await Promise.all([
     periodo(empresaId, semana),
@@ -41,7 +41,9 @@ async function entradaDe(empresaId: string, semana: Semana & { anterior: Semana 
       select: { fecha: true, colaborador: { select: { nombre: true, apellido: true } } },
       orderBy: { fecha: 'asc' },
     })),
-    prisma.permiso.count({ where: { aprobado: false, colaborador: { empresaId, activo: true } } }),
+    // Las personas activas primero y la cuenta por su lista: por la relación, MySQL recorría `permisos` entera.
+    prisma.colaborador.findMany({ where: { empresaId, activo: true }, select: { id: true } })
+      .then(activos => prisma.permiso.count({ where: { aprobado: false, colaboradorId: { in: activos.map(a => a.id) } } })),
     prisma.contrato.findMany({
       where: { estado: 'VIGENTE', colaborador: { empresaId, activo: true } },
       select: {
