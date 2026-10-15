@@ -895,7 +895,9 @@ apareció que la 1.2 publicada ya no es cierta en seis puntos, por funciones que
   (`CUERPO_DE_LA_EMPRESA` en `utils/auditoriaDePeticion.ts`). Las filas viejas se limpiaron el 15 con
   `dist/scripts/limpiar-auditoria.js` (DESPLIEGUE.md §6.4): 1.565 de 2.367, y la cuenta siguiente dio 0. Entre el
   reinicio y la limpieza entraron 104 filas nuevas y ninguna necesitó limpieza: el código vivo ya escribe sin datos.
-  Queda aparte la cédula de los intentos rechazados del kiosco (decide el dueño).
+  Quedan aparte, y los decide el dueño: el rastro técnico de los ERRORES, que se guarda completo por su decisión del 23
+  de septiembre y puede traer los datos de una consulta que falló (mientras siga así, el punto 4 no es del todo cierto), y
+  la cédula de los intentos rechazados del kiosco.
 - El correo de los lunes lleva nombres de trabajadores (el punto 8 dice que nunca); Telegram manda cinco clases de aviso (la
   política describe una); la geocerca guarda si se marcó fuera del área; el registro del sistema vive en nuestra base y no
   se borra; las reseñas con nombre son una finalidad que la 1.2 no tiene.

@@ -32,10 +32,14 @@ registro; del contenido guarda los nombres de los campos y los ids, nunca los va
 empresa (sus sedes, horarios, festivos, configuración, plan y usuarios del panel) guardan los valores. Una ruta nueva nace
 protegida: la lista es de las que sí guardan, no de las que no. Las filas que ya estaban se limpiaron el 15 de octubre con un
 comando en el servidor, con la misma regla: 1.565 de 2.367, y después de aplicarlo no quedó ninguna por limpiar. Así la
-promesa del punto 4 vuelve a ser cierta. (Lo que pueda quedar en la copia semanal de la base se va con ella, a los siete
-días como máximo, que es lo que ya dice el punto 7.)
+promesa del punto 4 vuelve a ser cierta en lo que toca a la auditoría. (Lo que pueda quedar en la copia semanal de la base se
+va con ella, a los siete días como máximo, que es lo que ya dice el punto 7.)
 
-**Lo que queda, y es otra cosa:** el registro de accesos guarda, de un intento rechazado en el kiosco, la cédula que se
+**Lo que queda, y son otras dos cosas.** Primera: **los errores.** Por decisión del dueño del 23 de septiembre de 2026, el
+registro de errores guarda el rastro técnico completo, y el mensaje de una consulta que falla puede traer adentro los datos
+que llevaba (una cédula, un correo, el texto de una novedad). El super admin lo ve. Mientras eso siga así, el punto 4 no es
+del todo cierto: o se tapan los datos en el rastro de los errores, o se declara. Segunda: el registro de accesos guarda, de un
+intento rechazado en el kiosco, la cédula que se
 escribió, para detectar a quien prueba cédulas. Si la cédula es de un trabajador (por ejemplo, con un dígito errado), el super
 admin la ve. Lo decide el dueño: declararlo, como hace el texto del punto 3.1, o guardar solo una parte de la cédula.
 
@@ -286,6 +290,7 @@ pregunta a cada colaborador cómo le fue hoy. Los resultados se ven en Clima lab
 ## 6. Lo que decide el dueño, no el abogado
 
 - ~~**Punto 0:** salida A o B.~~ Decidido el 14 de octubre de 2026: A. En producción y con las filas viejas limpias desde el 15.
+- **El rastro de los errores** (final del punto 0): taparle los datos o declararlo.
 - **La cédula de los intentos rechazados del kiosco** (final del punto 0).
 - **El plazo del registro del sistema.**
 - **El texto del kiosco** del punto 4, y si va.
