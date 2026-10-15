@@ -20,6 +20,8 @@ import { pruebasDe, resumenDelPanel } from '../utils/lecturasDelClima';
 import { DIAS_DE_PRUEBA, estadoDePrueba } from '../utils/pruebaClima';
 import { climaParaElInicio } from '../utils/climaDelInicio';
 import { armarAgenda } from '../utils/agendaDelInicio';
+import { liquidarEmpresa } from '../utils/reportesDeEmpresa';
+import { leerRangoDelInicio, resumenDeLaQuincena } from '../utils/extrasDelInicio';
 
 const TZ = 'America/Bogota';
 const CODIGOS_EXTRA = new Set(['HED', 'HEN', 'HEDD', 'HEND']);
@@ -32,6 +34,16 @@ function semanaKey(fecha: Date): string {
 // Panel de inicio de la empresa: foto del día + del mes.
 export default async function dashboardRoutes(app: FastifyInstance) {
   const auth = { preHandler: [app.requireEmpresa] };
+
+  // LAS EXTRAS Y LOS RECARGOS DE LA QUINCENA (15 de octubre de 2026), en pesos. Aparte del Inicio porque liquida a
+  // toda la empresa: el resto del Inicio no espera por esto, y la tarjeta lo pide al pintarse. Las fechas las pone la
+  // pantalla, que sabe qué quincena es; la cuenta es la del reporte de extras (utils/extrasDelInicio.ts).
+  app.get('/quincena', auth, async (request, reply) => {
+    const r = leerRangoDelInicio(request.query);
+    if (!r.ok) return reply.status(400).send({ error: r.error });
+    const { filas } = await liquidarEmpresa(request.empresaId!, r.desde, r.hasta);
+    return { desde: r.desde, hasta: r.hasta, ...resumenDeLaQuincena(filas) };
+  });
 
   app.get('/empresa', auth, async (request) => {
     const empresaId = request.empresaId!;

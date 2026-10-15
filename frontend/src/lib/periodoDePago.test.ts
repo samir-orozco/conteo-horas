@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   fechasDelPeriodo, periodoDeLasFechas, salarioDelPeriodo, periodoTerminado, hoyEnBogota, textoDelPeriodo,
-  totalDelReporte, avisoSinTotal, rotuloDelSalario,
+  totalDelReporte, avisoSinTotal, rotuloDelSalario, quincenaDeHoy,
 } from './periodoDePago';
 
 // EL PERÍODO DE PAGO EN LOS REPORTES (13 de octubre de 2026, decisión del dueño). El «Total a pagar» sumaba el
@@ -154,5 +154,15 @@ describe('rotuloDelSalario', () => {
 
   it('el mes completo no', () => {
     expect(rotuloDelSalario({ tipo: 'MES', anio: 2026, mes: 10 })).toBe('Salario de octubre de 2026');
+  });
+});
+
+// La quincena en curso, para las extras y los recargos del Inicio (15 de octubre de 2026).
+describe('quincenaDeHoy', () => {
+  it('del 1 al 15, la primera; del 16 en adelante, la segunda', () => {
+    expect(quincenaDeHoy('2026-10-01')).toEqual({ tipo: 'PRIMERA_QUINCENA', anio: 2026, mes: 10 });
+    expect(quincenaDeHoy('2026-10-15')).toEqual({ tipo: 'PRIMERA_QUINCENA', anio: 2026, mes: 10 });
+    expect(quincenaDeHoy('2026-10-16')).toEqual({ tipo: 'SEGUNDA_QUINCENA', anio: 2026, mes: 10 });
+    expect(quincenaDeHoy('2027-02-28')).toEqual({ tipo: 'SEGUNDA_QUINCENA', anio: 2027, mes: 2 });
   });
 });

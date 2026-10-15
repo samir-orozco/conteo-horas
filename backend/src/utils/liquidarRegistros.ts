@@ -289,6 +289,12 @@ export function liquidarRegistros(
     .filter(t => CODIGOS_EXTRA.has(t.codigo))
     .reduce((s, t) => s + t.minutos, 0);
 
+  // Las ordinarias que se pagan con recargo (nocturnas, dominicales, festivas), crudas por lo mismo. Las extras
+  // no cuentan aquí aunque sean nocturnas: van en `minutosExtra`. Para el Inicio (15 de octubre de 2026).
+  const minutosConRecargo = horasPorTipo
+    .filter(t => !CODIGOS_EXTRA.has(t.codigo) && t.recargo > 1)
+    .reduce((s, t) => s + t.minutos, 0);
+
   // Las abiertas viajan solo para medir las pausas: el conteo sigue siendo el de las cerradas.
   const delPeriodo = registros.filter(r => sePaga(r.fecha));
   const registrosCont = delPeriodo.filter(r => r.salida).length;
@@ -299,5 +305,5 @@ export function liquidarRegistros(
   // con 0 cerradas y 2 días trabajados. Un día sin hora de entrada no es una marcación.
   const diasCont = new Set(delPeriodo.filter(r => r.entrada).map(r => claveDiaBogota(r.fecha))).size;
 
-  return { liquidacion, totalRecargos, totalExtra, totalAdicional, registrosCont, diasCont, detalleRegistros, minutosOrdinarios, minutosExtra, minutosPorDia };
+  return { liquidacion, totalRecargos, totalExtra, totalAdicional, registrosCont, diasCont, detalleRegistros, minutosOrdinarios, minutosExtra, minutosConRecargo, minutosPorDia };
 }

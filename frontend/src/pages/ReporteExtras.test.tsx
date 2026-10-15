@@ -134,3 +134,24 @@ describe('ReporteExtras con varias sedes', () => {
     expect(screen.queryByRole('region', { name: 'Resumen por sede' })).not.toBeInTheDocument();
   });
 });
+
+// Desde el Inicio (15 de octubre de 2026): la tarjeta de extras y recargos de la quincena abre este reporte con sus
+// fechas, para que se vea el mismo total. Sin fechas, o con unas que no lo son, el reporte abre como siempre.
+describe('ReporteExtras: las fechas en la dirección', () => {
+  it('abre con las fechas que trae la dirección', async () => {
+    window.history.pushState({}, '', '/app/reportes/extras?desde=2026-09-16&hasta=2026-09-30');
+    montarCon([]);
+    await waitFor(() => expect(get).toHaveBeenCalledWith('/reportes/extras-resumen', expect.objectContaining({ params: expect.objectContaining({ desde: '2026-09-16', hasta: '2026-09-30' }) })));
+    window.history.pushState({}, '', '/');
+  });
+
+  it('con unas fechas que no lo son, abre como siempre', async () => {
+    get.mockClear();
+    window.history.pushState({}, '', '/app/reportes/extras?desde=ayer&hasta=2026-10-15');
+    montarCon([]);
+    await waitFor(() => expect(get).toHaveBeenCalledWith('/reportes/extras-resumen', expect.anything()));
+    const pedidas = get.mock.calls.filter(c => c[0] === '/reportes/extras-resumen').map(c => c[1].params.desde);
+    expect(pedidas).not.toContain('ayer');
+    window.history.pushState({}, '', '/');
+  });
+});

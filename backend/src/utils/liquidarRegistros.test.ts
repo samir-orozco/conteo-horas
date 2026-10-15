@@ -248,6 +248,35 @@ describe('liquidarRegistros: minutos extra', () => {
   });
 });
 
+// LOS MINUTOS CON RECARGO (15 de octubre de 2026). El Inicio muestra las extras y los recargos de la quincena en
+// pesos, con las horas pequeñas debajo: las extras por un lado y, por otro, las horas ordinarias que se pagan con
+// recargo (nocturnas, dominicales y festivas). Las extras no cuentan aquí aunque sean nocturnas: van en las suyas.
+describe('liquidarRegistros: minutos con recargo', () => {
+  const SIN_PAUSAS = { almuerzoMin: 0, almuerzoInicio: null, almuerzoFin: null, descansos: null };
+
+  it('las ordinarias nocturnas tienen recargo; las diurnas no', () => {
+    // De 14:00 a 23:00: siete horas diurnas y dos nocturnas, todas ordinarias en una semana de 42 h.
+    const dia: DiaEsperadoCalculado = { ...DIA, ...SIN_PAUSAS, horaEntrada: '14:00', horaSalida: '23:00', minutosEsperados: 540 };
+    const r = liquidar([fila('x', [14, 0], [23, 0])], [dia]);
+    expect(r.minutosOrdinarios).toBe(540);
+    expect(r.minutosConRecargo).toBe(120);
+  });
+
+  it('una extra no es un minuto con recargo, aunque se pague con recargo', () => {
+    const horario = { activo: true, franjas: [{ dias: ['LUNES'], horaEntrada: '07:00', horaSalida: '15:00', tieneAlmuerzo: false }] } as unknown as HorarioConFranjas;
+    const dia: DiaEsperadoCalculado = { ...DIA, ...SIN_PAUSAS, horaSalida: '15:00', minutosEsperados: 480 };
+    const r = liquidarRegistros([fila('x', [7, 0], [16, 0])], horario, construirExtraConfig('HORARIO', horario, [dia]), [], TIPOS, JORNADAS, 1_500_000, 210, false, [dia]);
+    expect(r.minutosExtra).toBe(60);
+    expect(r.minutosConRecargo).toBe(0);
+  });
+
+  it('un festivo entero va con recargo', () => {
+    const dia: DiaEsperadoCalculado = { ...DIA, ...SIN_PAUSAS, horaSalida: '15:00', minutosEsperados: 480 };
+    const r = liquidarRegistros([fila('x', [7, 0], [15, 0])], null, construirExtraConfig('SEMANAL', null, []), [LUNES], TIPOS, JORNADAS, 1_500_000, 210, false, [dia]);
+    expect(r.minutosConRecargo).toBe(480);
+  });
+});
+
 // LAS HORAS DE CADA DÍA (11 de octubre de 2026). El correo semanal dibuja una barra por día, y la
 // suma de las barras tiene que dar el total que el mismo correo muestra: por eso sale del motor,
 // con las pausas ya cobradas, y no de restar entrada y salida.

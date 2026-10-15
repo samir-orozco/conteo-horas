@@ -49,13 +49,21 @@ const COLUMNAS_RESUMEN: ColumnaResumen<ClaveExtras>[] = [
   { titulo: 'Total a pagar', valor: m => fmt(m.totalAdicional) },
 ];
 
+// Una fecha «yyyy-MM-dd» de la dirección, o null si no está o no tiene esa forma.
+function fechaDeLaDireccion(nombre: 'desde' | 'hasta'): string | null {
+  const v = new URLSearchParams(window.location.search).get(nombre);
+  return v && /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : null;
+}
+
 export default function ReporteExtras() {
   const [colaboradores, setColaboradores] = useState<{ id: string; nombre: string; apellido: string }[]>([]);
   const [colaboradorId, setColaboradorId] = useState(''); // '' = Todos
   const [sedeId, setSedeId] = useState(''); // '' = todas las sedes
   const [sedes, setSedes] = useState<{ id: string; nombre: string }[]>([]);
-  const [desde, setDesde] = useState(format(new Date(), 'yyyy-MM-01'));
-  const [hasta, setHasta] = useState(format(new Date(), 'yyyy-MM-dd'));
+  // Las fechas pueden venir en la dirección: la tarjeta de extras y recargos del Inicio abre este reporte con las de
+  // la quincena, para que se vea el mismo total (15 de octubre de 2026). Sin ellas, del 1 del mes a hoy.
+  const [desde, setDesde] = useState(() => fechaDeLaDireccion('desde') ?? format(new Date(), 'yyyy-MM-01'));
+  const [hasta, setHasta] = useState(() => fechaDeLaDireccion('hasta') ?? format(new Date(), 'yyyy-MM-dd'));
   const [filas, setFilas] = useState<Fila[] | null>(null);
   // El resumen por sede es de la empresa entera: el servidor lo arma sin filtro.
   const [resumen, setResumen] = useState<Resumen<ClaveExtras> | null>(null);

@@ -44,11 +44,20 @@ export function agrupar<T extends { colaboradorId: string }>(filas: T[]): Map<st
 //
 // Liviana a propósito: sin fotos ni horas de salida. Va por el índice
 // (colaboradorId, fecha) de `registros` (CLAUDE.md 8.4).
-export function filasParaLugares(empresaId: string, desdeF: Date, finExclusivo: Date) {
+export async function filasParaLugares(empresaId: string, desdeF: Date, finExclusivo: Date) {
   return prisma.registro.findMany({
-    where: { colaborador: { empresaId }, fecha: { gte: desdeF, lt: finExclusivo } },
+    where: { colaboradorId: { in: await idsDeLaEmpresa(empresaId) }, fecha: { gte: desdeF, lt: finExclusivo } },
     select: { colaboradorId: true, fecha: true, entrada: true, sedeId: true, sedeSalidaId: true },
   });
+}
+
+// TODAS las personas de la empresa, también las retiradas: lo mismo que el filtro `colaborador: { empresaId }`.
+// Con ese filtro MySQL recorría `registros` y `dias_esperados` ENTERAS, de todas las empresas, y descartaba después
+// lo que no era de esta (un Table scan, CLAUDE.md §8.4); con la lista entra por el índice (colaboradorId, fecha).
+// Medido el 15 de octubre de 2026 al llevar las extras de la quincena al Inicio, que se carga a cada rato.
+// prisma/diferencial-consultas-por-empresa.ts comprobó que los reportes responden byte a byte lo mismo.
+function idsDeLaEmpresa(empresaId: string): Promise<string[]> {
+  return prisma.colaborador.findMany({ where: { empresaId }, select: { id: true } }).then(cs => cs.map(c => c.id));
 }
 
 // Extras y recargos de TODOS los colaboradores activos en un período.
@@ -66,6 +75,7 @@ export async function liquidarEmpresa(empresaId: string, desde: string, hasta: s
   // Las marcaciones y los días se traen desde el lunes de la primera semana: cuentan para el tope
   // semanal, pero el motor solo paga desde `desdeF` (15 de octubre de 2026).
   const desdeCuenta = desdeDeLaCuentaSemanal(desdeF);
+  const ids = idsDeLaEmpresa(empresaId);
 
   const [colaboradores, registrosTodos, festivos, tiposHoraTodos, jornadas, cfgModo, diasTodosEsp, sedes, defectoDe, filasDeLugar] = await Promise.all([
     // Solo lo que usa este resumen. Sin `select` venían todas las columnas de cada persona
@@ -83,19 +93,19 @@ export async function liquidarEmpresa(empresaId: string, desde: string, hasta: s
     // Igual que en /liquidacion, pero aquí pesa más: son los registros de
     // TODA la empresa. Sin el select, las fotos de un mes entero viajaban a
     // memoria en cada carga del reporte.
-    prisma.registro.findMany({
+    ids.then(ids => prisma.registro.findMany({
       // Sin filtro de sede, A PROPÓSITO: cada persona se liquida con todos sus
       // turnos y la sede solo decide quién aparece (ver `responderPorSede`).
       // Filtrando aquí, el tope semanal se medía sobre la parte de la semana
       // que quedaba: quien repartió la semana entre dos sedes tenía $0 de
       // extras en cada una. También las abiertas, por lo mismo que en /liquidacion.
-      where: { colaborador: { empresaId }, fecha: { gte: desdeCuenta, lt: finExclusivo } },
+      where: { colaboradorId: { in: ids }, fecha: { gte: desdeCuenta, lt: finExclusivo } },
       select: {
         id: true, colaboradorId: true, fecha: true, entrada: true, salida: true, sedeId: true, sedeSalidaId: true,
         salidaAlmuerzo: true, salidaDescanso: true, descansoVentana: true,
       },
       orderBy: { fecha: 'asc' },
-    }),
+    })),
     prisma.diaFestivo.findMany({ where: { OR: [{ empresaId: null }, { empresaId }] } }),
     prisma.tipoHora.findMany(),
     prisma.jornadaVigencia.findMany(),
@@ -104,8 +114,8 @@ export async function liquidarEmpresa(empresaId: string, desde: string, hasta: s
     // tolerancia de jornada igual que en /liquidacion: si esta vista no la
     // aplicara, el resumen y el desglose del mismo colaborador darían cifras
     // distintas, que es la peor forma de perder la confianza en un reporte.
-    prisma.diaEsperado.findMany({
-      where: { colaborador: { empresaId }, fecha: { gte: desdeCuenta, lt: finExclusivo } },
+    ids.then(ids => prisma.diaEsperado.findMany({
+      where: { colaboradorId: { in: ids }, fecha: { gte: desdeCuenta, lt: finExclusivo } },
       select: {
         colaboradorId: true, fecha: true, programado: true, horaEntrada: true,
         horaSalida: true, toleranciaMin: true, almuerzoMin: true, minutosEsperados: true,
@@ -117,7 +127,7 @@ export async function liquidarEmpresa(empresaId: string, desde: string, hasta: s
         esDescanso: true,
       },
       orderBy: { fecha: 'asc' },
-    }),
+    })),
     // Todas las sedes, también las desactivadas: desactivar una sede no borra lo
     // que se trabajó ahí, y el resumen tiene que poder nombrarla.
     prisma.sede.findMany({ where: { empresaId }, select: { id: true, nombre: true, activa: true } }),
@@ -149,7 +159,7 @@ export async function liquidarEmpresa(empresaId: string, desde: string, hasta: s
       colaboradorId: col.id, nombre: col.nombre, apellido: col.apellido,
       totalRecargos: r.totalRecargos, totalExtra: r.totalExtra, totalAdicional: r.totalAdicional,
       ...lugaresConAtribucion(porColLugares.get(col.id) ?? [], { modalidad: col.modalidad, sedePorDefecto: defectoDe(col.id) }),
-      minutosOrdinarios: r.minutosOrdinarios, minutosExtra: r.minutosExtra, minutosPorDia: r.minutosPorDia,
+      minutosOrdinarios: r.minutosOrdinarios, minutosExtra: r.minutosExtra, minutosConRecargo: r.minutosConRecargo, minutosPorDia: r.minutosPorDia,
     };
   });
 

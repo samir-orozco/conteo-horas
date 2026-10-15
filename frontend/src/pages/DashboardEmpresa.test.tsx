@@ -9,6 +9,8 @@ import type { Dash } from '../features/dashboard/types';
 
 const { datos } = vi.hoisted(() => ({ datos: { actual: null as Dash | null } }));
 vi.mock('../features/dashboard/useDashboard', () => ({ useDashboard: () => ({ data: datos.actual, reload: vi.fn() }) }));
+// La tarjeta de extras y recargos pide su quincena aparte: aquí se queda cargando, sin salir a la red.
+vi.mock('../lib/api', () => ({ default: { get: vi.fn(() => new Promise(() => {})) } }));
 import DashboardEmpresa from './DashboardEmpresa';
 
 const BASE: Dash = {
@@ -82,6 +84,13 @@ describe('DashboardEmpresa', () => {
     expect(screen.getByRole('heading', { name: 'Próximos días' })).toBeInTheDocument();
     expect(screen.queryByText('Próximos festivos')).not.toBeInTheDocument();
     expect(screen.queryByText('Cumpleaños del mes')).not.toBeInTheDocument();
+  });
+
+  // Las extras y los recargos de la quincena (15 de octubre de 2026) reemplazan a «Horas extra del mes».
+  it('las extras y los recargos de la quincena en lugar de las horas extra del mes', () => {
+    montar(BASE);
+    expect(screen.getByText('Extras y recargos')).toBeInTheDocument();
+    expect(screen.queryByText('Horas extra del mes')).not.toBeInTheDocument();
   });
 
   it('con un servidor anterior, sin los campos nuevos, el Inicio sigue en pie', () => {

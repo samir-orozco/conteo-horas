@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { Users, UserCheck, Clock, TrendingUp, PartyPopper } from 'lucide-react';
+import { Users, UserCheck, Clock, PartyPopper } from 'lucide-react';
 import { useDashboard } from '../features/dashboard/useDashboard';
 import Kpi from '../features/dashboard/components/Kpi';
 import {
@@ -16,6 +16,7 @@ import AsistenciaSemana from '../features/dashboard/components/AsistenciaSemana'
 import LlegadasTarde7d from '../features/dashboard/components/LlegadasTarde7d';
 import ClimaSemana from '../features/dashboard/components/ClimaSemana';
 import ProximosDias from '../features/dashboard/components/ProximosDias';
+import KpiQuincena from '../features/dashboard/components/KpiQuincena';
 import type { Salida, TurnoOlvidado, Novedad } from '../features/dashboard/types';
 
 export default function DashboardEmpresa() {
@@ -63,8 +64,8 @@ export default function DashboardEmpresa() {
             : `de ${d.totales.colaboradoresActivos} colaboradores`} />
         <Kpi icon={Users} titulo="Colaboradores" valor={String(d.totales.colaboradoresActivos)} detalle="activos en la empresa" />
         <Kpi icon={Clock} titulo="Horas esta semana" valor={`${d.totales.horasSemana}h`} detalle="trabajadas por el equipo" />
-        <Kpi icon={TrendingUp} titulo="Horas extra del mes" valor={`${d.totales.horasExtraMes}h`} acento="text-orange-500"
-          detalle="acumuladas en el equipo" />
+        {/* En pesos, de la quincena en curso; con un servidor anterior vuelve a las horas extra del mes. */}
+        <KpiQuincena horasExtraMes={d.totales.horasExtraMes} />
       </div>
 
       {/* Hoy: quién está junto a quién falta, y debajo las salidas y las novedades. */}

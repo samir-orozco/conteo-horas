@@ -63,6 +63,12 @@ export function periodoTerminado(p: PeriodoDePago, hoy: string): boolean {
   return fechasDelPeriodo(p).hasta < hoy;
 }
 
+/** La quincena en la que cae un día «yyyy-MM-dd»: del 1 al 15 la primera, del 16 en adelante la segunda. */
+export function quincenaDeHoy(hoy: string): PeriodoDePago {
+  const [anio, mes, dia] = hoy.split('-').map(Number);
+  return { tipo: dia <= 15 ? 'PRIMERA_QUINCENA' : 'SEGUNDA_QUINCENA', anio, mes };
+}
+
 /** «yyyy-MM-dd» de hoy en Bogotá, no en la zona de la máquina. */
 export function hoyEnBogota(ahora: Date = new Date()): string {
   return new Intl.DateTimeFormat('en-CA', { timeZone: TZ, year: 'numeric', month: '2-digit', day: '2-digit' }).format(ahora);
