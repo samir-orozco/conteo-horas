@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { calcularDiasEsperados, combinarDiasEsperados } from './diasEsperados';
+import { calcularDiasEsperados, combinarDiasEsperados, diasParaMedir } from './diasEsperados';
 import { rangoReporte } from './fechas';
 
 // El día esperado se materializa: por cada colaborador y día se guarda lo que su
@@ -231,5 +231,37 @@ describe('combinarDiasEsperados', () => {
     const r = combinar('2026-07-01', '2026-07-02', [], null);
     expect(r).toHaveLength(2);
     expect(r.every(d => !d.programado && d.minutosEsperados === 0)).toBe(true);
+  });
+});
+
+// A QUIÉN SE LE MIDE LA ASISTENCIA Y LA LLEGADA TARDE (15 de octubre de 2026).
+//
+// Antes, a quien no tenía un horario fijo activo no se le medía nada, aunque el planificador de
+// turnos le hubiera pintado sus días: no salía en el reporte de llegadas tarde ni en «Aún no han
+// marcado». El aviso de Telegram sí lo miraba. El dueño decidió una sola regla: la de los días
+// esperados, con los turnos programados incluidos.
+describe('diasParaMedir', () => {
+  const { desdeF, finExclusivo } = rangoReporte('2026-07-06', '2026-07-12');
+  const pintado = { ...calcularDiasEsperados(desdeF, new Date(desdeF.getTime() + 86_400_000), HORARIO)[0] };
+
+  it('con un horario activo, sus días', () => {
+    expect(diasParaMedir(desdeF, finExclusivo, [], HORARIO)?.filter(d => d.programado)).toHaveLength(6);
+  });
+
+  it('sin horario, pero con un turno pintado en el planificador: se le mide ese día', () => {
+    const dias = diasParaMedir(desdeF, finExclusivo, [pintado], null);
+    expect(dias?.filter(d => d.programado).map(d => d.fecha.toISOString())).toEqual(['2026-07-06T05:00:00.000Z']);
+  });
+
+  it('sin horario y sin ningún turno pintado: no hay nada que medir', () => {
+    expect(diasParaMedir(desdeF, finExclusivo, [], null)).toBeNull();
+  });
+
+  it('con el horario desactivado y sin turnos pintados, tampoco', () => {
+    expect(diasParaMedir(desdeF, finExclusivo, [], { ...HORARIO, activo: false })).toBeNull();
+  });
+
+  it('un día pintado como libre no cuenta como turno', () => {
+    expect(diasParaMedir(desdeF, finExclusivo, [{ ...pintado, programado: false, horaEntrada: null }], null)).toBeNull();
   });
 });

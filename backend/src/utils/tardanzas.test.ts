@@ -353,3 +353,32 @@ describe('llegadaTarde', () => {
     expect(llegadaTarde(domingo(8, 25), ctx)).toBeNull();
   });
 });
+
+// LA PRIMERA ENTRADA ES LA DE LA JORNADA, NO LA DEL RELOJ (15 de octubre de 2026).
+//
+// El kiosco ancla cada marcación a la fecha de su jornada (`Registro.fecha`): el regreso de la pausa
+// de un nocturno, pasada la medianoche, sigue siendo de la noche anterior. Agrupando por el día del
+// reloj de la entrada, ese regreso de la 01:00 pasaba a ser la «primera entrada» del día siguiente y
+// tapaba la llegada tarde de esa noche. El Inicio contaba bien (agrupaba por la fecha) y el reporte
+// no: al unificar la regla (decisión del dueño), gana la fecha de la jornada.
+describe('calcularTardanzas: la primera entrada se toma por la fecha de la jornada', () => {
+  const noche = (fecha: string) => ({ fecha: bog(fecha, 0), programado: true, horaEntrada: '22:00', toleranciaMin: 5 });
+
+  it('el regreso de la pausa de anoche, ya pasada la medianoche, no tapa la llegada tarde de esta noche', () => {
+    const registros = [
+      { fecha: bog('2026-07-06', 0), entrada: bog('2026-07-06', 22, 0) },   // lunes: entra a tiempo
+      { fecha: bog('2026-07-06', 0), entrada: bog('2026-07-07', 1, 0) },    // vuelve de su pausa: martes en el reloj
+      { fecha: bog('2026-07-07', 0), entrada: bog('2026-07-07', 22, 40) },  // martes: 35 min tarde
+    ];
+    const r = calcularTardanzas(registros, [noche('2026-07-06'), noche('2026-07-07')], [], []);
+    expect(r.detalle).toEqual([{ fecha: '2026-07-07', horaEsperada: '22:00', horaLlegada: '22:40', minutosTarde: 35, toleranciaMin: 5 }]);
+  });
+
+  it('dos marcaciones de la misma jornada: cuenta la más temprana', () => {
+    const registros = [
+      { fecha: bog('2026-07-06', 0), entrada: bog('2026-07-06', 22, 20) },
+      { fecha: bog('2026-07-06', 0), entrada: bog('2026-07-06', 22, 10) },
+    ];
+    expect(calcularTardanzas(registros, [noche('2026-07-06')], [], []).detalle[0].minutosTarde).toBe(5);
+  });
+});

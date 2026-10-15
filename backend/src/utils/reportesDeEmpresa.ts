@@ -3,7 +3,7 @@ import { jornadaVigente, horasMesDeJornada } from './vigencias';
 import { calcularTardanzas, HorarioConFranjas, construirExtraConfig } from './tardanzas';
 import { rangoReporte } from './fechas';
 import { calcularValorHora } from './horasColombiana';
-import { combinarDiasEsperados } from './diasEsperados';
+import { combinarDiasEsperados, diasParaMedir } from './diasEsperados';
 import { lugaresConAtribucion } from './sedesDeReporte';
 import { sedesPorDefecto } from './sedesDeEmpresa';
 import { liquidarRegistros, desdeDeLaCuentaSemanal } from './liquidarRegistros';
@@ -216,12 +216,15 @@ export async function tardanzasDeEmpresa(empresaId: string, desde: string, hasta
 
   const filas = colaboradores.map(col => {
     const donde = lugaresConAtribucion(porColRegistros.get(col.id) ?? [], { modalidad: col.modalidad, sedePorDefecto: defectoDe(col.id) });
-    if (!col.horario || !col.horario.activo) {
-      return { colaboradorId: col.id, nombre: col.nombre, apellido: col.apellido, sinHorario: true, diasTarde: 0, totalMinutos: 0, montoTardanzas: 0, ...donde };
+    // Con horario activo o con turnos pintados en el planificador: la misma regla de /tardanzas y
+    // del Inicio (15 de octubre de 2026).
+    const dias = diasParaMedir(desdeF, finExclusivo, porColDias.get(col.id) ?? [], col.horario);
+    if (!dias) {
+      return { colaboradorId: col.id, nombre: col.nombre, apellido: col.apellido, sinHorario: true, diasTarde: 0, totalMinutos: 0, montoTardanzas: 0, detalle: [], ...donde };
     }
     const r = calcularTardanzas(
       porColRegistros.get(col.id) ?? [],
-      combinarDiasEsperados(desdeF, finExclusivo, porColDias.get(col.id) ?? [], col.horario),
+      dias,
       festivos,
       (porColPermisos.get(col.id) ?? []) as any
     );
@@ -232,6 +235,9 @@ export async function tardanzasDeEmpresa(empresaId: string, desde: string, hasta
       colaboradorId: col.id, nombre: col.nombre, apellido: col.apellido, sinHorario: false,
       diasTarde: r.diasTarde, totalMinutos: r.totalMinutos,
       montoTardanzas: parseFloat(monto.toFixed(2)),
+      // El detalle por día, para el Inicio (las llegadas tarde de los últimos 7 días). La ruta del
+      // resumen lo quita antes de responder.
+      detalle: r.detalle,
       ...donde,
     };
   });

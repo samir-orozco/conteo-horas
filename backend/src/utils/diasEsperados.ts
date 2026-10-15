@@ -154,3 +154,18 @@ export function combinarDiasEsperados(
     return congelado ? { ...congelado, fecha: dia.fecha } : dia;
   });
 }
+
+// A quién se le mide la asistencia y la llegada tarde (15 de octubre de 2026). Una sola regla, la de
+// los días esperados: a quien tiene un horario activo, y también a quien no lo tiene pero el
+// planificador le pintó turnos. `null` es «no hay turno que medir», que no es lo mismo que «llegó a
+// tiempo»: las pantallas lo dicen aparte.
+export function diasParaMedir(
+  desde: Date,
+  finExclusivo: Date,
+  materializados: DiaEsperadoCalculado[],
+  horario: HorarioConFranjas | null,
+): DiaEsperadoCalculado[] | null {
+  const dias = combinarDiasEsperados(desde, finExclusivo, materializados, horario);
+  const conHorario = !!horario && horario.activo;
+  return conHorario || dias.some(d => d.programado && !!d.horaEntrada) ? dias : null;
+}

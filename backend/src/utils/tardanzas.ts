@@ -146,9 +146,9 @@ export function excusaLaTardanza(p: NovedadParaDia, dia: Date, horaEntrada: stri
 // Un día sin fila no se evalúa. Quien llama completa el rango con
 // `combinarDiasEsperados` para que eso no esconda tardanzas reales.
 export function calcularTardanzas(
-  // Solo la entrada de cada registro: es lo único que se lee. Exigir el `Registro`
+  // Solo la entrada y la fecha de la jornada: es lo único que se lee. Exigir el `Registro`
   // entero obligaba a las rutas a traer también las fotos de cada marcación.
-  registros: Pick<Registro, 'entrada'>[],
+  registros: Pick<Registro, 'entrada' | 'fecha'>[],
   dias: DiaEsperadoParaTardanza[],
   festivos: DiaFestivo[],
   permisos: NovedadParaDia[]
@@ -156,11 +156,13 @@ export function calcularTardanzas(
   const festSet = new Set(festivos.map(f => claveDia(f.fecha)));
   const porDia = new Map(dias.map(d => [claveDia(d.fecha), d]));
 
-  // Primera entrada por día calendario
+  // Primera entrada de cada JORNADA, por su fecha (`Registro.fecha`) y no por el día del reloj: el
+  // regreso de la pausa de un nocturno pasada la medianoche es de la noche anterior, y contado por el
+  // reloj tapaba la llegada tarde de la noche siguiente (15 de octubre de 2026).
   const primeraEntrada = new Map<string, Date>();
   for (const r of registros) {
     if (!r.entrada) continue;
-    const clave = claveDia(r.entrada);
+    const clave = claveDia(r.fecha);
     const actual = primeraEntrada.get(clave);
     if (!actual || r.entrada < actual) primeraEntrada.set(clave, r.entrada);
   }

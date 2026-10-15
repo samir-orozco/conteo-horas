@@ -8,7 +8,7 @@ import { auxilioVigente, auxilioDelPeriodo } from '../utils/auxilioTransporte';
 import {
   CLAVE_PERMISOS_REMUNERADOS, parsearPoliticaPermisos, calcularHorasEsperadas, armarSaldo,
 } from '../utils/saldoTiempo';
-import { combinarDiasEsperados } from '../utils/diasEsperados';
+import { combinarDiasEsperados, diasParaMedir } from '../utils/diasEsperados';
 import {
   lugaresConAtribucion, apareceConFiltro, resumirPorSede, nombrarLugares, type Lugar, type SedeDelResumen,
 } from '../utils/sedesDeReporte';
@@ -200,9 +200,6 @@ export default async function reporteRoutes(app: FastifyInstance) {
       select: { salarioMensual: true, horario: { include: { franjas: true } } },
     });
     if (!colaborador) return reply.status(404).send({ error: 'Colaborador no encontrado' });
-    if (!colaborador.horario || !colaborador.horario.activo) {
-      return { sinHorario: true, detalle: [], totalMinutos: 0, diasTarde: 0 };
-    }
 
     const { desdeF, finExclusivo } = rangoReporte(desde, hasta);
     const [registros, festivos, permisos, jornadas, diasMaterializados] = await Promise.all([
@@ -210,7 +207,7 @@ export default async function reporteRoutes(app: FastifyInstance) {
       // venían también las fotos de cada marcación del período (ver /liquidacion).
       prisma.registro.findMany({
         where: { colaboradorId, fecha: { gte: desdeF, lt: finExclusivo } },
-        select: { entrada: true },
+        select: { entrada: true, fecha: true },
       }),
       prisma.diaFestivo.findMany({ where: { OR: [{ empresaId: null }, { empresaId: request.empresaId }] } }),
       // Con las horas: la novedad de una salida temprana no excusa la llegada de esa mañana.
@@ -233,7 +230,10 @@ export default async function reporteRoutes(app: FastifyInstance) {
       }),
     ]);
 
-    const diasEsperados = combinarDiasEsperados(desdeF, finExclusivo, diasMaterializados, colaborador.horario);
+    // A quien no tiene horario activo pero el planificador le pintó turnos también se le mide
+    // (decisión del dueño, 15 de octubre de 2026): la misma regla del Inicio y de Telegram.
+    const diasEsperados = diasParaMedir(desdeF, finExclusivo, diasMaterializados, colaborador.horario);
+    if (!diasEsperados) return { sinHorario: true, detalle: [], totalMinutos: 0, diasTarde: 0 };
     const resultado = calcularTardanzas(registros, diasEsperados, festivos, permisos);
     // Valor del tiempo llegado tarde, a la tarifa base. Es INFORMATIVO: el
     // descuento real sale del saldo del período (ver /liquidacion), que ya
@@ -251,7 +251,9 @@ export default async function reporteRoutes(app: FastifyInstance) {
   app.get('/tardanzas-resumen', auth, async (request) => {
     const { desde, hasta, sedeId } = request.query as any;
     const { filas, sedes } = await tardanzasDeEmpresa(request.empresaId!, desde, hasta);
-    return { desde, hasta, ...responderPorSede(filas, ['diasTarde', 'totalMinutos', 'montoTardanzas'] as const, sedes, sedeId) };
+    // El detalle por día no viaja aquí: lo usa el Inicio. Esta pantalla lo pide persona por persona.
+    const resultado = filas.map(({ detalle: _detalle, ...fila }) => fila);
+    return { desde, hasta, ...responderPorSede(resultado, ['diasTarde', 'totalMinutos', 'montoTardanzas'] as const, sedes, sedeId) };
   });
 
   // Nómina del período de TODOS los colaboradores activos (15 de septiembre de 2026): el desglose por
