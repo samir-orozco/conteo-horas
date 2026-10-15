@@ -15,6 +15,10 @@ import { CONTRATO_QUE_LA_REPRESENTA } from '../utils/estadoContratoResumen';
 import { contratosPorRevisar } from '../utils/contratosPorRevisar';
 import { enArranque, primerosPasos } from '../utils/primerosPasos';
 import { armarSemanaDelInicio, ventanaDelInicio } from '../utils/semanaDelInicio';
+import { capacidadesEmpresa } from '../utils/capacidades';
+import { pruebasDe, resumenDelPanel } from '../utils/lecturasDelClima';
+import { DIAS_DE_PRUEBA, estadoDePrueba } from '../utils/pruebaClima';
+import { climaParaElInicio } from '../utils/climaDelInicio';
 
 const TZ = 'America/Bogota';
 const CODIGOS_EXTRA = new Set(['HED', 'HEN', 'HEDD', 'HEND']);
@@ -382,6 +386,28 @@ export default async function dashboardRoutes(app: FastifyInstance) {
       ),
     };
 
+    // ===== El clima de los últimos 7 días =====
+    // Solo el ADMINISTRADOR, como el panel (`soloAdministrador` en routes/clima.ts): al supervisor no se le lee nada.
+    // Con o sin la función: sin ella salen las cifras sin nombres de la vista sin el plan. El resumen se lee SIN
+    // abrir casos: un GET que se carga a cada rato no escribe.
+    const esAdministrador = (request.user as { rol?: string } | undefined)?.rol === 'ADMIN';
+    let clima: ReturnType<typeof climaParaElInicio> = null;
+    if (esAdministrador) {
+      const desdeClima = ventana.claves7[0];
+      const hastaClima = ventana.claves7[6];
+      const [cap, pruebas, resumenClima, casosEnLaBase] = await Promise.all([
+        capacidadesEmpresa(empresaId),
+        pruebasDe(empresaId),
+        resumenDelPanel(empresaId, desdeClima, hastaClima, null, false),
+        prisma.seguimientoClima.count({ where: { empresaId, estado: { in: ['SIN_REVISAR', 'EN_SEGUIMIENTO'] } } }),
+      ]);
+      clima = climaParaElInicio({
+        esAdministrador, tieneClima: !!cap.features.clima, desde: desdeClima, hasta: hastaClima,
+        resumen: resumenClima, prueba: { ...estadoDePrueba(pruebas, ahora), dias: DIAS_DE_PRUEBA },
+        casosAbiertosEnLaBase: casosEnLaBase,
+      });
+    }
+
     // ===== Primeros pasos =====
     // null es «no aplica» (la empresa ya pasó su primer mes o completó los pasos). Un backend anterior no
     // manda el campo, y la pantalla tampoco pinta nada.
@@ -412,8 +438,10 @@ export default async function dashboardRoutes(app: FastifyInstance) {
       novedadesHoy,
       proximosFestivos,
       cumpleanos,
-      pendientes,
+      // Los casos de clima abiertos van con los demás pendientes, solo si el administrador tiene la función.
+      pendientes: clima?.estado === 'ACTIVO' ? { ...pendientes, casosClima: clima.casosAbiertos } : pendientes,
       primerosPasos: pasos,
+      clima,
       asistenciaSemana: semana.asistenciaSemana,
       llegadasTarde7d: { dias: semana.llegadasTarde7d.dias, personas: personasDeLaSemana },
     };

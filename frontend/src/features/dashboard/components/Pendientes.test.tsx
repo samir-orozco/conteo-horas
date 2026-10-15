@@ -31,6 +31,7 @@ function montar(props: Partial<Parameters<typeof Pendientes>[0]> = {}) {
       <Routes>
         <Route path="/app" element={<Pendientes turnos={[TURNO]} pendientes={PENDIENTES} onCerrarTurno={onCerrarTurno} {...props} />} />
         <Route path="/app/colaboradores/:id" element={<FichaFalsa />} />
+        <Route path="/app/clima" element={<FichaFalsa />} />
       </Routes>
     </MemoryRouter>,
   );
@@ -94,5 +95,15 @@ describe('Pendientes', () => {
   it('con un servidor anterior y sin turnos sin cerrar no pinta nada', () => {
     const { container } = montar({ turnos: [], pendientes: undefined });
     expect(container).toBeEmptyDOMElement();
+  });
+
+  // El clima (15 de octubre de 2026): los casos están en la pestaña Seguimiento del clima, donde se resuelven.
+  // El Inicio no tiene los nombres: el aviso lleva a esa pestaña.
+  it('los casos de clima abiertos llevan a la pestaña Seguimiento del clima', () => {
+    montar({ turnos: [], pendientes: { ...PENDIENTES, casosClima: 3 } });
+    fireEvent.click(chip(/3 casos de clima abiertos/));
+    expect(screen.getByText(/necesitan atención/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /Ir al seguimiento/ }));
+    expect(screen.getByText('Ficha de en seguimiento')).toBeInTheDocument();
   });
 });

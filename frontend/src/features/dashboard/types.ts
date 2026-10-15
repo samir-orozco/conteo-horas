@@ -25,6 +25,8 @@ export type Dash = {
   pendientes?: {
     novedades: { id: string; colaboradorId: string; colaborador: string; tipo: string; fechaInicio: string; fechaFin: string }[];
     contratos: { colaboradorId: string; colaborador: string; estado: 'POR_VENCER' | 'PREAVISO_VENCIDO' | 'VENCIDO'; vence: string; limitePreaviso: string }[];
+    // Los casos de clima abiertos (15 de octubre de 2026). Solo llega al administrador con la función.
+    casosClima?: number;
   };
   // null: la empresa ya pasó su primer mes o completó los pasos. Sin el campo: un servidor anterior. La
   // clave es un texto y no la lista cerrada porque un servidor más nuevo podría mandar un paso más.
@@ -41,7 +43,17 @@ export type Dash = {
       personas: { id: string; horaEsperada: string; horaLlegada: string; minutosTarde: number }[] }[];
     personas: Record<string, { nombre: string; fotoMini: string | null }>;
   };
+  // El clima de los últimos 7 días (15 de octubre de 2026). null: no es el administrador. Sin el campo: un
+  // servidor anterior. Nunca trae nombres: son las cifras de la vista sin el plan (backend: utils/climaDelInicio.ts).
+  clima?: ClimaDelInicio | null;
 };
+
+export type VistazoDelClima = { total: number; personas: number; promedio: number | null; variacion: number | null; jornadas: number; atencion: number };
+export type PruebaDelClima = { disponible: boolean; vigente: { hasta: string } | null; terminada: { hasta: string } | null; dias: number };
+export type ClimaDelInicio =
+  | { estado: 'SIN_PLAN'; desde: string; hasta: string; vistazo: VistazoDelClima; prueba: PruebaDelClima }
+  | { estado: 'ACTIVO'; desde: string; hasta: string; vistazo: VistazoDelClima; distribucion: Record<1 | 2 | 3 | 4 | 5, number>;
+      prueba: PruebaDelClima; casosAbiertos: number };
 
 export type Salida = Dash['salidasRecientes'][number];
 export type TurnoOlvidado = Dash['turnosOlvidados'][number];

@@ -14,6 +14,7 @@ import Pendientes from '../features/dashboard/components/Pendientes';
 import PrimerosPasos from '../features/dashboard/components/PrimerosPasos';
 import AsistenciaSemana from '../features/dashboard/components/AsistenciaSemana';
 import LlegadasTarde7d from '../features/dashboard/components/LlegadasTarde7d';
+import ClimaSemana from '../features/dashboard/components/ClimaSemana';
 import type { Salida, TurnoOlvidado, Novedad } from '../features/dashboard/types';
 
 export default function DashboardEmpresa() {
@@ -79,6 +80,13 @@ export default function DashboardEmpresa() {
         {d.asistenciaSemana && <AsistenciaSemana dias={d.asistenciaSemana.dias} />}
         {d.llegadasTarde7d ? <LlegadasTarde7d {...d.llegadasTarde7d} /> : <LlegadasTardeCard items={d.llegadasTardeHoy} />}
       </div>
+
+      {/* El clima de los últimos 7 días: solo le llega al administrador. */}
+      {d.clima && (
+        <div className="grid lg:grid-cols-2 gap-4">
+          <ClimaSemana clima={d.clima} />
+        </div>
+      )}
 
       <div className="grid lg:grid-cols-2 gap-4">
         <FestivosCard items={d.proximosFestivos} />

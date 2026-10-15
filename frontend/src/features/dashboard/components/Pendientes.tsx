@@ -13,6 +13,7 @@ const EXPLICACION: Record<ClavePendiente, string> = {
   TURNOS: 'Estos colaboradores marcaron entrada en días anteriores pero no registraron salida. Corrige el registro para que la liquidación sea correcta.',
   NOVEDADES: 'Se aprueban en la ficha de cada persona, en la pestaña Novedades.',
   CONTRATOS: 'Un contrato a término fijo se prorroga solo si no se avisa por escrito 30 días antes de que venza.',
+  CLIMA: 'Personas que necesitan atención por cómo calificaron sus últimos días. Cada caso se revisa y se cierra en el seguimiento del clima.',
 };
 
 function Fila({ titulo, detalle, onClick }: { titulo: string; detalle: string; onClick: () => void }) {
@@ -83,6 +84,11 @@ export default function Pendientes({ turnos, pendientes, onCerrarTurno }: {
               <Fila key={c.colaboradorId} titulo={c.colaborador} detalle={detalleDeContrato(c)}
                 onClick={aLaFicha(c.colaboradorId, 'contratos')} />
             ))}
+            {/* El Inicio no trae los nombres del clima: quién y por qué se ve en el seguimiento. */}
+            {visible === 'CLIMA' && (
+              <Fila titulo="Ir al seguimiento" detalle="Quiénes son, por qué y en qué va cada caso"
+                onClick={() => navigate('/app/clima?tab=seguimiento')} />
+            )}
           </div>
         </div>
       )}

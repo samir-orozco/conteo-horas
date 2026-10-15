@@ -19,7 +19,7 @@ const contrato = (over: Partial<ContratoPendiente> = {}): ContratoPendiente => (
   colaboradorId: 'c1', colaborador: 'Ana Ruiz', estado: 'POR_VENCER',
   vence: '2026-12-10T05:00:00.000Z', limitePreaviso: '2026-11-10T05:00:00.000Z', ...over,
 });
-const pendientes = (n: number, c: number): Dash['pendientes'] => ({
+const pendientes = (n: number, c: number): NonNullable<Dash['pendientes']> => ({
   novedades: Array.from({ length: n }, (_, i) => novedad({ id: `p${i}` })),
   contratos: Array.from({ length: c }, (_, i) => contrato({ colaboradorId: `c${i}` })),
 });
@@ -47,6 +47,19 @@ describe('chipsDePendientes', () => {
   // `pendientes`. Los turnos sin cerrar sí los manda desde siempre.
   it('con un servidor anterior, que no manda pendientes, quedan los turnos sin cerrar', () => {
     expect(chipsDePendientes(3, undefined)).toEqual([{ clave: 'TURNOS', total: 3, texto: '3 turnos sin cerrar' }]);
+  });
+
+  // Los casos de clima abiertos (15 de octubre de 2026): el servidor solo los manda al administrador que tiene
+  // la función. Van al final, porque no cambian la liquidación.
+  it('los casos de clima abiertos van al final, en singular y en plural', () => {
+    expect(chipsDePendientes(1, { ...pendientes(1, 0), casosClima: 2 }).map(c => [c.clave, c.texto]))
+      .toEqual([['TURNOS', '1 turno sin cerrar'], ['NOVEDADES', '1 novedad por aprobar'], ['CLIMA', '2 casos de clima abiertos']]);
+    expect(chipsDePendientes(0, { ...pendientes(0, 0), casosClima: 1 })).toEqual([{ clave: 'CLIMA', total: 1, texto: '1 caso de clima abierto' }]);
+  });
+
+  it('sin casos de clima, o sin el dato (supervisor, sin la función), no hay aviso del clima', () => {
+    expect(chipsDePendientes(0, { ...pendientes(0, 0), casosClima: 0 })).toEqual([]);
+    expect(chipsDePendientes(0, pendientes(0, 0))).toEqual([]);
   });
 });
 

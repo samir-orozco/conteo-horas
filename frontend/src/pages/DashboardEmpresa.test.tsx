@@ -65,6 +65,17 @@ describe('DashboardEmpresa', () => {
     expect(screen.queryByText('Llegadas tarde hoy', { selector: 'p' })).not.toBeInTheDocument();
   });
 
+  // El clima (15 de octubre de 2026): el servidor solo lo manda al administrador; al supervisor le llega null.
+  it('con el clima, su tarjeta; con null (el supervisor), nada', () => {
+    const vistazo = { total: 0, personas: 0, promedio: null, variacion: null, jornadas: 0, atencion: 0 };
+    const prueba = { disponible: true, vigente: null, terminada: null, dias: 30 };
+    const { unmount } = montar({ ...BASE, clima: { estado: 'SIN_PLAN', desde: '2026-10-08', hasta: '2026-10-14', vistazo, prueba } });
+    expect(screen.getByRole('region', { name: 'Clima laboral' })).toBeInTheDocument();
+    unmount();
+    montar({ ...BASE, clima: null });
+    expect(screen.queryByRole('region', { name: 'Clima laboral' })).not.toBeInTheDocument();
+  });
+
   it('con un servidor anterior, sin los campos nuevos, el Inicio sigue en pie', () => {
     montar(BASE);
     expect(screen.getByRole('button', { name: /1 turno sin cerrar/ })).toBeInTheDocument();

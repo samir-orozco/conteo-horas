@@ -16,6 +16,9 @@
 //     Caro llegó hoy a las 08:30; Sofía está de vacaciones aprobadas de ayer a mañana; Marta llega a
 //     tiempo; Jorge no tiene horario, pero el planificador le pintó hoy un turno de 10:00 a 18:00.
 //     Los festivos (por ejemplo el 12 de octubre) no tienen marcaciones.
+//   - El clima: una carita por cada jornada cerrada de la semana y otras de la semana anterior, para la
+//     variación. Luis calificó mal todas las de esta semana: necesita atención. La empresa no tiene la
+//     función: el Inicio muestra las cifras sin nombres y la invitación a la prueba gratis.
 import bcrypt from 'bcryptjs';
 import { prisma } from '../src/prisma';
 import { borrarEmpresaEnCascada } from '../src/utils/borrarEmpresaEnCascada';
@@ -103,6 +106,17 @@ async function main() {
     salida: m.n === 0 ? null : a(m.n, 17), metodoEntrada: 'CEDULA' as const,
   })) });
 
+  // El clima. Esta semana, una carita por jornada cerrada (las de hoy siguen abiertas); la anterior, sin
+  // marcaciones, solo para que haya con qué comparar.
+  const caritaDe = (colaboradorId: string, n: number) =>
+    colaboradorId === luis.id ? (n >= -6 ? 1 + (n % 2 === 0 ? 1 : 0) : 4)
+      : colaboradorId === marta.id ? 5 : colaboradorId === caro.id ? 3 : 4;
+  const anteriores = [-13, -12, -11, -10, -9].flatMap(n => [ana, luis, caro, sofia, marta].map(p => ({ colaboradorId: p.id, n })));
+  const calificaciones = [...marcas.filter(m => m.n < 0), ...anteriores];
+  await prisma.calificacionClima.createMany({ data: calificaciones.map(c => ({
+    empresaId: empresa.id, colaboradorId: c.colaboradorId, fecha: dia(c.n), carita: caritaDe(c.colaboradorId, c.n), motivos: [],
+  })) });
+
   // Jorge entró ayer a las 7:00 y nunca marcó salida (cargado a mano). Hoy el planificador le pintó
   // un turno de 10:00 a 18:00, aunque no tenga horario fijo.
   await prisma.registro.create({ data: { colaboradorId: jorge.id, fecha: dia(-1), entrada: a(-1, 7), metodoEntrada: 'MANUAL' } });
@@ -111,7 +125,7 @@ async function main() {
     almuerzoMin: 0, minutosEsperados: 480, origen: 'MANUAL',
   } });
 
-  console.log(`Empresa «${empresa.nombre}» creada: 6 personas, ${marcas.length + 1} marcaciones de la semana, 4 contratos y 3 novedades.`);
+  console.log(`Empresa «${empresa.nombre}» creada: 6 personas, ${marcas.length + 1} marcaciones de la semana, ${calificaciones.length} caritas, 4 contratos y 3 novedades.`);
 }
 
 main()
