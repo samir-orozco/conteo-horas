@@ -6,6 +6,7 @@ import { jornadaVigente, tiposVigentes } from './vigencias';
 import { franjaDelDia, HorarioConFranjas, construirExtraConfig } from './tardanzas';
 import { DIAS_SEMANA } from './diasDeLaSemana';
 import type { DiaEsperadoCalculado } from './diasEsperados';
+import { rangoSemanaBogota } from './fechas';
 import { ajustarAJornada } from './ajusteJornada';
 import { minutosAlmuerzoADescontar, minutosEnLaVentana, ventanaDeAlmuerzo } from './almuerzo';
 import { minutosDescansoADescontar, minutosEnLasVentanas, leerDescansos } from './descansos';
@@ -78,6 +79,12 @@ type DetalleRegistro = {
 // registros agrupados por semana ISO (el tope de 42h/sem se resetea cada semana),
 // aplica el motor de horas colombianas registro por registro, y opcionalmente
 // arma el desglose día a día (para el drill-down de "Extras y recargos").
+// Desde dónde hay que traer las marcaciones (y los días esperados) para liquidar un período que
+// empieza en `desde`: el lunes de su semana (15 de octubre de 2026). El tope de horas es semanal, y
+// sin los días de esa semana anteriores al período sus extras no salían en ninguna de las dos
+// mitades del corte. Se pasan al motor con `pagarDesde = desde`: cuentan, pero no se pagan.
+export const desdeDeLaCuentaSemanal = (desde: Date) => rangoSemanaBogota(desde).lunes;
+
 export function liquidarRegistros(
   registros: {
     id: string; fecha: Date; entrada: Date | null; salida: Date | null;
@@ -98,7 +105,15 @@ export function liquidarRegistros(
   // respaldo para las fechas sin fila congelada. Ausente = presunción legal, o sea el domingo, que es
   // lo que el sistema calculó siempre: por eso los llamadores que no lo pasen no ven cambio.
   fuenteDelDescanso?: FuenteDelDescanso,
+  // EL PRIMER DÍA QUE SE PAGA (15 de octubre de 2026). El tope de horas es semanal: para clasificar
+  // bien las horas de un período que empieza a mitad de semana, el llamador manda también las
+  // marcaciones de esa semana ANTERIORES al período, y este motor las usa solo para la cuenta de la
+  // semana. No se pagan, ni cuentan como días ni como marcaciones. Sin él, todo lo que llega se paga,
+  // como siempre. Sin las marcaciones anteriores, la semana empezaba en cero y sus extras no salían
+  // en ninguna de las dos mitades del corte.
+  pagarDesde?: Date,
 ) {
+  const sePaga = (fecha: Date) => !pagarDesde || fecha.getTime() >= pagarDesde.getTime();
   const diaPorClave = new Map(diasEsperados.map(d => [claveDiaBogota(d.fecha), d]));
 
   // EL CABLE ENTRE EL DÍA CONGELADO Y EL MOTOR DE HORAS (20 de septiembre de 2026).
@@ -228,6 +243,8 @@ export function liquidarRegistros(
       const descansoCobrado = cobrarDescanso(claveDia, debido?.descanso ?? 0, m => descontarAlmuerzoOrdinarias(resultado, m));
       const ordDelRegistro = Math.max(0, minutosOrdinariosTrabajados - almuerzoCobrado - descansoCobrado);
       minutosOrdSemana += ordDelRegistro;
+      // Antes del período: ya sumó a la cuenta de la semana, que es para lo único que vino.
+      if (!sePaga(registro.fecha)) continue;
 
       if (incluirDetalle) {
         // Solo lo que genera pago adicional (excluye HOD, que ya está en el salario)
@@ -273,13 +290,14 @@ export function liquidarRegistros(
     .reduce((s, t) => s + t.minutos, 0);
 
   // Las abiertas viajan solo para medir las pausas: el conteo sigue siendo el de las cerradas.
-  const registrosCont = registros.filter(r => r.salida).length;
+  const delPeriodo = registros.filter(r => sePaga(r.fecha));
+  const registrosCont = delPeriodo.filter(r => r.salida).length;
 
   // Los DÍAS con marcación, que no son lo mismo (15 de septiembre de 2026). Quien sale a almorzar y
   // vuelve marca dos veces el mismo día, y quien nunca marca la salida no suma ninguna cerrada
   // aunque haya trabajado. Medido contra la base del dueño: 11 cerradas en 5 días, y otra persona
   // con 0 cerradas y 2 días trabajados. Un día sin hora de entrada no es una marcación.
-  const diasCont = new Set(registros.filter(r => r.entrada).map(r => claveDiaBogota(r.fecha))).size;
+  const diasCont = new Set(delPeriodo.filter(r => r.entrada).map(r => claveDiaBogota(r.fecha))).size;
 
   return { liquidacion, totalRecargos, totalExtra, totalAdicional, registrosCont, diasCont, detalleRegistros, minutosOrdinarios, minutosExtra, minutosPorDia };
 }

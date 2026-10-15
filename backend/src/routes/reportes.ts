@@ -13,7 +13,7 @@ import {
   lugaresConAtribucion, apareceConFiltro, resumirPorSede, nombrarLugares, type Lugar, type SedeDelResumen,
 } from '../utils/sedesDeReporte';
 import { sedesPorDefecto } from '../utils/sedesDeEmpresa';
-import { liquidarRegistros } from '../utils/liquidarRegistros';
+import { liquidarRegistros, desdeDeLaCuentaSemanal } from '../utils/liquidarRegistros';
 import { novedadesDelPeriodo } from '../utils/novedadesDelPeriodo';
 import { COLABORADOR_SIN_FOTOS } from '../utils/columnasDeColaborador';
 // La guarda legal: convierte las tres columnas crudas en el estado que el motor entiende, y por el
@@ -52,6 +52,9 @@ export default async function reporteRoutes(app: FastifyInstance) {
   app.get('/liquidacion', auth, async (request, reply) => {
     const { colaboradorId, desde, hasta } = request.query as any;
     const { desdeF, finExclusivo } = rangoReporte(desde, hasta);
+    // Desde el lunes de la primera semana: esos días cuentan para el tope semanal, pero se pagan
+    // solo los del período (15 de octubre de 2026).
+    const desdeCuenta = desdeDeLaCuentaSemanal(desdeF);
 
     const [colaborador, registros, festivos, tiposHoraTodos, jornadas, auxilios, cfgModo, cfgPermisos, permisosRango, diasMaterializados] = await Promise.all([
       // El colaborador viaja entero en la respuesta, pero sin sus fotos ni su descriptor facial,
@@ -69,7 +72,7 @@ export default async function reporteRoutes(app: FastifyInstance) {
       // También las abiertas: no se liquidan, pero la entrada de una puede ser el regreso
       // de una pausa, y sin ella la pausa se cobraba entera (utils/liquidarRegistros.ts).
       prisma.registro.findMany({
-        where: { colaboradorId, fecha: { gte: desdeF, lt: finExclusivo } },
+        where: { colaboradorId, fecha: { gte: desdeCuenta, lt: finExclusivo } },
         select: { id: true, fecha: true, entrada: true, salida: true, salidaAlmuerzo: true, salidaDescanso: true, descansoVentana: true },
         orderBy: { fecha: 'asc' },
       }),
@@ -92,7 +95,7 @@ export default async function reporteRoutes(app: FastifyInstance) {
       // Lo que el horario exigía ESE día, congelado cuando se materializó. Es lo
       // que impide que editar un horario hoy mueva la liquidación de julio.
       prisma.diaEsperado.findMany({
-        where: { colaboradorId, fecha: { gte: desdeF, lt: finExclusivo } },
+        where: { colaboradorId, fecha: { gte: desdeCuenta, lt: finExclusivo } },
         select: {
           fecha: true, programado: true, horaEntrada: true, horaSalida: true,
           toleranciaMin: true, almuerzoMin: true, minutosEsperados: true,
@@ -129,13 +132,15 @@ export default async function reporteRoutes(app: FastifyInstance) {
     // lo que el sistema hacía siempre. Así nadie ve números nuevos por sorpresa.
     // Se resuelven ANTES de liquidar porque de ahí sale también la hora de
     // salida programada que usa la tolerancia de jornada.
-    const diasEsperados = combinarDiasEsperados(desdeF, finExclusivo, diasMaterializados, horario);
+    const diasDeLaCuenta = combinarDiasEsperados(desdeCuenta, finExclusivo, diasMaterializados, horario);
+    // Los del período, para lo que se exigía (el saldo). Los de antes solo le sirven al motor.
+    const diasEsperados = diasDeLaCuenta.filter(d => d.fecha.getTime() >= desdeF.getTime());
     // El ExtraConfig sale de los días YA COMBINADOS, no del horario vigente: es
     // lo que impide que cambiar un horario reescriba la clasificación de extras
     // de un período ya liquidado.
-    const extraConfig = construirExtraConfig(modoExtra, horario, diasEsperados);
+    const extraConfig = construirExtraConfig(modoExtra, horario, diasDeLaCuenta);
 
-    const r = liquidarRegistros(registros, horario, extraConfig, festivosDates, tiposHoraTodos, jornadas, colaborador.salarioMensual, horasMes, true, diasEsperados, fuenteDelDescansoDe(colaborador.horario));
+    const r = liquidarRegistros(registros, horario, extraConfig, festivosDates, tiposHoraTodos, jornadas, colaborador.salarioMensual, horasMes, true, diasDeLaCuenta, fuenteDelDescansoDe(colaborador.horario), desdeF);
 
     // Saldo de tiempo no remunerado: lo que el horario exigía contra lo que
     // realmente trabajó. Va en su propio campo y NUNCA dentro de `liquidacion`,
@@ -263,6 +268,8 @@ export default async function reporteRoutes(app: FastifyInstance) {
     const { desde, hasta, sedeId } = request.query as { desde: string; hasta: string; sedeId?: string };
     const empresaId = request.empresaId!;
     const { desdeF, finExclusivo } = rangoReporte(desde, hasta);
+    // Igual que /liquidacion: desde el lunes de la primera semana, para el tope semanal.
+    const desdeCuenta = desdeDeLaCuentaSemanal(desdeF);
 
     const [colaboradores, registrosTodos, festivos, tiposHoraTodos, jornadas, auxilios, cfgModo, cfgPermisos, permisosTodos, diasTodosEsp, sedes, defectoDe, filasDeLugar] = await Promise.all([
       // Solo lo que usa este reporte. La cédula y el cargo van para el archivo del ERP, que
@@ -281,7 +288,7 @@ export default async function reporteRoutes(app: FastifyInstance) {
       // Sin filtro de sede y también las abiertas, por lo mismo que en /extras-resumen: cada persona
       // se liquida con todos sus turnos y la sede solo decide quién aparece.
       prisma.registro.findMany({
-        where: { colaborador: { empresaId }, fecha: { gte: desdeF, lt: finExclusivo } },
+        where: { colaborador: { empresaId }, fecha: { gte: desdeCuenta, lt: finExclusivo } },
         select: {
           id: true, colaboradorId: true, fecha: true, entrada: true, salida: true, sedeId: true, sedeSalidaId: true,
           salidaAlmuerzo: true, salidaDescanso: true, descansoVentana: true,
@@ -300,7 +307,7 @@ export default async function reporteRoutes(app: FastifyInstance) {
         select: { colaboradorId: true, fechaInicio: true, fechaFin: true, horaInicio: true, horaFin: true, tipo: true },
       }),
       prisma.diaEsperado.findMany({
-        where: { colaborador: { empresaId }, fecha: { gte: desdeF, lt: finExclusivo } },
+        where: { colaborador: { empresaId }, fecha: { gte: desdeCuenta, lt: finExclusivo } },
         select: {
           colaboradorId: true, fecha: true, programado: true, horaEntrada: true,
           horaSalida: true, toleranciaMin: true, almuerzoMin: true, minutosEsperados: true,
@@ -335,7 +342,7 @@ export default async function reporteRoutes(app: FastifyInstance) {
 
     const resultado = colaboradores.map(col => {
       const horario = col.horario as HorarioConFranjas | null;
-      const dias = combinarDiasEsperados(desdeF, finExclusivo, porColDiasEsp.get(col.id) ?? [], horario);
+      const dias = combinarDiasEsperados(desdeCuenta, finExclusivo, porColDiasEsp.get(col.id) ?? [], horario);
       const extraConfig = construirExtraConfig(modoExtra, horario, dias);
       // Solo las columnas que lee el motor de horas: las demás de la fila (colaborador, sedes) son
       // para saber dónde trabajó, y pasarlas enteras obligaba a un `as any`.
@@ -345,7 +352,7 @@ export default async function reporteRoutes(app: FastifyInstance) {
       }));
       const r = liquidarRegistros(
         suyos, horario, extraConfig, festivosDates,
-        tiposHoraTodos, jornadas, col.salarioMensual, horasMes, false, dias, fuenteDelDescansoDe(col.horario),
+        tiposHoraTodos, jornadas, col.salarioMensual, horasMes, false, dias, fuenteDelDescansoDe(col.horario), desdeF,
       );
       return {
         colaboradorId: col.id, cedula: col.cedula, numeroContrato: col.numeroContrato, nombre: col.nombre, apellido: col.apellido, cargo: col.cargo,

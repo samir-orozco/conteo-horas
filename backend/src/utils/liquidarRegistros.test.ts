@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { liquidarRegistros, cobroDePausas } from './liquidarRegistros';
+import { liquidarRegistros, cobroDePausas, desdeDeLaCuentaSemanal } from './liquidarRegistros';
 import { construirExtraConfig, type HorarioConFranjas } from './tardanzas';
 import type { DiaEsperadoCalculado } from './diasEsperados';
 
@@ -272,5 +272,69 @@ describe('liquidarRegistros: los minutos de cada día', () => {
   it('una fila abierta no suma a ningún día', () => {
     const abierta = { id: 'a', fecha: LUNES, entrada: lunes(7), salida: null };
     expect(liquidar([abierta as never], [DIA]).minutosPorDia).toEqual({});
+  });
+});
+
+// LA SEMANA QUE CRUZA EL CORTE DEL PERÍODO (15 de octubre de 2026).
+//
+// El tope de horas es SEMANAL, pero el motor solo veía las marcaciones del período que se le
+// pedía. Una semana que cruza el día 1 o el 16 empezaba su cuenta en cero dentro del período, y
+// las extras de esa semana no salían en ninguna de las dos mitades. Medido contra la base local:
+// septiembre por quincenas sumaba $31.260.908 y como mes, $36.703.170. El dueño decidió
+// arreglarlo: el período mide el tope con la semana entera y paga solo lo trabajado en sus fechas.
+//
+// La semana del lunes 7 al domingo 13 de septiembre de 2026, jornada de 42 h. De lunes a sábado,
+// 9 h diarias (07:00 a 16:00, sin pausas): 54 h. El viernes llega al tope a la 1 p. m.
+// (5 × 9 = 45 h, de las que 3 son extra) y el sábado entero es extra: 12 h extra en la semana.
+describe('liquidarRegistros: la semana que cruza el corte del período', () => {
+  const dia = (n: number, h: number) => new Date(Date.UTC(2026, 8, 7 + n, h + 5, 0, 0));
+  const semana = [0, 1, 2, 3, 4, 5].map(n => ({ id: `d${n}`, fecha: dia(n, 0), entrada: dia(n, 7), salida: dia(n, 16) }));
+  const JUEVES = dia(3, 0);
+  const SEMANAL = construirExtraConfig('SEMANAL', null, []);
+  const liquidarDesde = (registros: typeof semana, pagarDesde?: Date) =>
+    liquidarRegistros(registros, null, SEMANAL, [], TIPOS, JORNADAS, 1_500_000, 210, false, [], undefined, pagarDesde);
+
+  it('la semana entera: 42 h ordinarias y 12 h extra', () => {
+    const r = liquidarDesde(semana);
+    expect(r.minutosOrdinarios).toBe(42 * 60);
+    expect(r.minutosExtra).toBe(12 * 60);
+  });
+
+  it('el período que empieza el jueves paga las extras del viernes y el sábado, contando desde el lunes', () => {
+    const r = liquidarDesde(semana, JUEVES);
+    // Jueves 9 h y viernes hasta la 1 p. m. (6 h) son ordinarias; el resto del viernes (3 h) y el sábado (9 h), extra.
+    expect(r.minutosOrdinarios).toBe(15 * 60);
+    expect(r.minutosExtra).toBe(12 * 60);
+  });
+
+  it('las dos mitades suman exactamente la semana entera, código por código', () => {
+    const entera = liquidarDesde(semana);
+    const primera = liquidarDesde(semana.slice(0, 3));
+    const segunda = liquidarDesde(semana, JUEVES);
+    const horas = (r: ReturnType<typeof liquidarDesde>, codigo: string) => r.liquidacion.find(l => l.codigo === codigo)?.horas ?? 0;
+    for (const codigo of ['HOD', 'HED']) {
+      expect(horas(primera, codigo) + horas(segunda, codigo)).toBeCloseTo(horas(entera, codigo), 2);
+    }
+    expect(primera.totalAdicional + segunda.totalAdicional).toBeCloseTo(entera.totalAdicional, 0);
+  });
+
+  it('los días de antes del período cuentan para el tope, pero no se pagan ni se cuentan como días', () => {
+    const r = liquidarDesde(semana, JUEVES);
+    expect(r.diasCont).toBe(3);
+    expect(r.registrosCont).toBe(3);
+    expect(Object.keys(r.minutosPorDia).sort()).toEqual(['2026-09-10', '2026-09-11', '2026-09-12']);
+  });
+});
+
+describe('desdeDeLaCuentaSemanal: desde dónde se traen las marcaciones para liquidar un período', () => {
+  const f = (d: number) => new Date(Date.UTC(2026, 9, d, 5, 0, 0));
+  it('un período que empieza un jueves (1 de octubre) se cuenta desde el lunes 28 de septiembre', () => {
+    expect(desdeDeLaCuentaSemanal(f(1))).toEqual(new Date(Date.UTC(2026, 8, 28, 5, 0, 0)));
+  });
+  it('uno que empieza un lunes (el 12) no trae nada de antes', () => {
+    expect(desdeDeLaCuentaSemanal(f(12))).toEqual(f(12));
+  });
+  it('uno que empieza un domingo (el 18) se cuenta desde el lunes 12', () => {
+    expect(desdeDeLaCuentaSemanal(f(18))).toEqual(f(12));
   });
 });

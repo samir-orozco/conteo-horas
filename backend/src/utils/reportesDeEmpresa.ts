@@ -6,7 +6,7 @@ import { calcularValorHora } from './horasColombiana';
 import { combinarDiasEsperados } from './diasEsperados';
 import { lugaresConAtribucion } from './sedesDeReporte';
 import { sedesPorDefecto } from './sedesDeEmpresa';
-import { liquidarRegistros } from './liquidarRegistros';
+import { liquidarRegistros, desdeDeLaCuentaSemanal } from './liquidarRegistros';
 // La guarda legal: convierte las tres columnas crudas en el estado que el motor entiende, y por el
 // camino descarta cualquier día declarado SIN acuerdo escrito. Se resuelve aquí, una vez por
 // persona, y nunca dentro del motor: así no hay ninguna rama que pueda saltársela.
@@ -63,6 +63,9 @@ export function filasParaLugares(empresaId: string, desdeF: Date, finExclusivo: 
 export async function liquidarEmpresa(empresaId: string, desde: string, hasta: string) {
   const { desdeF, finExclusivo } = rangoReporte(desde, hasta);
   const hastaF = new Date(hasta); // solo para resolver la jornada vigente al cierre
+  // Las marcaciones y los días se traen desde el lunes de la primera semana: cuentan para el tope
+  // semanal, pero el motor solo paga desde `desdeF` (15 de octubre de 2026).
+  const desdeCuenta = desdeDeLaCuentaSemanal(desdeF);
 
   const [colaboradores, registrosTodos, festivos, tiposHoraTodos, jornadas, cfgModo, diasTodosEsp, sedes, defectoDe, filasDeLugar] = await Promise.all([
     // Solo lo que usa este resumen. Sin `select` venían todas las columnas de cada persona
@@ -86,7 +89,7 @@ export async function liquidarEmpresa(empresaId: string, desde: string, hasta: s
       // Filtrando aquí, el tope semanal se medía sobre la parte de la semana
       // que quedaba: quien repartió la semana entre dos sedes tenía $0 de
       // extras en cada una. También las abiertas, por lo mismo que en /liquidacion.
-      where: { colaborador: { empresaId }, fecha: { gte: desdeF, lt: finExclusivo } },
+      where: { colaborador: { empresaId }, fecha: { gte: desdeCuenta, lt: finExclusivo } },
       select: {
         id: true, colaboradorId: true, fecha: true, entrada: true, salida: true, sedeId: true, sedeSalidaId: true,
         salidaAlmuerzo: true, salidaDescanso: true, descansoVentana: true,
@@ -102,7 +105,7 @@ export async function liquidarEmpresa(empresaId: string, desde: string, hasta: s
     // aplicara, el resumen y el desglose del mismo colaborador darían cifras
     // distintas, que es la peor forma de perder la confianza en un reporte.
     prisma.diaEsperado.findMany({
-      where: { colaborador: { empresaId }, fecha: { gte: desdeF, lt: finExclusivo } },
+      where: { colaborador: { empresaId }, fecha: { gte: desdeCuenta, lt: finExclusivo } },
       select: {
         colaboradorId: true, fecha: true, programado: true, horaEntrada: true,
         horaSalida: true, toleranciaMin: true, almuerzoMin: true, minutosEsperados: true,
@@ -139,9 +142,9 @@ export async function liquidarEmpresa(empresaId: string, desde: string, hasta: s
   const filas = colaboradores.map(col => {
     const horario = (col as any).horario as HorarioConFranjas | null;
     const registros = porColaborador.get(col.id) ?? [];
-    const dias = combinarDiasEsperados(desdeF, finExclusivo, porColDiasEsp.get(col.id) ?? [], horario);
+    const dias = combinarDiasEsperados(desdeCuenta, finExclusivo, porColDiasEsp.get(col.id) ?? [], horario);
     const extraConfig = construirExtraConfig(modoExtra, horario, dias);
-    const r = liquidarRegistros(registros as any, horario, extraConfig, festivosDates, tiposHoraTodos, jornadas, col.salarioMensual, horasMes, false, dias, fuenteDelDescansoDe(col.horario));
+    const r = liquidarRegistros(registros as any, horario, extraConfig, festivosDates, tiposHoraTodos, jornadas, col.salarioMensual, horasMes, false, dias, fuenteDelDescansoDe(col.horario), desdeF);
     return {
       colaboradorId: col.id, nombre: col.nombre, apellido: col.apellido,
       totalRecargos: r.totalRecargos, totalExtra: r.totalExtra, totalAdicional: r.totalAdicional,
