@@ -13,6 +13,9 @@ const liquidarRegistros_1 = require("../utils/liquidarRegistros");
 const almuerzo_1 = require("../utils/almuerzo");
 // Con el nombre de siempre: la copia local salió a `utils/fechas.ts` y ninguna línea de uso cambia.
 const fechas_1 = require("../utils/fechas");
+const estadoContratoResumen_1 = require("../utils/estadoContratoResumen");
+const contratosPorRevisar_1 = require("../utils/contratosPorRevisar");
+const primerosPasos_1 = require("../utils/primerosPasos");
 const diasDeLaSemana_1 = require("../utils/diasDeLaSemana");
 const TZ = 'America/Bogota';
 const CODIGOS_EXTRA = new Set(['HED', 'HEN', 'HEDD', 'HEND']);
@@ -40,13 +43,17 @@ async function dashboardRoutes(app) {
         const inicioSemanaMes = (0, date_fns_tz_1.fromZonedTime)((0, date_fns_1.startOfISOWeek)((0, date_fns_tz_1.toZonedTime)(inicioMes, TZ)), TZ);
         const claveHoy = (0, fechas_1.claveDiaBogota)(ahora);
         const diaHoy = diasDeLaSemana_1.DIAS_SEMANA[ahoraBog.getDay()];
-        const [colaboradores, festivos, jornadas, tiposHoraTodos, permisos] = await Promise.all([
+        const [colaboradores, festivos, jornadas, tiposHoraTodos, permisos, empresa] = await Promise.all([
             prisma_1.prisma.colaborador.findMany({
                 where: { empresaId, activo: true },
                 select: {
                     id: true, nombre: true, apellido: true, cargo: true, fechaNacimiento: true,
                     horario: { select: { id: true, activo: true, nombre: true, toleranciaMin: true, almuerzoMin: true,
                             franjas: { select: { dias: true, horaEntrada: true, horaSalida: true, tieneAlmuerzo: true } } } },
+                    // Para «Primeros pasos»: si ya hay alguien con su rostro registrado.
+                    rostroEnroladoEn: true,
+                    // Para «Pendientes por resolver»: el mismo contrato que pinta la lista de Colaboradores.
+                    contratos: estadoContratoResumen_1.CONTRATO_QUE_LA_REPRESENTA,
                 },
                 orderBy: { nombre: 'asc' },
             }),
@@ -59,8 +66,12 @@ async function dashboardRoutes(app) {
                 select: { id: true, colaboradorId: true, fechaInicio: true, fechaFin: true, horaInicio: true, horaFin: true, tipo: true, descripcion: true, aprobado: true, evidenciaTipo: true, evidenciaNombre: true,
                     colaborador: { select: { nombre: true, apellido: true } } },
             }),
+            // Por su llave primaria. Solo hace falta la fecha de creación, para saber si sigue arrancando.
+            prisma_1.prisma.empresa.findUnique({ where: { id: empresaId }, select: { creadoEn: true } }),
         ]);
         const colIds = colaboradores.map(c => c.id);
+        // «Primeros pasos» solo existe durante el primer mes: fuera de él no se pregunta nada más a la base.
+        const arrancando = !!empresa && (0, primerosPasos_1.enArranque)(empresa.creadoEn, ahora);
         const festSet = new Set(festivos.map(f => (0, fechas_1.claveDiaBogota)(f.fecha)));
         const hoyEsFestivo = festSet.has(claveHoy);
         // Registros de hoy + turnos abiertos de días anteriores.
@@ -73,7 +84,7 @@ async function dashboardRoutes(app) {
             salidaAlmuerzo: true, salidaDescanso: true,
             colaborador: { select: { id: true, nombre: true, apellido: true, cargo: true } },
         };
-        const [registrosHoy, turnosAbiertos, registrosMes, salidasConFoto, diasCongelados] = await Promise.all([
+        const [registrosHoy, turnosAbiertos, registrosMes, salidasConFoto, diasCongelados, porAprobar, horariosActivos, marcacionDelKiosco] = await Promise.all([
             prisma_1.prisma.registro.findMany({
                 where: { colaboradorId: { in: colIds }, fecha: { gte: inicioDia, lt: finDia } },
                 select: SEL_REG,
@@ -101,6 +112,22 @@ async function dashboardRoutes(app) {
                 where: { colaboradorId: { in: colIds }, fecha: { gte: inicioSemanaMes, lte: finDia } },
                 select: { colaboradorId: true, fecha: true, esDescanso: true },
             }),
+            // Las novedades por aprobar: sin aprobar y de alguien activo, sean de la fecha que sean. Es la misma
+            // regla con la que el resumen semanal las cuenta (`envioResumenSemanal.ts`). Va por los ids de los
+            // activos y no por la relación con la empresa, para que entre por el índice de `colaboradorId`.
+            prisma_1.prisma.permiso.findMany({
+                where: { aprobado: false, colaboradorId: { in: colIds } },
+                select: { id: true, colaboradorId: true, tipo: true, fechaInicio: true, fechaFin: true },
+                orderBy: { fechaInicio: 'asc' },
+            }),
+            arrancando ? prisma_1.prisma.horario.count({ where: { empresaId, activo: true } }) : Promise.resolve(0),
+            // Del kiosco: con rostro o con cédula. Una carga a mano (MANUAL) no prueba que el kiosco funcione, y
+            // `not: 'MANUAL'` dejaría fuera las filas en null, así que van los dos métodos con nombre. Se busca
+            // entre TODA la gente de la empresa, también la retirada: la primera marcación es un hecho que ya
+            // pasó, y retirar a quien probó el kiosco no puede volver a pedir el paso (revisión del 14/10/2026).
+            arrancando
+                ? prisma_1.prisma.colaborador.findMany({ where: { empresaId }, select: { id: true } }).then(todos => prisma_1.prisma.registro.findFirst({ where: { colaboradorId: { in: todos.map(c => c.id) }, metodoEntrada: { in: ['ROSTRO', 'CEDULA'] } }, select: { id: true } }))
+                : Promise.resolve(null),
         ]);
         const conFotoSalida = new Set(salidasConFoto.map(r => r.id));
         // Un turno abierto de un día anterior aún puede estar EN CURSO (turno nocturno
@@ -345,6 +372,27 @@ async function dashboardRoutes(app) {
         })
             .filter(c => c.mes === mesHoy)
             .sort((a, b) => a.dia - b.dia);
+        // ===== Pendientes por resolver =====
+        // Lo que espera a que alguien haga algo. Los turnos sin cerrar ya viajan en `turnosOlvidados`.
+        const nombreDe = new Map(colaboradores.map(c => [c.id, `${c.nombre} ${c.apellido}`]));
+        const pendientes = {
+            novedades: porAprobar.map(p => ({
+                id: p.id, colaboradorId: p.colaboradorId, colaborador: nombreDe.get(p.colaboradorId) ?? '',
+                tipo: p.tipo, fechaInicio: p.fechaInicio, fechaFin: p.fechaFin,
+            })),
+            contratos: (0, contratosPorRevisar_1.contratosPorRevisar)(colaboradores.map(c => ({ id: c.id, nombre: `${c.nombre} ${c.apellido}`, contrato: c.contratos[0] ?? null })), ahora),
+        };
+        // ===== Primeros pasos =====
+        // null es «no aplica» (la empresa ya pasó su primer mes o completó los pasos). Un backend anterior no
+        // manda el campo, y la pantalla tampoco pinta nada.
+        const pasos = arrancando
+            ? (0, primerosPasos_1.primerosPasos)({
+                horariosActivos,
+                colaboradoresActivos: colaboradores.length,
+                conRostro: colaboradores.filter(c => c.rostroEnroladoEn).length,
+                marcoEnElKiosco: !!marcacionDelKiosco,
+            })
+            : null;
         return {
             fecha: ahora,
             hoyEsFestivo,
@@ -363,6 +411,8 @@ async function dashboardRoutes(app) {
             novedadesHoy,
             proximosFestivos,
             cumpleanos,
+            pendientes,
+            primerosPasos: pasos,
         };
     });
 }

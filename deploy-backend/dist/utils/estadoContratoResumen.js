@@ -1,8 +1,21 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.CLAVES_ESTADO_CONTRATO = void 0;
+exports.CLAVES_ESTADO_CONTRATO = exports.CONTRATO_QUE_LA_REPRESENTA = void 0;
 exports.resumenDeContrato = resumenDeContrato;
 const contratos_1 = require("./contratos");
+// El contrato que representa a una persona: el VIGENTE más reciente. Vigente debería haber uno, y si
+// hubiera dos manda el nuevo. Es un trozo de consulta y no una función porque la lista de Colaboradores y
+// el Inicio lo piden dentro de su propia consulta de colaboradores: con el mismo trozo, los dos eligen el
+// mismo contrato y su estado coincide (14 de octubre de 2026).
+exports.CONTRATO_QUE_LA_REPRESENTA = {
+    where: { estado: 'VIGENTE' },
+    select: {
+        tipo: true, fechaInicio: true, fechaFin: true, fechaInicioPractica: true,
+        prorrogas: { select: { desde: true, hasta: true } },
+    },
+    orderBy: { fechaInicio: 'desc' },
+    take: 1,
+};
 // Todas las claves que este módulo puede devolver. La pantalla las traduce a
 // etiqueta y color; aquí solo viven las que existen, para poder comprobar que
 // la traducción no se quede corta.

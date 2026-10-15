@@ -86,17 +86,9 @@ async function colaboradorRoutes(app) {
                 // pedir los nombres aparte sería una consulta por cada carga.
                 sedes: { select: { sedeId: true, sede: { select: { nombre: true } } } },
                 // El contrato vigente, para poder decir en la lista quién tiene el
-                // preaviso encima sin abrir ficha por ficha. Solo el más reciente:
-                // vigente debería haber uno, y si hubiera dos manda el nuevo.
-                contratos: {
-                    where: { estado: 'VIGENTE' },
-                    select: {
-                        tipo: true, fechaInicio: true, fechaFin: true, fechaInicioPractica: true,
-                        prorrogas: { select: { desde: true, hasta: true } },
-                    },
-                    orderBy: { fechaInicio: 'desc' },
-                    take: 1,
-                },
+                // preaviso encima sin abrir ficha por ficha. El Inicio elige con el
+                // mismo trozo de consulta, para que sus pendientes coincidan con esta lista.
+                contratos: estadoContratoResumen_1.CONTRATO_QUE_LA_REPRESENTA,
             },
             orderBy: { nombre: 'asc' },
         });

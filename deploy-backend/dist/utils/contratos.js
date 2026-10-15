@@ -21,6 +21,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.VIGENCIA_REFORMA = exports.PRORROGAS_ANTES_DE_UN_ANIO = exports.ANIOS_TOPE_APRENDIZAJE = exports.ANIOS_TOPE_FIJO = exports.DIAS_PREAVISO = void 0;
 exports.estadoDelContrato = estadoDelContrato;
+const fechas_1 = require("./fechas");
 exports.DIAS_PREAVISO = 30;
 exports.ANIOS_TOPE_FIJO = 4;
 exports.ANIOS_TOPE_APRENDIZAJE = 3;
@@ -36,6 +37,10 @@ const sumarDias = (f, n) => new Date(f.getTime() + n * DIA_MS);
 const sumarAnios = (f, n) => new Date(Date.UTC(f.getUTCFullYear() + n, f.getUTCMonth(), f.getUTCDate(), 5, 0, 0));
 function estadoDelContrato(contrato, prorrogas, hoy) {
     const { tipo, fechaInicio } = contrato;
+    // Los días se cuentan desde la medianoche de Bogotá de hoy, como están guardadas las fechas. Contados
+    // desde el instante, el redondeo partía el día en dos: desde el mediodía, el último día del contrato ya
+    // salía vencido y el último día para avisar ya salía pasado (14 de octubre de 2026).
+    const dia = (0, fechas_1.rangoDiaBogota)(hoy).inicioDia;
     const alertas = [];
     // El indefinido y el de obra o labor no vencen en una fecha, así que no hay
     // preaviso, ni tope, ni nada que avisar.
@@ -43,9 +48,9 @@ function estadoDelContrato(contrato, prorrogas, hoy) {
     const enOrden = [...prorrogas].sort((a, b) => a.hasta.getTime() - b.hasta.getTime());
     const ultima = enOrden[enOrden.length - 1];
     const finVigente = tieneVencimiento ? (ultima?.hasta ?? contrato.fechaFin) : null;
-    const diasParaVencer = finVigente ? dias(hoy, finVigente) : null;
+    const diasParaVencer = finVigente ? dias(dia, finVigente) : null;
     const fechaLimitePreaviso = finVigente ? sumarDias(finVigente, -exports.DIAS_PREAVISO) : null;
-    const diasParaPreaviso = fechaLimitePreaviso ? dias(hoy, fechaLimitePreaviso) : null;
+    const diasParaPreaviso = fechaLimitePreaviso ? dias(dia, fechaLimitePreaviso) : null;
     const vigente = diasParaVencer === null || diasParaVencer >= 0;
     const preavisoVencido = !!fechaLimitePreaviso && vigente && diasParaPreaviso < 0;
     // El tope: cuatro años para el fijo, tres para el aprendizaje. Si el contrato
@@ -76,7 +81,7 @@ function estadoDelContrato(contrato, prorrogas, hoy) {
     // Etapa del aprendiz
     let etapa = null;
     if (tipo === 'APRENDIZAJE' && contrato.fechaInicioPractica) {
-        etapa = hoy >= contrato.fechaInicioPractica ? 'PRACTICA' : 'LECTIVA';
+        etapa = dia >= contrato.fechaInicioPractica ? 'PRACTICA' : 'LECTIVA';
     }
     // ===== Alertas =====
     if (vigente && fechaLimitePreaviso) {
@@ -90,12 +95,12 @@ function estadoDelContrato(contrato, prorrogas, hoy) {
     if (yaSuperaElTope)
         alertas.push({ tipo: 'SUPERA_TOPE', dias: null });
     else if (vigente && seVuelveIndefinidoEl) {
-        const d = dias(hoy, seVuelveIndefinidoEl);
+        const d = dias(dia, seVuelveIndefinidoEl);
         if (d >= 0 && d <= exports.DIAS_PREAVISO)
             alertas.push({ tipo: 'SE_VUELVE_INDEFINIDO', dias: d });
     }
     if (etapa === 'LECTIVA' && contrato.fechaInicioPractica) {
-        const d = dias(hoy, contrato.fechaInicioPractica);
+        const d = dias(dia, contrato.fechaInicioPractica);
         if (d >= 0 && d <= exports.DIAS_PREAVISO)
             alertas.push({ tipo: 'CAMBIO_ETAPA_APRENDIZ', dias: d });
     }
