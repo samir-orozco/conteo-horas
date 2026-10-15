@@ -24,6 +24,11 @@ export type Empresa = $Result.DefaultSelection<Prisma.$EmpresaPayload>
  */
 export type Suscripcion = $Result.DefaultSelection<Prisma.$SuscripcionPayload>
 /**
+ * Model ConcesionFuncion
+ * 
+ */
+export type ConcesionFuncion = $Result.DefaultSelection<Prisma.$ConcesionFuncionPayload>
+/**
  * Model Pago
  * 
  */
@@ -674,6 +679,16 @@ export class PrismaClient<
     * ```
     */
   get suscripcion(): Prisma.SuscripcionDelegate<ExtArgs>;
+
+  /**
+   * `prisma.concesionFuncion`: Exposes CRUD operations for the **ConcesionFuncion** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more ConcesionFuncions
+    * const concesionFuncions = await prisma.concesionFuncion.findMany()
+    * ```
+    */
+  get concesionFuncion(): Prisma.ConcesionFuncionDelegate<ExtArgs>;
 
   /**
    * `prisma.pago`: Exposes CRUD operations for the **Pago** model.
@@ -1477,6 +1492,7 @@ export namespace Prisma {
   export const ModelName: {
     Empresa: 'Empresa',
     Suscripcion: 'Suscripcion',
+    ConcesionFuncion: 'ConcesionFuncion',
     Pago: 'Pago',
     ConfiguracionPlataforma: 'ConfiguracionPlataforma',
     JornadaVigencia: 'JornadaVigencia',
@@ -1528,7 +1544,7 @@ export namespace Prisma {
 
   export type TypeMap<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, ClientOptions = {}> = {
     meta: {
-      modelProps: "empresa" | "suscripcion" | "pago" | "configuracionPlataforma" | "jornadaVigencia" | "auxilioVigencia" | "tipoHora" | "horario" | "franjaHorario" | "plantillaTurno" | "dispositivoKiosco" | "colaborador" | "sede" | "colaboradorSede" | "diaEsperado" | "registro" | "permiso" | "diaFestivo" | "configuracion" | "notificacion" | "usuario" | "afiliado" | "comision" | "solicitudRetiro" | "registroCambio" | "descansoTrabajado" | "descansoTrabajadoCambio" | "vinculacionEvento" | "enlaceRegistroFacial" | "constanciaBiometrica" | "contrato" | "prorrogaContrato" | "eventoSistema" | "calificacionClima" | "observacionConfidencial" | "seguimientoClima" | "comentarioSeguimientoClima" | "resena"
+      modelProps: "empresa" | "suscripcion" | "concesionFuncion" | "pago" | "configuracionPlataforma" | "jornadaVigencia" | "auxilioVigencia" | "tipoHora" | "horario" | "franjaHorario" | "plantillaTurno" | "dispositivoKiosco" | "colaborador" | "sede" | "colaboradorSede" | "diaEsperado" | "registro" | "permiso" | "diaFestivo" | "configuracion" | "notificacion" | "usuario" | "afiliado" | "comision" | "solicitudRetiro" | "registroCambio" | "descansoTrabajado" | "descansoTrabajadoCambio" | "vinculacionEvento" | "enlaceRegistroFacial" | "constanciaBiometrica" | "contrato" | "prorrogaContrato" | "eventoSistema" | "calificacionClima" | "observacionConfidencial" | "seguimientoClima" | "comentarioSeguimientoClima" | "resena"
       txIsolationLevel: Prisma.TransactionIsolationLevel
     }
     model: {
@@ -1661,6 +1677,72 @@ export namespace Prisma {
           count: {
             args: Prisma.SuscripcionCountArgs<ExtArgs>
             result: $Utils.Optional<SuscripcionCountAggregateOutputType> | number
+          }
+        }
+      }
+      ConcesionFuncion: {
+        payload: Prisma.$ConcesionFuncionPayload<ExtArgs>
+        fields: Prisma.ConcesionFuncionFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.ConcesionFuncionFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ConcesionFuncionPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.ConcesionFuncionFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ConcesionFuncionPayload>
+          }
+          findFirst: {
+            args: Prisma.ConcesionFuncionFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ConcesionFuncionPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.ConcesionFuncionFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ConcesionFuncionPayload>
+          }
+          findMany: {
+            args: Prisma.ConcesionFuncionFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ConcesionFuncionPayload>[]
+          }
+          create: {
+            args: Prisma.ConcesionFuncionCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ConcesionFuncionPayload>
+          }
+          createMany: {
+            args: Prisma.ConcesionFuncionCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          delete: {
+            args: Prisma.ConcesionFuncionDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ConcesionFuncionPayload>
+          }
+          update: {
+            args: Prisma.ConcesionFuncionUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ConcesionFuncionPayload>
+          }
+          deleteMany: {
+            args: Prisma.ConcesionFuncionDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.ConcesionFuncionUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          upsert: {
+            args: Prisma.ConcesionFuncionUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ConcesionFuncionPayload>
+          }
+          aggregate: {
+            args: Prisma.ConcesionFuncionAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateConcesionFuncion>
+          }
+          groupBy: {
+            args: Prisma.ConcesionFuncionGroupByArgs<ExtArgs>
+            result: $Utils.Optional<ConcesionFuncionGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.ConcesionFuncionCountArgs<ExtArgs>
+            result: $Utils.Optional<ConcesionFuncionCountAggregateOutputType> | number
           }
         }
       }
@@ -4214,6 +4296,7 @@ export namespace Prisma {
     calificacionesClima: number
     notasConfidenciales: number
     seguimientosClima: number
+    concesiones: number
   }
 
   export type EmpresaCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -4230,6 +4313,7 @@ export namespace Prisma {
     calificacionesClima?: boolean | EmpresaCountOutputTypeCountCalificacionesClimaArgs
     notasConfidenciales?: boolean | EmpresaCountOutputTypeCountNotasConfidencialesArgs
     seguimientosClima?: boolean | EmpresaCountOutputTypeCountSeguimientosClimaArgs
+    concesiones?: boolean | EmpresaCountOutputTypeCountConcesionesArgs
   }
 
   // Custom InputTypes
@@ -4332,6 +4416,13 @@ export namespace Prisma {
    */
   export type EmpresaCountOutputTypeCountSeguimientosClimaArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     where?: SeguimientoClimaWhereInput
+  }
+
+  /**
+   * EmpresaCountOutputType without action
+   */
+  export type EmpresaCountOutputTypeCountConcesionesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: ConcesionFuncionWhereInput
   }
 
 
@@ -5063,6 +5154,7 @@ export namespace Prisma {
     notasConfidenciales?: boolean | Empresa$notasConfidencialesArgs<ExtArgs>
     seguimientosClima?: boolean | Empresa$seguimientosClimaArgs<ExtArgs>
     resena?: boolean | Empresa$resenaArgs<ExtArgs>
+    concesiones?: boolean | Empresa$concesionesArgs<ExtArgs>
     _count?: boolean | EmpresaCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["empresa"]>
 
@@ -5101,6 +5193,7 @@ export namespace Prisma {
     notasConfidenciales?: boolean | Empresa$notasConfidencialesArgs<ExtArgs>
     seguimientosClima?: boolean | Empresa$seguimientosClimaArgs<ExtArgs>
     resena?: boolean | Empresa$resenaArgs<ExtArgs>
+    concesiones?: boolean | Empresa$concesionesArgs<ExtArgs>
     _count?: boolean | EmpresaCountOutputTypeDefaultArgs<ExtArgs>
   }
 
@@ -5123,6 +5216,7 @@ export namespace Prisma {
       notasConfidenciales: Prisma.$ObservacionConfidencialPayload<ExtArgs>[]
       seguimientosClima: Prisma.$SeguimientoClimaPayload<ExtArgs>[]
       resena: Prisma.$ResenaPayload<ExtArgs> | null
+      concesiones: Prisma.$ConcesionFuncionPayload<ExtArgs>[]
     }
     scalars: $Extensions.GetPayloadResult<{
       id: string
@@ -5495,6 +5589,7 @@ export namespace Prisma {
     notasConfidenciales<T extends Empresa$notasConfidencialesArgs<ExtArgs> = {}>(args?: Subset<T, Empresa$notasConfidencialesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ObservacionConfidencialPayload<ExtArgs>, T, "findMany"> | Null>
     seguimientosClima<T extends Empresa$seguimientosClimaArgs<ExtArgs> = {}>(args?: Subset<T, Empresa$seguimientosClimaArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$SeguimientoClimaPayload<ExtArgs>, T, "findMany"> | Null>
     resena<T extends Empresa$resenaArgs<ExtArgs> = {}>(args?: Subset<T, Empresa$resenaArgs<ExtArgs>>): Prisma__ResenaClient<$Result.GetResult<Prisma.$ResenaPayload<ExtArgs>, T, "findUniqueOrThrow"> | null, null, ExtArgs>
+    concesiones<T extends Empresa$concesionesArgs<ExtArgs> = {}>(args?: Subset<T, Empresa$concesionesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ConcesionFuncionPayload<ExtArgs>, T, "findMany"> | Null>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -6139,6 +6234,26 @@ export namespace Prisma {
      */
     include?: ResenaInclude<ExtArgs> | null
     where?: ResenaWhereInput
+  }
+
+  /**
+   * Empresa.concesiones
+   */
+  export type Empresa$concesionesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ConcesionFuncion
+     */
+    select?: ConcesionFuncionSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ConcesionFuncionInclude<ExtArgs> | null
+    where?: ConcesionFuncionWhereInput
+    orderBy?: ConcesionFuncionOrderByWithRelationInput | ConcesionFuncionOrderByWithRelationInput[]
+    cursor?: ConcesionFuncionWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: ConcesionFuncionScalarFieldEnum | ConcesionFuncionScalarFieldEnum[]
   }
 
   /**
@@ -7247,6 +7362,951 @@ export namespace Prisma {
      * Choose, which related nodes to fetch as well
      */
     include?: SuscripcionInclude<ExtArgs> | null
+  }
+
+
+  /**
+   * Model ConcesionFuncion
+   */
+
+  export type AggregateConcesionFuncion = {
+    _count: ConcesionFuncionCountAggregateOutputType | null
+    _min: ConcesionFuncionMinAggregateOutputType | null
+    _max: ConcesionFuncionMaxAggregateOutputType | null
+  }
+
+  export type ConcesionFuncionMinAggregateOutputType = {
+    id: string | null
+    empresaId: string | null
+    funcion: string | null
+    desde: Date | null
+    hasta: Date | null
+    origen: string | null
+    otorgadaPorId: string | null
+    otorgadaPorNombre: string | null
+    revocadaEn: Date | null
+    creadoEn: Date | null
+    actualizadoEn: Date | null
+  }
+
+  export type ConcesionFuncionMaxAggregateOutputType = {
+    id: string | null
+    empresaId: string | null
+    funcion: string | null
+    desde: Date | null
+    hasta: Date | null
+    origen: string | null
+    otorgadaPorId: string | null
+    otorgadaPorNombre: string | null
+    revocadaEn: Date | null
+    creadoEn: Date | null
+    actualizadoEn: Date | null
+  }
+
+  export type ConcesionFuncionCountAggregateOutputType = {
+    id: number
+    empresaId: number
+    funcion: number
+    desde: number
+    hasta: number
+    origen: number
+    otorgadaPorId: number
+    otorgadaPorNombre: number
+    revocadaEn: number
+    creadoEn: number
+    actualizadoEn: number
+    _all: number
+  }
+
+
+  export type ConcesionFuncionMinAggregateInputType = {
+    id?: true
+    empresaId?: true
+    funcion?: true
+    desde?: true
+    hasta?: true
+    origen?: true
+    otorgadaPorId?: true
+    otorgadaPorNombre?: true
+    revocadaEn?: true
+    creadoEn?: true
+    actualizadoEn?: true
+  }
+
+  export type ConcesionFuncionMaxAggregateInputType = {
+    id?: true
+    empresaId?: true
+    funcion?: true
+    desde?: true
+    hasta?: true
+    origen?: true
+    otorgadaPorId?: true
+    otorgadaPorNombre?: true
+    revocadaEn?: true
+    creadoEn?: true
+    actualizadoEn?: true
+  }
+
+  export type ConcesionFuncionCountAggregateInputType = {
+    id?: true
+    empresaId?: true
+    funcion?: true
+    desde?: true
+    hasta?: true
+    origen?: true
+    otorgadaPorId?: true
+    otorgadaPorNombre?: true
+    revocadaEn?: true
+    creadoEn?: true
+    actualizadoEn?: true
+    _all?: true
+  }
+
+  export type ConcesionFuncionAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which ConcesionFuncion to aggregate.
+     */
+    where?: ConcesionFuncionWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of ConcesionFuncions to fetch.
+     */
+    orderBy?: ConcesionFuncionOrderByWithRelationInput | ConcesionFuncionOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: ConcesionFuncionWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` ConcesionFuncions from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` ConcesionFuncions.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned ConcesionFuncions
+    **/
+    _count?: true | ConcesionFuncionCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: ConcesionFuncionMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: ConcesionFuncionMaxAggregateInputType
+  }
+
+  export type GetConcesionFuncionAggregateType<T extends ConcesionFuncionAggregateArgs> = {
+        [P in keyof T & keyof AggregateConcesionFuncion]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateConcesionFuncion[P]>
+      : GetScalarType<T[P], AggregateConcesionFuncion[P]>
+  }
+
+
+
+
+  export type ConcesionFuncionGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: ConcesionFuncionWhereInput
+    orderBy?: ConcesionFuncionOrderByWithAggregationInput | ConcesionFuncionOrderByWithAggregationInput[]
+    by: ConcesionFuncionScalarFieldEnum[] | ConcesionFuncionScalarFieldEnum
+    having?: ConcesionFuncionScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: ConcesionFuncionCountAggregateInputType | true
+    _min?: ConcesionFuncionMinAggregateInputType
+    _max?: ConcesionFuncionMaxAggregateInputType
+  }
+
+  export type ConcesionFuncionGroupByOutputType = {
+    id: string
+    empresaId: string
+    funcion: string
+    desde: Date
+    hasta: Date
+    origen: string
+    otorgadaPorId: string | null
+    otorgadaPorNombre: string | null
+    revocadaEn: Date | null
+    creadoEn: Date
+    actualizadoEn: Date
+    _count: ConcesionFuncionCountAggregateOutputType | null
+    _min: ConcesionFuncionMinAggregateOutputType | null
+    _max: ConcesionFuncionMaxAggregateOutputType | null
+  }
+
+  type GetConcesionFuncionGroupByPayload<T extends ConcesionFuncionGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<ConcesionFuncionGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof ConcesionFuncionGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], ConcesionFuncionGroupByOutputType[P]>
+            : GetScalarType<T[P], ConcesionFuncionGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type ConcesionFuncionSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    empresaId?: boolean
+    funcion?: boolean
+    desde?: boolean
+    hasta?: boolean
+    origen?: boolean
+    otorgadaPorId?: boolean
+    otorgadaPorNombre?: boolean
+    revocadaEn?: boolean
+    creadoEn?: boolean
+    actualizadoEn?: boolean
+    empresa?: boolean | EmpresaDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["concesionFuncion"]>
+
+
+  export type ConcesionFuncionSelectScalar = {
+    id?: boolean
+    empresaId?: boolean
+    funcion?: boolean
+    desde?: boolean
+    hasta?: boolean
+    origen?: boolean
+    otorgadaPorId?: boolean
+    otorgadaPorNombre?: boolean
+    revocadaEn?: boolean
+    creadoEn?: boolean
+    actualizadoEn?: boolean
+  }
+
+  export type ConcesionFuncionInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    empresa?: boolean | EmpresaDefaultArgs<ExtArgs>
+  }
+
+  export type $ConcesionFuncionPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "ConcesionFuncion"
+    objects: {
+      empresa: Prisma.$EmpresaPayload<ExtArgs>
+    }
+    scalars: $Extensions.GetPayloadResult<{
+      id: string
+      empresaId: string
+      funcion: string
+      desde: Date
+      hasta: Date
+      origen: string
+      otorgadaPorId: string | null
+      otorgadaPorNombre: string | null
+      revocadaEn: Date | null
+      creadoEn: Date
+      actualizadoEn: Date
+    }, ExtArgs["result"]["concesionFuncion"]>
+    composites: {}
+  }
+
+  type ConcesionFuncionGetPayload<S extends boolean | null | undefined | ConcesionFuncionDefaultArgs> = $Result.GetResult<Prisma.$ConcesionFuncionPayload, S>
+
+  type ConcesionFuncionCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = 
+    Omit<ConcesionFuncionFindManyArgs, 'select' | 'include' | 'distinct'> & {
+      select?: ConcesionFuncionCountAggregateInputType | true
+    }
+
+  export interface ConcesionFuncionDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['ConcesionFuncion'], meta: { name: 'ConcesionFuncion' } }
+    /**
+     * Find zero or one ConcesionFuncion that matches the filter.
+     * @param {ConcesionFuncionFindUniqueArgs} args - Arguments to find a ConcesionFuncion
+     * @example
+     * // Get one ConcesionFuncion
+     * const concesionFuncion = await prisma.concesionFuncion.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends ConcesionFuncionFindUniqueArgs>(args: SelectSubset<T, ConcesionFuncionFindUniqueArgs<ExtArgs>>): Prisma__ConcesionFuncionClient<$Result.GetResult<Prisma.$ConcesionFuncionPayload<ExtArgs>, T, "findUnique"> | null, null, ExtArgs>
+
+    /**
+     * Find one ConcesionFuncion that matches the filter or throw an error with `error.code='P2025'` 
+     * if no matches were found.
+     * @param {ConcesionFuncionFindUniqueOrThrowArgs} args - Arguments to find a ConcesionFuncion
+     * @example
+     * // Get one ConcesionFuncion
+     * const concesionFuncion = await prisma.concesionFuncion.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends ConcesionFuncionFindUniqueOrThrowArgs>(args: SelectSubset<T, ConcesionFuncionFindUniqueOrThrowArgs<ExtArgs>>): Prisma__ConcesionFuncionClient<$Result.GetResult<Prisma.$ConcesionFuncionPayload<ExtArgs>, T, "findUniqueOrThrow">, never, ExtArgs>
+
+    /**
+     * Find the first ConcesionFuncion that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ConcesionFuncionFindFirstArgs} args - Arguments to find a ConcesionFuncion
+     * @example
+     * // Get one ConcesionFuncion
+     * const concesionFuncion = await prisma.concesionFuncion.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends ConcesionFuncionFindFirstArgs>(args?: SelectSubset<T, ConcesionFuncionFindFirstArgs<ExtArgs>>): Prisma__ConcesionFuncionClient<$Result.GetResult<Prisma.$ConcesionFuncionPayload<ExtArgs>, T, "findFirst"> | null, null, ExtArgs>
+
+    /**
+     * Find the first ConcesionFuncion that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ConcesionFuncionFindFirstOrThrowArgs} args - Arguments to find a ConcesionFuncion
+     * @example
+     * // Get one ConcesionFuncion
+     * const concesionFuncion = await prisma.concesionFuncion.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends ConcesionFuncionFindFirstOrThrowArgs>(args?: SelectSubset<T, ConcesionFuncionFindFirstOrThrowArgs<ExtArgs>>): Prisma__ConcesionFuncionClient<$Result.GetResult<Prisma.$ConcesionFuncionPayload<ExtArgs>, T, "findFirstOrThrow">, never, ExtArgs>
+
+    /**
+     * Find zero or more ConcesionFuncions that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ConcesionFuncionFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all ConcesionFuncions
+     * const concesionFuncions = await prisma.concesionFuncion.findMany()
+     * 
+     * // Get first 10 ConcesionFuncions
+     * const concesionFuncions = await prisma.concesionFuncion.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const concesionFuncionWithIdOnly = await prisma.concesionFuncion.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends ConcesionFuncionFindManyArgs>(args?: SelectSubset<T, ConcesionFuncionFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ConcesionFuncionPayload<ExtArgs>, T, "findMany">>
+
+    /**
+     * Create a ConcesionFuncion.
+     * @param {ConcesionFuncionCreateArgs} args - Arguments to create a ConcesionFuncion.
+     * @example
+     * // Create one ConcesionFuncion
+     * const ConcesionFuncion = await prisma.concesionFuncion.create({
+     *   data: {
+     *     // ... data to create a ConcesionFuncion
+     *   }
+     * })
+     * 
+     */
+    create<T extends ConcesionFuncionCreateArgs>(args: SelectSubset<T, ConcesionFuncionCreateArgs<ExtArgs>>): Prisma__ConcesionFuncionClient<$Result.GetResult<Prisma.$ConcesionFuncionPayload<ExtArgs>, T, "create">, never, ExtArgs>
+
+    /**
+     * Create many ConcesionFuncions.
+     * @param {ConcesionFuncionCreateManyArgs} args - Arguments to create many ConcesionFuncions.
+     * @example
+     * // Create many ConcesionFuncions
+     * const concesionFuncion = await prisma.concesionFuncion.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends ConcesionFuncionCreateManyArgs>(args?: SelectSubset<T, ConcesionFuncionCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Delete a ConcesionFuncion.
+     * @param {ConcesionFuncionDeleteArgs} args - Arguments to delete one ConcesionFuncion.
+     * @example
+     * // Delete one ConcesionFuncion
+     * const ConcesionFuncion = await prisma.concesionFuncion.delete({
+     *   where: {
+     *     // ... filter to delete one ConcesionFuncion
+     *   }
+     * })
+     * 
+     */
+    delete<T extends ConcesionFuncionDeleteArgs>(args: SelectSubset<T, ConcesionFuncionDeleteArgs<ExtArgs>>): Prisma__ConcesionFuncionClient<$Result.GetResult<Prisma.$ConcesionFuncionPayload<ExtArgs>, T, "delete">, never, ExtArgs>
+
+    /**
+     * Update one ConcesionFuncion.
+     * @param {ConcesionFuncionUpdateArgs} args - Arguments to update one ConcesionFuncion.
+     * @example
+     * // Update one ConcesionFuncion
+     * const concesionFuncion = await prisma.concesionFuncion.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends ConcesionFuncionUpdateArgs>(args: SelectSubset<T, ConcesionFuncionUpdateArgs<ExtArgs>>): Prisma__ConcesionFuncionClient<$Result.GetResult<Prisma.$ConcesionFuncionPayload<ExtArgs>, T, "update">, never, ExtArgs>
+
+    /**
+     * Delete zero or more ConcesionFuncions.
+     * @param {ConcesionFuncionDeleteManyArgs} args - Arguments to filter ConcesionFuncions to delete.
+     * @example
+     * // Delete a few ConcesionFuncions
+     * const { count } = await prisma.concesionFuncion.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends ConcesionFuncionDeleteManyArgs>(args?: SelectSubset<T, ConcesionFuncionDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more ConcesionFuncions.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ConcesionFuncionUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many ConcesionFuncions
+     * const concesionFuncion = await prisma.concesionFuncion.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends ConcesionFuncionUpdateManyArgs>(args: SelectSubset<T, ConcesionFuncionUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create or update one ConcesionFuncion.
+     * @param {ConcesionFuncionUpsertArgs} args - Arguments to update or create a ConcesionFuncion.
+     * @example
+     * // Update or create a ConcesionFuncion
+     * const concesionFuncion = await prisma.concesionFuncion.upsert({
+     *   create: {
+     *     // ... data to create a ConcesionFuncion
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the ConcesionFuncion we want to update
+     *   }
+     * })
+     */
+    upsert<T extends ConcesionFuncionUpsertArgs>(args: SelectSubset<T, ConcesionFuncionUpsertArgs<ExtArgs>>): Prisma__ConcesionFuncionClient<$Result.GetResult<Prisma.$ConcesionFuncionPayload<ExtArgs>, T, "upsert">, never, ExtArgs>
+
+
+    /**
+     * Count the number of ConcesionFuncions.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ConcesionFuncionCountArgs} args - Arguments to filter ConcesionFuncions to count.
+     * @example
+     * // Count the number of ConcesionFuncions
+     * const count = await prisma.concesionFuncion.count({
+     *   where: {
+     *     // ... the filter for the ConcesionFuncions we want to count
+     *   }
+     * })
+    **/
+    count<T extends ConcesionFuncionCountArgs>(
+      args?: Subset<T, ConcesionFuncionCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], ConcesionFuncionCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a ConcesionFuncion.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ConcesionFuncionAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends ConcesionFuncionAggregateArgs>(args: Subset<T, ConcesionFuncionAggregateArgs>): Prisma.PrismaPromise<GetConcesionFuncionAggregateType<T>>
+
+    /**
+     * Group by ConcesionFuncion.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ConcesionFuncionGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends ConcesionFuncionGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: ConcesionFuncionGroupByArgs['orderBy'] }
+        : { orderBy?: ConcesionFuncionGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, ConcesionFuncionGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetConcesionFuncionGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the ConcesionFuncion model
+   */
+  readonly fields: ConcesionFuncionFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for ConcesionFuncion.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__ConcesionFuncionClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    empresa<T extends EmpresaDefaultArgs<ExtArgs> = {}>(args?: Subset<T, EmpresaDefaultArgs<ExtArgs>>): Prisma__EmpresaClient<$Result.GetResult<Prisma.$EmpresaPayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the ConcesionFuncion model
+   */ 
+  interface ConcesionFuncionFieldRefs {
+    readonly id: FieldRef<"ConcesionFuncion", 'String'>
+    readonly empresaId: FieldRef<"ConcesionFuncion", 'String'>
+    readonly funcion: FieldRef<"ConcesionFuncion", 'String'>
+    readonly desde: FieldRef<"ConcesionFuncion", 'DateTime'>
+    readonly hasta: FieldRef<"ConcesionFuncion", 'DateTime'>
+    readonly origen: FieldRef<"ConcesionFuncion", 'String'>
+    readonly otorgadaPorId: FieldRef<"ConcesionFuncion", 'String'>
+    readonly otorgadaPorNombre: FieldRef<"ConcesionFuncion", 'String'>
+    readonly revocadaEn: FieldRef<"ConcesionFuncion", 'DateTime'>
+    readonly creadoEn: FieldRef<"ConcesionFuncion", 'DateTime'>
+    readonly actualizadoEn: FieldRef<"ConcesionFuncion", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * ConcesionFuncion findUnique
+   */
+  export type ConcesionFuncionFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ConcesionFuncion
+     */
+    select?: ConcesionFuncionSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ConcesionFuncionInclude<ExtArgs> | null
+    /**
+     * Filter, which ConcesionFuncion to fetch.
+     */
+    where: ConcesionFuncionWhereUniqueInput
+  }
+
+  /**
+   * ConcesionFuncion findUniqueOrThrow
+   */
+  export type ConcesionFuncionFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ConcesionFuncion
+     */
+    select?: ConcesionFuncionSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ConcesionFuncionInclude<ExtArgs> | null
+    /**
+     * Filter, which ConcesionFuncion to fetch.
+     */
+    where: ConcesionFuncionWhereUniqueInput
+  }
+
+  /**
+   * ConcesionFuncion findFirst
+   */
+  export type ConcesionFuncionFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ConcesionFuncion
+     */
+    select?: ConcesionFuncionSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ConcesionFuncionInclude<ExtArgs> | null
+    /**
+     * Filter, which ConcesionFuncion to fetch.
+     */
+    where?: ConcesionFuncionWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of ConcesionFuncions to fetch.
+     */
+    orderBy?: ConcesionFuncionOrderByWithRelationInput | ConcesionFuncionOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for ConcesionFuncions.
+     */
+    cursor?: ConcesionFuncionWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` ConcesionFuncions from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` ConcesionFuncions.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of ConcesionFuncions.
+     */
+    distinct?: ConcesionFuncionScalarFieldEnum | ConcesionFuncionScalarFieldEnum[]
+  }
+
+  /**
+   * ConcesionFuncion findFirstOrThrow
+   */
+  export type ConcesionFuncionFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ConcesionFuncion
+     */
+    select?: ConcesionFuncionSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ConcesionFuncionInclude<ExtArgs> | null
+    /**
+     * Filter, which ConcesionFuncion to fetch.
+     */
+    where?: ConcesionFuncionWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of ConcesionFuncions to fetch.
+     */
+    orderBy?: ConcesionFuncionOrderByWithRelationInput | ConcesionFuncionOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for ConcesionFuncions.
+     */
+    cursor?: ConcesionFuncionWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` ConcesionFuncions from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` ConcesionFuncions.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of ConcesionFuncions.
+     */
+    distinct?: ConcesionFuncionScalarFieldEnum | ConcesionFuncionScalarFieldEnum[]
+  }
+
+  /**
+   * ConcesionFuncion findMany
+   */
+  export type ConcesionFuncionFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ConcesionFuncion
+     */
+    select?: ConcesionFuncionSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ConcesionFuncionInclude<ExtArgs> | null
+    /**
+     * Filter, which ConcesionFuncions to fetch.
+     */
+    where?: ConcesionFuncionWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of ConcesionFuncions to fetch.
+     */
+    orderBy?: ConcesionFuncionOrderByWithRelationInput | ConcesionFuncionOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing ConcesionFuncions.
+     */
+    cursor?: ConcesionFuncionWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` ConcesionFuncions from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` ConcesionFuncions.
+     */
+    skip?: number
+    distinct?: ConcesionFuncionScalarFieldEnum | ConcesionFuncionScalarFieldEnum[]
+  }
+
+  /**
+   * ConcesionFuncion create
+   */
+  export type ConcesionFuncionCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ConcesionFuncion
+     */
+    select?: ConcesionFuncionSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ConcesionFuncionInclude<ExtArgs> | null
+    /**
+     * The data needed to create a ConcesionFuncion.
+     */
+    data: XOR<ConcesionFuncionCreateInput, ConcesionFuncionUncheckedCreateInput>
+  }
+
+  /**
+   * ConcesionFuncion createMany
+   */
+  export type ConcesionFuncionCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many ConcesionFuncions.
+     */
+    data: ConcesionFuncionCreateManyInput | ConcesionFuncionCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * ConcesionFuncion update
+   */
+  export type ConcesionFuncionUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ConcesionFuncion
+     */
+    select?: ConcesionFuncionSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ConcesionFuncionInclude<ExtArgs> | null
+    /**
+     * The data needed to update a ConcesionFuncion.
+     */
+    data: XOR<ConcesionFuncionUpdateInput, ConcesionFuncionUncheckedUpdateInput>
+    /**
+     * Choose, which ConcesionFuncion to update.
+     */
+    where: ConcesionFuncionWhereUniqueInput
+  }
+
+  /**
+   * ConcesionFuncion updateMany
+   */
+  export type ConcesionFuncionUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update ConcesionFuncions.
+     */
+    data: XOR<ConcesionFuncionUpdateManyMutationInput, ConcesionFuncionUncheckedUpdateManyInput>
+    /**
+     * Filter which ConcesionFuncions to update
+     */
+    where?: ConcesionFuncionWhereInput
+  }
+
+  /**
+   * ConcesionFuncion upsert
+   */
+  export type ConcesionFuncionUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ConcesionFuncion
+     */
+    select?: ConcesionFuncionSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ConcesionFuncionInclude<ExtArgs> | null
+    /**
+     * The filter to search for the ConcesionFuncion to update in case it exists.
+     */
+    where: ConcesionFuncionWhereUniqueInput
+    /**
+     * In case the ConcesionFuncion found by the `where` argument doesn't exist, create a new ConcesionFuncion with this data.
+     */
+    create: XOR<ConcesionFuncionCreateInput, ConcesionFuncionUncheckedCreateInput>
+    /**
+     * In case the ConcesionFuncion was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<ConcesionFuncionUpdateInput, ConcesionFuncionUncheckedUpdateInput>
+  }
+
+  /**
+   * ConcesionFuncion delete
+   */
+  export type ConcesionFuncionDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ConcesionFuncion
+     */
+    select?: ConcesionFuncionSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ConcesionFuncionInclude<ExtArgs> | null
+    /**
+     * Filter which ConcesionFuncion to delete.
+     */
+    where: ConcesionFuncionWhereUniqueInput
+  }
+
+  /**
+   * ConcesionFuncion deleteMany
+   */
+  export type ConcesionFuncionDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which ConcesionFuncions to delete
+     */
+    where?: ConcesionFuncionWhereInput
+  }
+
+  /**
+   * ConcesionFuncion without action
+   */
+  export type ConcesionFuncionDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ConcesionFuncion
+     */
+    select?: ConcesionFuncionSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ConcesionFuncionInclude<ExtArgs> | null
   }
 
 
@@ -42656,6 +43716,23 @@ export namespace Prisma {
   export type SuscripcionScalarFieldEnum = (typeof SuscripcionScalarFieldEnum)[keyof typeof SuscripcionScalarFieldEnum]
 
 
+  export const ConcesionFuncionScalarFieldEnum: {
+    id: 'id',
+    empresaId: 'empresaId',
+    funcion: 'funcion',
+    desde: 'desde',
+    hasta: 'hasta',
+    origen: 'origen',
+    otorgadaPorId: 'otorgadaPorId',
+    otorgadaPorNombre: 'otorgadaPorNombre',
+    revocadaEn: 'revocadaEn',
+    creadoEn: 'creadoEn',
+    actualizadoEn: 'actualizadoEn'
+  };
+
+  export type ConcesionFuncionScalarFieldEnum = (typeof ConcesionFuncionScalarFieldEnum)[keyof typeof ConcesionFuncionScalarFieldEnum]
+
+
   export const PagoScalarFieldEnum: {
     id: 'id',
     suscripcionId: 'suscripcionId',
@@ -43560,6 +44637,7 @@ export namespace Prisma {
     notasConfidenciales?: ObservacionConfidencialListRelationFilter
     seguimientosClima?: SeguimientoClimaListRelationFilter
     resena?: XOR<ResenaNullableRelationFilter, ResenaWhereInput> | null
+    concesiones?: ConcesionFuncionListRelationFilter
   }
 
   export type EmpresaOrderByWithRelationInput = {
@@ -43593,6 +44671,7 @@ export namespace Prisma {
     notasConfidenciales?: ObservacionConfidencialOrderByRelationAggregateInput
     seguimientosClima?: SeguimientoClimaOrderByRelationAggregateInput
     resena?: ResenaOrderByWithRelationInput
+    concesiones?: ConcesionFuncionOrderByRelationAggregateInput
   }
 
   export type EmpresaWhereUniqueInput = Prisma.AtLeast<{
@@ -43629,6 +44708,7 @@ export namespace Prisma {
     notasConfidenciales?: ObservacionConfidencialListRelationFilter
     seguimientosClima?: SeguimientoClimaListRelationFilter
     resena?: XOR<ResenaNullableRelationFilter, ResenaWhereInput> | null
+    concesiones?: ConcesionFuncionListRelationFilter
   }, "id" | "nit" | "marcadorToken">
 
   export type EmpresaOrderByWithAggregationInput = {
@@ -43794,6 +44874,91 @@ export namespace Prisma {
     wompiFuentePagoId?: StringNullableWithAggregatesFilter<"Suscripcion"> | string | null
     creadoEn?: DateTimeWithAggregatesFilter<"Suscripcion"> | Date | string
     actualizadoEn?: DateTimeWithAggregatesFilter<"Suscripcion"> | Date | string
+  }
+
+  export type ConcesionFuncionWhereInput = {
+    AND?: ConcesionFuncionWhereInput | ConcesionFuncionWhereInput[]
+    OR?: ConcesionFuncionWhereInput[]
+    NOT?: ConcesionFuncionWhereInput | ConcesionFuncionWhereInput[]
+    id?: StringFilter<"ConcesionFuncion"> | string
+    empresaId?: StringFilter<"ConcesionFuncion"> | string
+    funcion?: StringFilter<"ConcesionFuncion"> | string
+    desde?: DateTimeFilter<"ConcesionFuncion"> | Date | string
+    hasta?: DateTimeFilter<"ConcesionFuncion"> | Date | string
+    origen?: StringFilter<"ConcesionFuncion"> | string
+    otorgadaPorId?: StringNullableFilter<"ConcesionFuncion"> | string | null
+    otorgadaPorNombre?: StringNullableFilter<"ConcesionFuncion"> | string | null
+    revocadaEn?: DateTimeNullableFilter<"ConcesionFuncion"> | Date | string | null
+    creadoEn?: DateTimeFilter<"ConcesionFuncion"> | Date | string
+    actualizadoEn?: DateTimeFilter<"ConcesionFuncion"> | Date | string
+    empresa?: XOR<EmpresaRelationFilter, EmpresaWhereInput>
+  }
+
+  export type ConcesionFuncionOrderByWithRelationInput = {
+    id?: SortOrder
+    empresaId?: SortOrder
+    funcion?: SortOrder
+    desde?: SortOrder
+    hasta?: SortOrder
+    origen?: SortOrder
+    otorgadaPorId?: SortOrderInput | SortOrder
+    otorgadaPorNombre?: SortOrderInput | SortOrder
+    revocadaEn?: SortOrderInput | SortOrder
+    creadoEn?: SortOrder
+    actualizadoEn?: SortOrder
+    empresa?: EmpresaOrderByWithRelationInput
+  }
+
+  export type ConcesionFuncionWhereUniqueInput = Prisma.AtLeast<{
+    id?: string
+    AND?: ConcesionFuncionWhereInput | ConcesionFuncionWhereInput[]
+    OR?: ConcesionFuncionWhereInput[]
+    NOT?: ConcesionFuncionWhereInput | ConcesionFuncionWhereInput[]
+    empresaId?: StringFilter<"ConcesionFuncion"> | string
+    funcion?: StringFilter<"ConcesionFuncion"> | string
+    desde?: DateTimeFilter<"ConcesionFuncion"> | Date | string
+    hasta?: DateTimeFilter<"ConcesionFuncion"> | Date | string
+    origen?: StringFilter<"ConcesionFuncion"> | string
+    otorgadaPorId?: StringNullableFilter<"ConcesionFuncion"> | string | null
+    otorgadaPorNombre?: StringNullableFilter<"ConcesionFuncion"> | string | null
+    revocadaEn?: DateTimeNullableFilter<"ConcesionFuncion"> | Date | string | null
+    creadoEn?: DateTimeFilter<"ConcesionFuncion"> | Date | string
+    actualizadoEn?: DateTimeFilter<"ConcesionFuncion"> | Date | string
+    empresa?: XOR<EmpresaRelationFilter, EmpresaWhereInput>
+  }, "id">
+
+  export type ConcesionFuncionOrderByWithAggregationInput = {
+    id?: SortOrder
+    empresaId?: SortOrder
+    funcion?: SortOrder
+    desde?: SortOrder
+    hasta?: SortOrder
+    origen?: SortOrder
+    otorgadaPorId?: SortOrderInput | SortOrder
+    otorgadaPorNombre?: SortOrderInput | SortOrder
+    revocadaEn?: SortOrderInput | SortOrder
+    creadoEn?: SortOrder
+    actualizadoEn?: SortOrder
+    _count?: ConcesionFuncionCountOrderByAggregateInput
+    _max?: ConcesionFuncionMaxOrderByAggregateInput
+    _min?: ConcesionFuncionMinOrderByAggregateInput
+  }
+
+  export type ConcesionFuncionScalarWhereWithAggregatesInput = {
+    AND?: ConcesionFuncionScalarWhereWithAggregatesInput | ConcesionFuncionScalarWhereWithAggregatesInput[]
+    OR?: ConcesionFuncionScalarWhereWithAggregatesInput[]
+    NOT?: ConcesionFuncionScalarWhereWithAggregatesInput | ConcesionFuncionScalarWhereWithAggregatesInput[]
+    id?: StringWithAggregatesFilter<"ConcesionFuncion"> | string
+    empresaId?: StringWithAggregatesFilter<"ConcesionFuncion"> | string
+    funcion?: StringWithAggregatesFilter<"ConcesionFuncion"> | string
+    desde?: DateTimeWithAggregatesFilter<"ConcesionFuncion"> | Date | string
+    hasta?: DateTimeWithAggregatesFilter<"ConcesionFuncion"> | Date | string
+    origen?: StringWithAggregatesFilter<"ConcesionFuncion"> | string
+    otorgadaPorId?: StringNullableWithAggregatesFilter<"ConcesionFuncion"> | string | null
+    otorgadaPorNombre?: StringNullableWithAggregatesFilter<"ConcesionFuncion"> | string | null
+    revocadaEn?: DateTimeNullableWithAggregatesFilter<"ConcesionFuncion"> | Date | string | null
+    creadoEn?: DateTimeWithAggregatesFilter<"ConcesionFuncion"> | Date | string
+    actualizadoEn?: DateTimeWithAggregatesFilter<"ConcesionFuncion"> | Date | string
   }
 
   export type PagoWhereInput = {
@@ -47033,6 +48198,7 @@ export namespace Prisma {
     notasConfidenciales?: ObservacionConfidencialCreateNestedManyWithoutEmpresaInput
     seguimientosClima?: SeguimientoClimaCreateNestedManyWithoutEmpresaInput
     resena?: ResenaCreateNestedOneWithoutEmpresaInput
+    concesiones?: ConcesionFuncionCreateNestedManyWithoutEmpresaInput
   }
 
   export type EmpresaUncheckedCreateInput = {
@@ -47065,6 +48231,7 @@ export namespace Prisma {
     notasConfidenciales?: ObservacionConfidencialUncheckedCreateNestedManyWithoutEmpresaInput
     seguimientosClima?: SeguimientoClimaUncheckedCreateNestedManyWithoutEmpresaInput
     resena?: ResenaUncheckedCreateNestedOneWithoutEmpresaInput
+    concesiones?: ConcesionFuncionUncheckedCreateNestedManyWithoutEmpresaInput
   }
 
   export type EmpresaUpdateInput = {
@@ -47097,6 +48264,7 @@ export namespace Prisma {
     notasConfidenciales?: ObservacionConfidencialUpdateManyWithoutEmpresaNestedInput
     seguimientosClima?: SeguimientoClimaUpdateManyWithoutEmpresaNestedInput
     resena?: ResenaUpdateOneWithoutEmpresaNestedInput
+    concesiones?: ConcesionFuncionUpdateManyWithoutEmpresaNestedInput
   }
 
   export type EmpresaUncheckedUpdateInput = {
@@ -47129,6 +48297,7 @@ export namespace Prisma {
     notasConfidenciales?: ObservacionConfidencialUncheckedUpdateManyWithoutEmpresaNestedInput
     seguimientosClima?: SeguimientoClimaUncheckedUpdateManyWithoutEmpresaNestedInput
     resena?: ResenaUncheckedUpdateOneWithoutEmpresaNestedInput
+    concesiones?: ConcesionFuncionUncheckedUpdateManyWithoutEmpresaNestedInput
   }
 
   export type EmpresaCreateManyInput = {
@@ -47327,6 +48496,103 @@ export namespace Prisma {
     limiteTramo1?: NullableIntFieldUpdateOperationsInput | number | null
     precioTramo2?: NullableIntFieldUpdateOperationsInput | number | null
     wompiFuentePagoId?: NullableStringFieldUpdateOperationsInput | string | null
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type ConcesionFuncionCreateInput = {
+    id?: string
+    funcion: string
+    desde?: Date | string
+    hasta: Date | string
+    origen: string
+    otorgadaPorId?: string | null
+    otorgadaPorNombre?: string | null
+    revocadaEn?: Date | string | null
+    creadoEn?: Date | string
+    actualizadoEn?: Date | string
+    empresa: EmpresaCreateNestedOneWithoutConcesionesInput
+  }
+
+  export type ConcesionFuncionUncheckedCreateInput = {
+    id?: string
+    empresaId: string
+    funcion: string
+    desde?: Date | string
+    hasta: Date | string
+    origen: string
+    otorgadaPorId?: string | null
+    otorgadaPorNombre?: string | null
+    revocadaEn?: Date | string | null
+    creadoEn?: Date | string
+    actualizadoEn?: Date | string
+  }
+
+  export type ConcesionFuncionUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    funcion?: StringFieldUpdateOperationsInput | string
+    desde?: DateTimeFieldUpdateOperationsInput | Date | string
+    hasta?: DateTimeFieldUpdateOperationsInput | Date | string
+    origen?: StringFieldUpdateOperationsInput | string
+    otorgadaPorId?: NullableStringFieldUpdateOperationsInput | string | null
+    otorgadaPorNombre?: NullableStringFieldUpdateOperationsInput | string | null
+    revocadaEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    empresa?: EmpresaUpdateOneRequiredWithoutConcesionesNestedInput
+  }
+
+  export type ConcesionFuncionUncheckedUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    empresaId?: StringFieldUpdateOperationsInput | string
+    funcion?: StringFieldUpdateOperationsInput | string
+    desde?: DateTimeFieldUpdateOperationsInput | Date | string
+    hasta?: DateTimeFieldUpdateOperationsInput | Date | string
+    origen?: StringFieldUpdateOperationsInput | string
+    otorgadaPorId?: NullableStringFieldUpdateOperationsInput | string | null
+    otorgadaPorNombre?: NullableStringFieldUpdateOperationsInput | string | null
+    revocadaEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type ConcesionFuncionCreateManyInput = {
+    id?: string
+    empresaId: string
+    funcion: string
+    desde?: Date | string
+    hasta: Date | string
+    origen: string
+    otorgadaPorId?: string | null
+    otorgadaPorNombre?: string | null
+    revocadaEn?: Date | string | null
+    creadoEn?: Date | string
+    actualizadoEn?: Date | string
+  }
+
+  export type ConcesionFuncionUpdateManyMutationInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    funcion?: StringFieldUpdateOperationsInput | string
+    desde?: DateTimeFieldUpdateOperationsInput | Date | string
+    hasta?: DateTimeFieldUpdateOperationsInput | Date | string
+    origen?: StringFieldUpdateOperationsInput | string
+    otorgadaPorId?: NullableStringFieldUpdateOperationsInput | string | null
+    otorgadaPorNombre?: NullableStringFieldUpdateOperationsInput | string | null
+    revocadaEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type ConcesionFuncionUncheckedUpdateManyInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    empresaId?: StringFieldUpdateOperationsInput | string
+    funcion?: StringFieldUpdateOperationsInput | string
+    desde?: DateTimeFieldUpdateOperationsInput | Date | string
+    hasta?: DateTimeFieldUpdateOperationsInput | Date | string
+    origen?: StringFieldUpdateOperationsInput | string
+    otorgadaPorId?: NullableStringFieldUpdateOperationsInput | string | null
+    otorgadaPorNombre?: NullableStringFieldUpdateOperationsInput | string | null
+    revocadaEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -51077,6 +52343,12 @@ export namespace Prisma {
     isNot?: ResenaWhereInput | null
   }
 
+  export type ConcesionFuncionListRelationFilter = {
+    every?: ConcesionFuncionWhereInput
+    some?: ConcesionFuncionWhereInput
+    none?: ConcesionFuncionWhereInput
+  }
+
   export type SortOrderInput = {
     sort: SortOrder
     nulls?: NullsOrder
@@ -51131,6 +52403,10 @@ export namespace Prisma {
   }
 
   export type SeguimientoClimaOrderByRelationAggregateInput = {
+    _count?: SortOrder
+  }
+
+  export type ConcesionFuncionOrderByRelationAggregateInput = {
     _count?: SortOrder
   }
 
@@ -51436,6 +52712,48 @@ export namespace Prisma {
     _count?: NestedIntNullableFilter<$PrismaModel>
     _min?: NestedJsonNullableFilter<$PrismaModel>
     _max?: NestedJsonNullableFilter<$PrismaModel>
+  }
+
+  export type ConcesionFuncionCountOrderByAggregateInput = {
+    id?: SortOrder
+    empresaId?: SortOrder
+    funcion?: SortOrder
+    desde?: SortOrder
+    hasta?: SortOrder
+    origen?: SortOrder
+    otorgadaPorId?: SortOrder
+    otorgadaPorNombre?: SortOrder
+    revocadaEn?: SortOrder
+    creadoEn?: SortOrder
+    actualizadoEn?: SortOrder
+  }
+
+  export type ConcesionFuncionMaxOrderByAggregateInput = {
+    id?: SortOrder
+    empresaId?: SortOrder
+    funcion?: SortOrder
+    desde?: SortOrder
+    hasta?: SortOrder
+    origen?: SortOrder
+    otorgadaPorId?: SortOrder
+    otorgadaPorNombre?: SortOrder
+    revocadaEn?: SortOrder
+    creadoEn?: SortOrder
+    actualizadoEn?: SortOrder
+  }
+
+  export type ConcesionFuncionMinOrderByAggregateInput = {
+    id?: SortOrder
+    empresaId?: SortOrder
+    funcion?: SortOrder
+    desde?: SortOrder
+    hasta?: SortOrder
+    origen?: SortOrder
+    otorgadaPorId?: SortOrder
+    otorgadaPorNombre?: SortOrder
+    revocadaEn?: SortOrder
+    creadoEn?: SortOrder
+    actualizadoEn?: SortOrder
   }
 
   export type FloatFilter<$PrismaModel = never> = {
@@ -54056,6 +55374,13 @@ export namespace Prisma {
     connect?: ResenaWhereUniqueInput
   }
 
+  export type ConcesionFuncionCreateNestedManyWithoutEmpresaInput = {
+    create?: XOR<ConcesionFuncionCreateWithoutEmpresaInput, ConcesionFuncionUncheckedCreateWithoutEmpresaInput> | ConcesionFuncionCreateWithoutEmpresaInput[] | ConcesionFuncionUncheckedCreateWithoutEmpresaInput[]
+    connectOrCreate?: ConcesionFuncionCreateOrConnectWithoutEmpresaInput | ConcesionFuncionCreateOrConnectWithoutEmpresaInput[]
+    createMany?: ConcesionFuncionCreateManyEmpresaInputEnvelope
+    connect?: ConcesionFuncionWhereUniqueInput | ConcesionFuncionWhereUniqueInput[]
+  }
+
   export type UsuarioUncheckedCreateNestedManyWithoutEmpresaInput = {
     create?: XOR<UsuarioCreateWithoutEmpresaInput, UsuarioUncheckedCreateWithoutEmpresaInput> | UsuarioCreateWithoutEmpresaInput[] | UsuarioUncheckedCreateWithoutEmpresaInput[]
     connectOrCreate?: UsuarioCreateOrConnectWithoutEmpresaInput | UsuarioCreateOrConnectWithoutEmpresaInput[]
@@ -54157,6 +55482,13 @@ export namespace Prisma {
     create?: XOR<ResenaCreateWithoutEmpresaInput, ResenaUncheckedCreateWithoutEmpresaInput>
     connectOrCreate?: ResenaCreateOrConnectWithoutEmpresaInput
     connect?: ResenaWhereUniqueInput
+  }
+
+  export type ConcesionFuncionUncheckedCreateNestedManyWithoutEmpresaInput = {
+    create?: XOR<ConcesionFuncionCreateWithoutEmpresaInput, ConcesionFuncionUncheckedCreateWithoutEmpresaInput> | ConcesionFuncionCreateWithoutEmpresaInput[] | ConcesionFuncionUncheckedCreateWithoutEmpresaInput[]
+    connectOrCreate?: ConcesionFuncionCreateOrConnectWithoutEmpresaInput | ConcesionFuncionCreateOrConnectWithoutEmpresaInput[]
+    createMany?: ConcesionFuncionCreateManyEmpresaInputEnvelope
+    connect?: ConcesionFuncionWhereUniqueInput | ConcesionFuncionWhereUniqueInput[]
   }
 
   export type StringFieldUpdateOperationsInput = {
@@ -54391,6 +55723,20 @@ export namespace Prisma {
     update?: XOR<XOR<ResenaUpdateToOneWithWhereWithoutEmpresaInput, ResenaUpdateWithoutEmpresaInput>, ResenaUncheckedUpdateWithoutEmpresaInput>
   }
 
+  export type ConcesionFuncionUpdateManyWithoutEmpresaNestedInput = {
+    create?: XOR<ConcesionFuncionCreateWithoutEmpresaInput, ConcesionFuncionUncheckedCreateWithoutEmpresaInput> | ConcesionFuncionCreateWithoutEmpresaInput[] | ConcesionFuncionUncheckedCreateWithoutEmpresaInput[]
+    connectOrCreate?: ConcesionFuncionCreateOrConnectWithoutEmpresaInput | ConcesionFuncionCreateOrConnectWithoutEmpresaInput[]
+    upsert?: ConcesionFuncionUpsertWithWhereUniqueWithoutEmpresaInput | ConcesionFuncionUpsertWithWhereUniqueWithoutEmpresaInput[]
+    createMany?: ConcesionFuncionCreateManyEmpresaInputEnvelope
+    set?: ConcesionFuncionWhereUniqueInput | ConcesionFuncionWhereUniqueInput[]
+    disconnect?: ConcesionFuncionWhereUniqueInput | ConcesionFuncionWhereUniqueInput[]
+    delete?: ConcesionFuncionWhereUniqueInput | ConcesionFuncionWhereUniqueInput[]
+    connect?: ConcesionFuncionWhereUniqueInput | ConcesionFuncionWhereUniqueInput[]
+    update?: ConcesionFuncionUpdateWithWhereUniqueWithoutEmpresaInput | ConcesionFuncionUpdateWithWhereUniqueWithoutEmpresaInput[]
+    updateMany?: ConcesionFuncionUpdateManyWithWhereWithoutEmpresaInput | ConcesionFuncionUpdateManyWithWhereWithoutEmpresaInput[]
+    deleteMany?: ConcesionFuncionScalarWhereInput | ConcesionFuncionScalarWhereInput[]
+  }
+
   export type UsuarioUncheckedUpdateManyWithoutEmpresaNestedInput = {
     create?: XOR<UsuarioCreateWithoutEmpresaInput, UsuarioUncheckedCreateWithoutEmpresaInput> | UsuarioCreateWithoutEmpresaInput[] | UsuarioUncheckedCreateWithoutEmpresaInput[]
     connectOrCreate?: UsuarioCreateOrConnectWithoutEmpresaInput | UsuarioCreateOrConnectWithoutEmpresaInput[]
@@ -54593,6 +55939,20 @@ export namespace Prisma {
     update?: XOR<XOR<ResenaUpdateToOneWithWhereWithoutEmpresaInput, ResenaUpdateWithoutEmpresaInput>, ResenaUncheckedUpdateWithoutEmpresaInput>
   }
 
+  export type ConcesionFuncionUncheckedUpdateManyWithoutEmpresaNestedInput = {
+    create?: XOR<ConcesionFuncionCreateWithoutEmpresaInput, ConcesionFuncionUncheckedCreateWithoutEmpresaInput> | ConcesionFuncionCreateWithoutEmpresaInput[] | ConcesionFuncionUncheckedCreateWithoutEmpresaInput[]
+    connectOrCreate?: ConcesionFuncionCreateOrConnectWithoutEmpresaInput | ConcesionFuncionCreateOrConnectWithoutEmpresaInput[]
+    upsert?: ConcesionFuncionUpsertWithWhereUniqueWithoutEmpresaInput | ConcesionFuncionUpsertWithWhereUniqueWithoutEmpresaInput[]
+    createMany?: ConcesionFuncionCreateManyEmpresaInputEnvelope
+    set?: ConcesionFuncionWhereUniqueInput | ConcesionFuncionWhereUniqueInput[]
+    disconnect?: ConcesionFuncionWhereUniqueInput | ConcesionFuncionWhereUniqueInput[]
+    delete?: ConcesionFuncionWhereUniqueInput | ConcesionFuncionWhereUniqueInput[]
+    connect?: ConcesionFuncionWhereUniqueInput | ConcesionFuncionWhereUniqueInput[]
+    update?: ConcesionFuncionUpdateWithWhereUniqueWithoutEmpresaInput | ConcesionFuncionUpdateWithWhereUniqueWithoutEmpresaInput[]
+    updateMany?: ConcesionFuncionUpdateManyWithWhereWithoutEmpresaInput | ConcesionFuncionUpdateManyWithWhereWithoutEmpresaInput[]
+    deleteMany?: ConcesionFuncionScalarWhereInput | ConcesionFuncionScalarWhereInput[]
+  }
+
   export type EmpresaCreateNestedOneWithoutSuscripcionInput = {
     create?: XOR<EmpresaCreateWithoutSuscripcionInput, EmpresaUncheckedCreateWithoutSuscripcionInput>
     connectOrCreate?: EmpresaCreateOrConnectWithoutSuscripcionInput
@@ -54659,6 +56019,20 @@ export namespace Prisma {
     update?: PagoUpdateWithWhereUniqueWithoutSuscripcionInput | PagoUpdateWithWhereUniqueWithoutSuscripcionInput[]
     updateMany?: PagoUpdateManyWithWhereWithoutSuscripcionInput | PagoUpdateManyWithWhereWithoutSuscripcionInput[]
     deleteMany?: PagoScalarWhereInput | PagoScalarWhereInput[]
+  }
+
+  export type EmpresaCreateNestedOneWithoutConcesionesInput = {
+    create?: XOR<EmpresaCreateWithoutConcesionesInput, EmpresaUncheckedCreateWithoutConcesionesInput>
+    connectOrCreate?: EmpresaCreateOrConnectWithoutConcesionesInput
+    connect?: EmpresaWhereUniqueInput
+  }
+
+  export type EmpresaUpdateOneRequiredWithoutConcesionesNestedInput = {
+    create?: XOR<EmpresaCreateWithoutConcesionesInput, EmpresaUncheckedCreateWithoutConcesionesInput>
+    connectOrCreate?: EmpresaCreateOrConnectWithoutConcesionesInput
+    upsert?: EmpresaUpsertWithoutConcesionesInput
+    connect?: EmpresaWhereUniqueInput
+    update?: XOR<XOR<EmpresaUpdateToOneWithWhereWithoutConcesionesInput, EmpresaUpdateWithoutConcesionesInput>, EmpresaUncheckedUpdateWithoutConcesionesInput>
   }
 
   export type SuscripcionCreateNestedOneWithoutPagosInput = {
@@ -57896,6 +59270,42 @@ export namespace Prisma {
     create: XOR<ResenaCreateWithoutEmpresaInput, ResenaUncheckedCreateWithoutEmpresaInput>
   }
 
+  export type ConcesionFuncionCreateWithoutEmpresaInput = {
+    id?: string
+    funcion: string
+    desde?: Date | string
+    hasta: Date | string
+    origen: string
+    otorgadaPorId?: string | null
+    otorgadaPorNombre?: string | null
+    revocadaEn?: Date | string | null
+    creadoEn?: Date | string
+    actualizadoEn?: Date | string
+  }
+
+  export type ConcesionFuncionUncheckedCreateWithoutEmpresaInput = {
+    id?: string
+    funcion: string
+    desde?: Date | string
+    hasta: Date | string
+    origen: string
+    otorgadaPorId?: string | null
+    otorgadaPorNombre?: string | null
+    revocadaEn?: Date | string | null
+    creadoEn?: Date | string
+    actualizadoEn?: Date | string
+  }
+
+  export type ConcesionFuncionCreateOrConnectWithoutEmpresaInput = {
+    where: ConcesionFuncionWhereUniqueInput
+    create: XOR<ConcesionFuncionCreateWithoutEmpresaInput, ConcesionFuncionUncheckedCreateWithoutEmpresaInput>
+  }
+
+  export type ConcesionFuncionCreateManyEmpresaInputEnvelope = {
+    data: ConcesionFuncionCreateManyEmpresaInput | ConcesionFuncionCreateManyEmpresaInput[]
+    skipDuplicates?: boolean
+  }
+
   export type UsuarioUpsertWithWhereUniqueWithoutEmpresaInput = {
     where: UsuarioWhereUniqueInput
     update: XOR<UsuarioUpdateWithoutEmpresaInput, UsuarioUncheckedUpdateWithoutEmpresaInput>
@@ -58486,6 +59896,39 @@ export namespace Prisma {
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
+  export type ConcesionFuncionUpsertWithWhereUniqueWithoutEmpresaInput = {
+    where: ConcesionFuncionWhereUniqueInput
+    update: XOR<ConcesionFuncionUpdateWithoutEmpresaInput, ConcesionFuncionUncheckedUpdateWithoutEmpresaInput>
+    create: XOR<ConcesionFuncionCreateWithoutEmpresaInput, ConcesionFuncionUncheckedCreateWithoutEmpresaInput>
+  }
+
+  export type ConcesionFuncionUpdateWithWhereUniqueWithoutEmpresaInput = {
+    where: ConcesionFuncionWhereUniqueInput
+    data: XOR<ConcesionFuncionUpdateWithoutEmpresaInput, ConcesionFuncionUncheckedUpdateWithoutEmpresaInput>
+  }
+
+  export type ConcesionFuncionUpdateManyWithWhereWithoutEmpresaInput = {
+    where: ConcesionFuncionScalarWhereInput
+    data: XOR<ConcesionFuncionUpdateManyMutationInput, ConcesionFuncionUncheckedUpdateManyWithoutEmpresaInput>
+  }
+
+  export type ConcesionFuncionScalarWhereInput = {
+    AND?: ConcesionFuncionScalarWhereInput | ConcesionFuncionScalarWhereInput[]
+    OR?: ConcesionFuncionScalarWhereInput[]
+    NOT?: ConcesionFuncionScalarWhereInput | ConcesionFuncionScalarWhereInput[]
+    id?: StringFilter<"ConcesionFuncion"> | string
+    empresaId?: StringFilter<"ConcesionFuncion"> | string
+    funcion?: StringFilter<"ConcesionFuncion"> | string
+    desde?: DateTimeFilter<"ConcesionFuncion"> | Date | string
+    hasta?: DateTimeFilter<"ConcesionFuncion"> | Date | string
+    origen?: StringFilter<"ConcesionFuncion"> | string
+    otorgadaPorId?: StringNullableFilter<"ConcesionFuncion"> | string | null
+    otorgadaPorNombre?: StringNullableFilter<"ConcesionFuncion"> | string | null
+    revocadaEn?: DateTimeNullableFilter<"ConcesionFuncion"> | Date | string | null
+    creadoEn?: DateTimeFilter<"ConcesionFuncion"> | Date | string
+    actualizadoEn?: DateTimeFilter<"ConcesionFuncion"> | Date | string
+  }
+
   export type EmpresaCreateWithoutSuscripcionInput = {
     id?: string
     nombre: string
@@ -58515,6 +59958,7 @@ export namespace Prisma {
     notasConfidenciales?: ObservacionConfidencialCreateNestedManyWithoutEmpresaInput
     seguimientosClima?: SeguimientoClimaCreateNestedManyWithoutEmpresaInput
     resena?: ResenaCreateNestedOneWithoutEmpresaInput
+    concesiones?: ConcesionFuncionCreateNestedManyWithoutEmpresaInput
   }
 
   export type EmpresaUncheckedCreateWithoutSuscripcionInput = {
@@ -58546,6 +59990,7 @@ export namespace Prisma {
     notasConfidenciales?: ObservacionConfidencialUncheckedCreateNestedManyWithoutEmpresaInput
     seguimientosClima?: SeguimientoClimaUncheckedCreateNestedManyWithoutEmpresaInput
     resena?: ResenaUncheckedCreateNestedOneWithoutEmpresaInput
+    concesiones?: ConcesionFuncionUncheckedCreateNestedManyWithoutEmpresaInput
   }
 
   export type EmpresaCreateOrConnectWithoutSuscripcionInput = {
@@ -58635,6 +60080,7 @@ export namespace Prisma {
     notasConfidenciales?: ObservacionConfidencialUpdateManyWithoutEmpresaNestedInput
     seguimientosClima?: SeguimientoClimaUpdateManyWithoutEmpresaNestedInput
     resena?: ResenaUpdateOneWithoutEmpresaNestedInput
+    concesiones?: ConcesionFuncionUpdateManyWithoutEmpresaNestedInput
   }
 
   export type EmpresaUncheckedUpdateWithoutSuscripcionInput = {
@@ -58666,6 +60112,7 @@ export namespace Prisma {
     notasConfidenciales?: ObservacionConfidencialUncheckedUpdateManyWithoutEmpresaNestedInput
     seguimientosClima?: SeguimientoClimaUncheckedUpdateManyWithoutEmpresaNestedInput
     resena?: ResenaUncheckedUpdateOneWithoutEmpresaNestedInput
+    concesiones?: ConcesionFuncionUncheckedUpdateManyWithoutEmpresaNestedInput
   }
 
   export type PagoUpsertWithWhereUniqueWithoutSuscripcionInput = {
@@ -58701,6 +60148,150 @@ export namespace Prisma {
     comprobanteBase64?: StringNullableFilter<"Pago"> | string | null
     registradoPor?: StringNullableFilter<"Pago"> | string | null
     creadoEn?: DateTimeFilter<"Pago"> | Date | string
+  }
+
+  export type EmpresaCreateWithoutConcesionesInput = {
+    id?: string
+    nombre: string
+    nit: string
+    email: string
+    telefono?: string | null
+    marcadorToken?: string
+    exentaPago?: boolean
+    activa?: boolean
+    auxilioRevisadoEn?: Date | string | null
+    creadoEn?: Date | string
+    actualizadoEn?: Date | string
+    atribuidoEn?: Date | string | null
+    primerPagoComisionEn?: Date | string | null
+    usuarios?: UsuarioCreateNestedManyWithoutEmpresaInput
+    colaboradores?: ColaboradorCreateNestedManyWithoutEmpresaInput
+    festivos?: DiaFestivoCreateNestedManyWithoutEmpresaInput
+    configuracion?: ConfiguracionCreateNestedManyWithoutEmpresaInput
+    suscripcion?: SuscripcionCreateNestedOneWithoutEmpresaInput
+    horarios?: HorarioCreateNestedManyWithoutEmpresaInput
+    sedes?: SedeCreateNestedManyWithoutEmpresaInput
+    plantillasTurno?: PlantillaTurnoCreateNestedManyWithoutEmpresaInput
+    dispositivos?: DispositivoKioscoCreateNestedManyWithoutEmpresaInput
+    notificaciones?: NotificacionCreateNestedManyWithoutEmpresaInput
+    afiliado?: AfiliadoCreateNestedOneWithoutEmpresasInput
+    comisiones?: ComisionCreateNestedManyWithoutEmpresaInput
+    calificacionesClima?: CalificacionClimaCreateNestedManyWithoutEmpresaInput
+    notasConfidenciales?: ObservacionConfidencialCreateNestedManyWithoutEmpresaInput
+    seguimientosClima?: SeguimientoClimaCreateNestedManyWithoutEmpresaInput
+    resena?: ResenaCreateNestedOneWithoutEmpresaInput
+  }
+
+  export type EmpresaUncheckedCreateWithoutConcesionesInput = {
+    id?: string
+    nombre: string
+    nit: string
+    email: string
+    telefono?: string | null
+    marcadorToken?: string
+    exentaPago?: boolean
+    activa?: boolean
+    auxilioRevisadoEn?: Date | string | null
+    creadoEn?: Date | string
+    actualizadoEn?: Date | string
+    afiliadoId?: string | null
+    atribuidoEn?: Date | string | null
+    primerPagoComisionEn?: Date | string | null
+    usuarios?: UsuarioUncheckedCreateNestedManyWithoutEmpresaInput
+    colaboradores?: ColaboradorUncheckedCreateNestedManyWithoutEmpresaInput
+    festivos?: DiaFestivoUncheckedCreateNestedManyWithoutEmpresaInput
+    configuracion?: ConfiguracionUncheckedCreateNestedManyWithoutEmpresaInput
+    suscripcion?: SuscripcionUncheckedCreateNestedOneWithoutEmpresaInput
+    horarios?: HorarioUncheckedCreateNestedManyWithoutEmpresaInput
+    sedes?: SedeUncheckedCreateNestedManyWithoutEmpresaInput
+    plantillasTurno?: PlantillaTurnoUncheckedCreateNestedManyWithoutEmpresaInput
+    dispositivos?: DispositivoKioscoUncheckedCreateNestedManyWithoutEmpresaInput
+    notificaciones?: NotificacionUncheckedCreateNestedManyWithoutEmpresaInput
+    comisiones?: ComisionUncheckedCreateNestedManyWithoutEmpresaInput
+    calificacionesClima?: CalificacionClimaUncheckedCreateNestedManyWithoutEmpresaInput
+    notasConfidenciales?: ObservacionConfidencialUncheckedCreateNestedManyWithoutEmpresaInput
+    seguimientosClima?: SeguimientoClimaUncheckedCreateNestedManyWithoutEmpresaInput
+    resena?: ResenaUncheckedCreateNestedOneWithoutEmpresaInput
+  }
+
+  export type EmpresaCreateOrConnectWithoutConcesionesInput = {
+    where: EmpresaWhereUniqueInput
+    create: XOR<EmpresaCreateWithoutConcesionesInput, EmpresaUncheckedCreateWithoutConcesionesInput>
+  }
+
+  export type EmpresaUpsertWithoutConcesionesInput = {
+    update: XOR<EmpresaUpdateWithoutConcesionesInput, EmpresaUncheckedUpdateWithoutConcesionesInput>
+    create: XOR<EmpresaCreateWithoutConcesionesInput, EmpresaUncheckedCreateWithoutConcesionesInput>
+    where?: EmpresaWhereInput
+  }
+
+  export type EmpresaUpdateToOneWithWhereWithoutConcesionesInput = {
+    where?: EmpresaWhereInput
+    data: XOR<EmpresaUpdateWithoutConcesionesInput, EmpresaUncheckedUpdateWithoutConcesionesInput>
+  }
+
+  export type EmpresaUpdateWithoutConcesionesInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    nombre?: StringFieldUpdateOperationsInput | string
+    nit?: StringFieldUpdateOperationsInput | string
+    email?: StringFieldUpdateOperationsInput | string
+    telefono?: NullableStringFieldUpdateOperationsInput | string | null
+    marcadorToken?: StringFieldUpdateOperationsInput | string
+    exentaPago?: BoolFieldUpdateOperationsInput | boolean
+    activa?: BoolFieldUpdateOperationsInput | boolean
+    auxilioRevisadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    atribuidoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    primerPagoComisionEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    usuarios?: UsuarioUpdateManyWithoutEmpresaNestedInput
+    colaboradores?: ColaboradorUpdateManyWithoutEmpresaNestedInput
+    festivos?: DiaFestivoUpdateManyWithoutEmpresaNestedInput
+    configuracion?: ConfiguracionUpdateManyWithoutEmpresaNestedInput
+    suscripcion?: SuscripcionUpdateOneWithoutEmpresaNestedInput
+    horarios?: HorarioUpdateManyWithoutEmpresaNestedInput
+    sedes?: SedeUpdateManyWithoutEmpresaNestedInput
+    plantillasTurno?: PlantillaTurnoUpdateManyWithoutEmpresaNestedInput
+    dispositivos?: DispositivoKioscoUpdateManyWithoutEmpresaNestedInput
+    notificaciones?: NotificacionUpdateManyWithoutEmpresaNestedInput
+    afiliado?: AfiliadoUpdateOneWithoutEmpresasNestedInput
+    comisiones?: ComisionUpdateManyWithoutEmpresaNestedInput
+    calificacionesClima?: CalificacionClimaUpdateManyWithoutEmpresaNestedInput
+    notasConfidenciales?: ObservacionConfidencialUpdateManyWithoutEmpresaNestedInput
+    seguimientosClima?: SeguimientoClimaUpdateManyWithoutEmpresaNestedInput
+    resena?: ResenaUpdateOneWithoutEmpresaNestedInput
+  }
+
+  export type EmpresaUncheckedUpdateWithoutConcesionesInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    nombre?: StringFieldUpdateOperationsInput | string
+    nit?: StringFieldUpdateOperationsInput | string
+    email?: StringFieldUpdateOperationsInput | string
+    telefono?: NullableStringFieldUpdateOperationsInput | string | null
+    marcadorToken?: StringFieldUpdateOperationsInput | string
+    exentaPago?: BoolFieldUpdateOperationsInput | boolean
+    activa?: BoolFieldUpdateOperationsInput | boolean
+    auxilioRevisadoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    afiliadoId?: NullableStringFieldUpdateOperationsInput | string | null
+    atribuidoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    primerPagoComisionEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    usuarios?: UsuarioUncheckedUpdateManyWithoutEmpresaNestedInput
+    colaboradores?: ColaboradorUncheckedUpdateManyWithoutEmpresaNestedInput
+    festivos?: DiaFestivoUncheckedUpdateManyWithoutEmpresaNestedInput
+    configuracion?: ConfiguracionUncheckedUpdateManyWithoutEmpresaNestedInput
+    suscripcion?: SuscripcionUncheckedUpdateOneWithoutEmpresaNestedInput
+    horarios?: HorarioUncheckedUpdateManyWithoutEmpresaNestedInput
+    sedes?: SedeUncheckedUpdateManyWithoutEmpresaNestedInput
+    plantillasTurno?: PlantillaTurnoUncheckedUpdateManyWithoutEmpresaNestedInput
+    dispositivos?: DispositivoKioscoUncheckedUpdateManyWithoutEmpresaNestedInput
+    notificaciones?: NotificacionUncheckedUpdateManyWithoutEmpresaNestedInput
+    comisiones?: ComisionUncheckedUpdateManyWithoutEmpresaNestedInput
+    calificacionesClima?: CalificacionClimaUncheckedUpdateManyWithoutEmpresaNestedInput
+    notasConfidenciales?: ObservacionConfidencialUncheckedUpdateManyWithoutEmpresaNestedInput
+    seguimientosClima?: SeguimientoClimaUncheckedUpdateManyWithoutEmpresaNestedInput
+    resena?: ResenaUncheckedUpdateOneWithoutEmpresaNestedInput
   }
 
   export type SuscripcionCreateWithoutPagosInput = {
@@ -58892,6 +60483,7 @@ export namespace Prisma {
     notasConfidenciales?: ObservacionConfidencialCreateNestedManyWithoutEmpresaInput
     seguimientosClima?: SeguimientoClimaCreateNestedManyWithoutEmpresaInput
     resena?: ResenaCreateNestedOneWithoutEmpresaInput
+    concesiones?: ConcesionFuncionCreateNestedManyWithoutEmpresaInput
   }
 
   export type EmpresaUncheckedCreateWithoutHorariosInput = {
@@ -58923,6 +60515,7 @@ export namespace Prisma {
     notasConfidenciales?: ObservacionConfidencialUncheckedCreateNestedManyWithoutEmpresaInput
     seguimientosClima?: SeguimientoClimaUncheckedCreateNestedManyWithoutEmpresaInput
     resena?: ResenaUncheckedCreateNestedOneWithoutEmpresaInput
+    concesiones?: ConcesionFuncionUncheckedCreateNestedManyWithoutEmpresaInput
   }
 
   export type EmpresaCreateOrConnectWithoutHorariosInput = {
@@ -59090,6 +60683,7 @@ export namespace Prisma {
     notasConfidenciales?: ObservacionConfidencialUpdateManyWithoutEmpresaNestedInput
     seguimientosClima?: SeguimientoClimaUpdateManyWithoutEmpresaNestedInput
     resena?: ResenaUpdateOneWithoutEmpresaNestedInput
+    concesiones?: ConcesionFuncionUpdateManyWithoutEmpresaNestedInput
   }
 
   export type EmpresaUncheckedUpdateWithoutHorariosInput = {
@@ -59121,6 +60715,7 @@ export namespace Prisma {
     notasConfidenciales?: ObservacionConfidencialUncheckedUpdateManyWithoutEmpresaNestedInput
     seguimientosClima?: SeguimientoClimaUncheckedUpdateManyWithoutEmpresaNestedInput
     resena?: ResenaUncheckedUpdateOneWithoutEmpresaNestedInput
+    concesiones?: ConcesionFuncionUncheckedUpdateManyWithoutEmpresaNestedInput
   }
 
   export type FranjaHorarioUpsertWithWhereUniqueWithoutHorarioInput = {
@@ -59271,6 +60866,7 @@ export namespace Prisma {
     notasConfidenciales?: ObservacionConfidencialCreateNestedManyWithoutEmpresaInput
     seguimientosClima?: SeguimientoClimaCreateNestedManyWithoutEmpresaInput
     resena?: ResenaCreateNestedOneWithoutEmpresaInput
+    concesiones?: ConcesionFuncionCreateNestedManyWithoutEmpresaInput
   }
 
   export type EmpresaUncheckedCreateWithoutPlantillasTurnoInput = {
@@ -59302,6 +60898,7 @@ export namespace Prisma {
     notasConfidenciales?: ObservacionConfidencialUncheckedCreateNestedManyWithoutEmpresaInput
     seguimientosClima?: SeguimientoClimaUncheckedCreateNestedManyWithoutEmpresaInput
     resena?: ResenaUncheckedCreateNestedOneWithoutEmpresaInput
+    concesiones?: ConcesionFuncionUncheckedCreateNestedManyWithoutEmpresaInput
   }
 
   export type EmpresaCreateOrConnectWithoutPlantillasTurnoInput = {
@@ -59444,6 +61041,7 @@ export namespace Prisma {
     notasConfidenciales?: ObservacionConfidencialUpdateManyWithoutEmpresaNestedInput
     seguimientosClima?: SeguimientoClimaUpdateManyWithoutEmpresaNestedInput
     resena?: ResenaUpdateOneWithoutEmpresaNestedInput
+    concesiones?: ConcesionFuncionUpdateManyWithoutEmpresaNestedInput
   }
 
   export type EmpresaUncheckedUpdateWithoutPlantillasTurnoInput = {
@@ -59475,6 +61073,7 @@ export namespace Prisma {
     notasConfidenciales?: ObservacionConfidencialUncheckedUpdateManyWithoutEmpresaNestedInput
     seguimientosClima?: SeguimientoClimaUncheckedUpdateManyWithoutEmpresaNestedInput
     resena?: ResenaUncheckedUpdateOneWithoutEmpresaNestedInput
+    concesiones?: ConcesionFuncionUncheckedUpdateManyWithoutEmpresaNestedInput
   }
 
   export type SedeUpsertWithoutPlantillasInput = {
@@ -59594,6 +61193,7 @@ export namespace Prisma {
     notasConfidenciales?: ObservacionConfidencialCreateNestedManyWithoutEmpresaInput
     seguimientosClima?: SeguimientoClimaCreateNestedManyWithoutEmpresaInput
     resena?: ResenaCreateNestedOneWithoutEmpresaInput
+    concesiones?: ConcesionFuncionCreateNestedManyWithoutEmpresaInput
   }
 
   export type EmpresaUncheckedCreateWithoutDispositivosInput = {
@@ -59625,6 +61225,7 @@ export namespace Prisma {
     notasConfidenciales?: ObservacionConfidencialUncheckedCreateNestedManyWithoutEmpresaInput
     seguimientosClima?: SeguimientoClimaUncheckedCreateNestedManyWithoutEmpresaInput
     resena?: ResenaUncheckedCreateNestedOneWithoutEmpresaInput
+    concesiones?: ConcesionFuncionUncheckedCreateNestedManyWithoutEmpresaInput
   }
 
   export type EmpresaCreateOrConnectWithoutDispositivosInput = {
@@ -59672,6 +61273,7 @@ export namespace Prisma {
     notasConfidenciales?: ObservacionConfidencialUpdateManyWithoutEmpresaNestedInput
     seguimientosClima?: SeguimientoClimaUpdateManyWithoutEmpresaNestedInput
     resena?: ResenaUpdateOneWithoutEmpresaNestedInput
+    concesiones?: ConcesionFuncionUpdateManyWithoutEmpresaNestedInput
   }
 
   export type EmpresaUncheckedUpdateWithoutDispositivosInput = {
@@ -59703,6 +61305,7 @@ export namespace Prisma {
     notasConfidenciales?: ObservacionConfidencialUncheckedUpdateManyWithoutEmpresaNestedInput
     seguimientosClima?: SeguimientoClimaUncheckedUpdateManyWithoutEmpresaNestedInput
     resena?: ResenaUncheckedUpdateOneWithoutEmpresaNestedInput
+    concesiones?: ConcesionFuncionUncheckedUpdateManyWithoutEmpresaNestedInput
   }
 
   export type EmpresaCreateWithoutColaboradoresInput = {
@@ -59734,6 +61337,7 @@ export namespace Prisma {
     notasConfidenciales?: ObservacionConfidencialCreateNestedManyWithoutEmpresaInput
     seguimientosClima?: SeguimientoClimaCreateNestedManyWithoutEmpresaInput
     resena?: ResenaCreateNestedOneWithoutEmpresaInput
+    concesiones?: ConcesionFuncionCreateNestedManyWithoutEmpresaInput
   }
 
   export type EmpresaUncheckedCreateWithoutColaboradoresInput = {
@@ -59765,6 +61369,7 @@ export namespace Prisma {
     notasConfidenciales?: ObservacionConfidencialUncheckedCreateNestedManyWithoutEmpresaInput
     seguimientosClima?: SeguimientoClimaUncheckedCreateNestedManyWithoutEmpresaInput
     resena?: ResenaUncheckedCreateNestedOneWithoutEmpresaInput
+    concesiones?: ConcesionFuncionUncheckedCreateNestedManyWithoutEmpresaInput
   }
 
   export type EmpresaCreateOrConnectWithoutColaboradoresInput = {
@@ -60281,6 +61886,7 @@ export namespace Prisma {
     notasConfidenciales?: ObservacionConfidencialUpdateManyWithoutEmpresaNestedInput
     seguimientosClima?: SeguimientoClimaUpdateManyWithoutEmpresaNestedInput
     resena?: ResenaUpdateOneWithoutEmpresaNestedInput
+    concesiones?: ConcesionFuncionUpdateManyWithoutEmpresaNestedInput
   }
 
   export type EmpresaUncheckedUpdateWithoutColaboradoresInput = {
@@ -60312,6 +61918,7 @@ export namespace Prisma {
     notasConfidenciales?: ObservacionConfidencialUncheckedUpdateManyWithoutEmpresaNestedInput
     seguimientosClima?: SeguimientoClimaUncheckedUpdateManyWithoutEmpresaNestedInput
     resena?: ResenaUncheckedUpdateOneWithoutEmpresaNestedInput
+    concesiones?: ConcesionFuncionUncheckedUpdateManyWithoutEmpresaNestedInput
   }
 
   export type DescansoTrabajadoUpsertWithWhereUniqueWithoutColaboradorInput = {
@@ -60703,6 +62310,7 @@ export namespace Prisma {
     notasConfidenciales?: ObservacionConfidencialCreateNestedManyWithoutEmpresaInput
     seguimientosClima?: SeguimientoClimaCreateNestedManyWithoutEmpresaInput
     resena?: ResenaCreateNestedOneWithoutEmpresaInput
+    concesiones?: ConcesionFuncionCreateNestedManyWithoutEmpresaInput
   }
 
   export type EmpresaUncheckedCreateWithoutSedesInput = {
@@ -60734,6 +62342,7 @@ export namespace Prisma {
     notasConfidenciales?: ObservacionConfidencialUncheckedCreateNestedManyWithoutEmpresaInput
     seguimientosClima?: SeguimientoClimaUncheckedCreateNestedManyWithoutEmpresaInput
     resena?: ResenaUncheckedCreateNestedOneWithoutEmpresaInput
+    concesiones?: ConcesionFuncionUncheckedCreateNestedManyWithoutEmpresaInput
   }
 
   export type EmpresaCreateOrConnectWithoutSedesInput = {
@@ -60989,6 +62598,7 @@ export namespace Prisma {
     notasConfidenciales?: ObservacionConfidencialUpdateManyWithoutEmpresaNestedInput
     seguimientosClima?: SeguimientoClimaUpdateManyWithoutEmpresaNestedInput
     resena?: ResenaUpdateOneWithoutEmpresaNestedInput
+    concesiones?: ConcesionFuncionUpdateManyWithoutEmpresaNestedInput
   }
 
   export type EmpresaUncheckedUpdateWithoutSedesInput = {
@@ -61020,6 +62630,7 @@ export namespace Prisma {
     notasConfidenciales?: ObservacionConfidencialUncheckedUpdateManyWithoutEmpresaNestedInput
     seguimientosClima?: SeguimientoClimaUncheckedUpdateManyWithoutEmpresaNestedInput
     resena?: ResenaUncheckedUpdateOneWithoutEmpresaNestedInput
+    concesiones?: ConcesionFuncionUncheckedUpdateManyWithoutEmpresaNestedInput
   }
 
   export type ColaboradorSedeUpsertWithWhereUniqueWithoutSedeInput = {
@@ -62405,6 +64016,7 @@ export namespace Prisma {
     notasConfidenciales?: ObservacionConfidencialCreateNestedManyWithoutEmpresaInput
     seguimientosClima?: SeguimientoClimaCreateNestedManyWithoutEmpresaInput
     resena?: ResenaCreateNestedOneWithoutEmpresaInput
+    concesiones?: ConcesionFuncionCreateNestedManyWithoutEmpresaInput
   }
 
   export type EmpresaUncheckedCreateWithoutFestivosInput = {
@@ -62436,6 +64048,7 @@ export namespace Prisma {
     notasConfidenciales?: ObservacionConfidencialUncheckedCreateNestedManyWithoutEmpresaInput
     seguimientosClima?: SeguimientoClimaUncheckedCreateNestedManyWithoutEmpresaInput
     resena?: ResenaUncheckedCreateNestedOneWithoutEmpresaInput
+    concesiones?: ConcesionFuncionUncheckedCreateNestedManyWithoutEmpresaInput
   }
 
   export type EmpresaCreateOrConnectWithoutFestivosInput = {
@@ -62483,6 +64096,7 @@ export namespace Prisma {
     notasConfidenciales?: ObservacionConfidencialUpdateManyWithoutEmpresaNestedInput
     seguimientosClima?: SeguimientoClimaUpdateManyWithoutEmpresaNestedInput
     resena?: ResenaUpdateOneWithoutEmpresaNestedInput
+    concesiones?: ConcesionFuncionUpdateManyWithoutEmpresaNestedInput
   }
 
   export type EmpresaUncheckedUpdateWithoutFestivosInput = {
@@ -62514,6 +64128,7 @@ export namespace Prisma {
     notasConfidenciales?: ObservacionConfidencialUncheckedUpdateManyWithoutEmpresaNestedInput
     seguimientosClima?: SeguimientoClimaUncheckedUpdateManyWithoutEmpresaNestedInput
     resena?: ResenaUncheckedUpdateOneWithoutEmpresaNestedInput
+    concesiones?: ConcesionFuncionUncheckedUpdateManyWithoutEmpresaNestedInput
   }
 
   export type EmpresaCreateWithoutConfiguracionInput = {
@@ -62545,6 +64160,7 @@ export namespace Prisma {
     notasConfidenciales?: ObservacionConfidencialCreateNestedManyWithoutEmpresaInput
     seguimientosClima?: SeguimientoClimaCreateNestedManyWithoutEmpresaInput
     resena?: ResenaCreateNestedOneWithoutEmpresaInput
+    concesiones?: ConcesionFuncionCreateNestedManyWithoutEmpresaInput
   }
 
   export type EmpresaUncheckedCreateWithoutConfiguracionInput = {
@@ -62576,6 +64192,7 @@ export namespace Prisma {
     notasConfidenciales?: ObservacionConfidencialUncheckedCreateNestedManyWithoutEmpresaInput
     seguimientosClima?: SeguimientoClimaUncheckedCreateNestedManyWithoutEmpresaInput
     resena?: ResenaUncheckedCreateNestedOneWithoutEmpresaInput
+    concesiones?: ConcesionFuncionUncheckedCreateNestedManyWithoutEmpresaInput
   }
 
   export type EmpresaCreateOrConnectWithoutConfiguracionInput = {
@@ -62623,6 +64240,7 @@ export namespace Prisma {
     notasConfidenciales?: ObservacionConfidencialUpdateManyWithoutEmpresaNestedInput
     seguimientosClima?: SeguimientoClimaUpdateManyWithoutEmpresaNestedInput
     resena?: ResenaUpdateOneWithoutEmpresaNestedInput
+    concesiones?: ConcesionFuncionUpdateManyWithoutEmpresaNestedInput
   }
 
   export type EmpresaUncheckedUpdateWithoutConfiguracionInput = {
@@ -62654,6 +64272,7 @@ export namespace Prisma {
     notasConfidenciales?: ObservacionConfidencialUncheckedUpdateManyWithoutEmpresaNestedInput
     seguimientosClima?: SeguimientoClimaUncheckedUpdateManyWithoutEmpresaNestedInput
     resena?: ResenaUncheckedUpdateOneWithoutEmpresaNestedInput
+    concesiones?: ConcesionFuncionUncheckedUpdateManyWithoutEmpresaNestedInput
   }
 
   export type EmpresaCreateWithoutNotificacionesInput = {
@@ -62685,6 +64304,7 @@ export namespace Prisma {
     notasConfidenciales?: ObservacionConfidencialCreateNestedManyWithoutEmpresaInput
     seguimientosClima?: SeguimientoClimaCreateNestedManyWithoutEmpresaInput
     resena?: ResenaCreateNestedOneWithoutEmpresaInput
+    concesiones?: ConcesionFuncionCreateNestedManyWithoutEmpresaInput
   }
 
   export type EmpresaUncheckedCreateWithoutNotificacionesInput = {
@@ -62716,6 +64336,7 @@ export namespace Prisma {
     notasConfidenciales?: ObservacionConfidencialUncheckedCreateNestedManyWithoutEmpresaInput
     seguimientosClima?: SeguimientoClimaUncheckedCreateNestedManyWithoutEmpresaInput
     resena?: ResenaUncheckedCreateNestedOneWithoutEmpresaInput
+    concesiones?: ConcesionFuncionUncheckedCreateNestedManyWithoutEmpresaInput
   }
 
   export type EmpresaCreateOrConnectWithoutNotificacionesInput = {
@@ -62763,6 +64384,7 @@ export namespace Prisma {
     notasConfidenciales?: ObservacionConfidencialUpdateManyWithoutEmpresaNestedInput
     seguimientosClima?: SeguimientoClimaUpdateManyWithoutEmpresaNestedInput
     resena?: ResenaUpdateOneWithoutEmpresaNestedInput
+    concesiones?: ConcesionFuncionUpdateManyWithoutEmpresaNestedInput
   }
 
   export type EmpresaUncheckedUpdateWithoutNotificacionesInput = {
@@ -62794,6 +64416,7 @@ export namespace Prisma {
     notasConfidenciales?: ObservacionConfidencialUncheckedUpdateManyWithoutEmpresaNestedInput
     seguimientosClima?: SeguimientoClimaUncheckedUpdateManyWithoutEmpresaNestedInput
     resena?: ResenaUncheckedUpdateOneWithoutEmpresaNestedInput
+    concesiones?: ConcesionFuncionUncheckedUpdateManyWithoutEmpresaNestedInput
   }
 
   export type EmpresaCreateWithoutUsuariosInput = {
@@ -62825,6 +64448,7 @@ export namespace Prisma {
     notasConfidenciales?: ObservacionConfidencialCreateNestedManyWithoutEmpresaInput
     seguimientosClima?: SeguimientoClimaCreateNestedManyWithoutEmpresaInput
     resena?: ResenaCreateNestedOneWithoutEmpresaInput
+    concesiones?: ConcesionFuncionCreateNestedManyWithoutEmpresaInput
   }
 
   export type EmpresaUncheckedCreateWithoutUsuariosInput = {
@@ -62856,6 +64480,7 @@ export namespace Prisma {
     notasConfidenciales?: ObservacionConfidencialUncheckedCreateNestedManyWithoutEmpresaInput
     seguimientosClima?: SeguimientoClimaUncheckedCreateNestedManyWithoutEmpresaInput
     resena?: ResenaUncheckedCreateNestedOneWithoutEmpresaInput
+    concesiones?: ConcesionFuncionUncheckedCreateNestedManyWithoutEmpresaInput
   }
 
   export type EmpresaCreateOrConnectWithoutUsuariosInput = {
@@ -62950,6 +64575,7 @@ export namespace Prisma {
     notasConfidenciales?: ObservacionConfidencialUpdateManyWithoutEmpresaNestedInput
     seguimientosClima?: SeguimientoClimaUpdateManyWithoutEmpresaNestedInput
     resena?: ResenaUpdateOneWithoutEmpresaNestedInput
+    concesiones?: ConcesionFuncionUpdateManyWithoutEmpresaNestedInput
   }
 
   export type EmpresaUncheckedUpdateWithoutUsuariosInput = {
@@ -62981,6 +64607,7 @@ export namespace Prisma {
     notasConfidenciales?: ObservacionConfidencialUncheckedUpdateManyWithoutEmpresaNestedInput
     seguimientosClima?: SeguimientoClimaUncheckedUpdateManyWithoutEmpresaNestedInput
     resena?: ResenaUncheckedUpdateOneWithoutEmpresaNestedInput
+    concesiones?: ConcesionFuncionUncheckedUpdateManyWithoutEmpresaNestedInput
   }
 
   export type AfiliadoUpsertWithoutUsuariosInput = {
@@ -63107,6 +64734,7 @@ export namespace Prisma {
     notasConfidenciales?: ObservacionConfidencialCreateNestedManyWithoutEmpresaInput
     seguimientosClima?: SeguimientoClimaCreateNestedManyWithoutEmpresaInput
     resena?: ResenaCreateNestedOneWithoutEmpresaInput
+    concesiones?: ConcesionFuncionCreateNestedManyWithoutEmpresaInput
   }
 
   export type EmpresaUncheckedCreateWithoutAfiliadoInput = {
@@ -63138,6 +64766,7 @@ export namespace Prisma {
     notasConfidenciales?: ObservacionConfidencialUncheckedCreateNestedManyWithoutEmpresaInput
     seguimientosClima?: SeguimientoClimaUncheckedCreateNestedManyWithoutEmpresaInput
     resena?: ResenaUncheckedCreateNestedOneWithoutEmpresaInput
+    concesiones?: ConcesionFuncionUncheckedCreateNestedManyWithoutEmpresaInput
   }
 
   export type EmpresaCreateOrConnectWithoutAfiliadoInput = {
@@ -63389,6 +65018,7 @@ export namespace Prisma {
     notasConfidenciales?: ObservacionConfidencialCreateNestedManyWithoutEmpresaInput
     seguimientosClima?: SeguimientoClimaCreateNestedManyWithoutEmpresaInput
     resena?: ResenaCreateNestedOneWithoutEmpresaInput
+    concesiones?: ConcesionFuncionCreateNestedManyWithoutEmpresaInput
   }
 
   export type EmpresaUncheckedCreateWithoutComisionesInput = {
@@ -63420,6 +65050,7 @@ export namespace Prisma {
     notasConfidenciales?: ObservacionConfidencialUncheckedCreateNestedManyWithoutEmpresaInput
     seguimientosClima?: SeguimientoClimaUncheckedCreateNestedManyWithoutEmpresaInput
     resena?: ResenaUncheckedCreateNestedOneWithoutEmpresaInput
+    concesiones?: ConcesionFuncionUncheckedCreateNestedManyWithoutEmpresaInput
   }
 
   export type EmpresaCreateOrConnectWithoutComisionesInput = {
@@ -63557,6 +65188,7 @@ export namespace Prisma {
     notasConfidenciales?: ObservacionConfidencialUpdateManyWithoutEmpresaNestedInput
     seguimientosClima?: SeguimientoClimaUpdateManyWithoutEmpresaNestedInput
     resena?: ResenaUpdateOneWithoutEmpresaNestedInput
+    concesiones?: ConcesionFuncionUpdateManyWithoutEmpresaNestedInput
   }
 
   export type EmpresaUncheckedUpdateWithoutComisionesInput = {
@@ -63588,6 +65220,7 @@ export namespace Prisma {
     notasConfidenciales?: ObservacionConfidencialUncheckedUpdateManyWithoutEmpresaNestedInput
     seguimientosClima?: SeguimientoClimaUncheckedUpdateManyWithoutEmpresaNestedInput
     resena?: ResenaUncheckedUpdateOneWithoutEmpresaNestedInput
+    concesiones?: ConcesionFuncionUncheckedUpdateManyWithoutEmpresaNestedInput
   }
 
   export type PagoUpsertWithoutComisionInput = {
@@ -65034,6 +66667,7 @@ export namespace Prisma {
     notasConfidenciales?: ObservacionConfidencialCreateNestedManyWithoutEmpresaInput
     seguimientosClima?: SeguimientoClimaCreateNestedManyWithoutEmpresaInput
     resena?: ResenaCreateNestedOneWithoutEmpresaInput
+    concesiones?: ConcesionFuncionCreateNestedManyWithoutEmpresaInput
   }
 
   export type EmpresaUncheckedCreateWithoutCalificacionesClimaInput = {
@@ -65065,6 +66699,7 @@ export namespace Prisma {
     notasConfidenciales?: ObservacionConfidencialUncheckedCreateNestedManyWithoutEmpresaInput
     seguimientosClima?: SeguimientoClimaUncheckedCreateNestedManyWithoutEmpresaInput
     resena?: ResenaUncheckedCreateNestedOneWithoutEmpresaInput
+    concesiones?: ConcesionFuncionUncheckedCreateNestedManyWithoutEmpresaInput
   }
 
   export type EmpresaCreateOrConnectWithoutCalificacionesClimaInput = {
@@ -65195,6 +66830,7 @@ export namespace Prisma {
     notasConfidenciales?: ObservacionConfidencialUpdateManyWithoutEmpresaNestedInput
     seguimientosClima?: SeguimientoClimaUpdateManyWithoutEmpresaNestedInput
     resena?: ResenaUpdateOneWithoutEmpresaNestedInput
+    concesiones?: ConcesionFuncionUpdateManyWithoutEmpresaNestedInput
   }
 
   export type EmpresaUncheckedUpdateWithoutCalificacionesClimaInput = {
@@ -65226,6 +66862,7 @@ export namespace Prisma {
     notasConfidenciales?: ObservacionConfidencialUncheckedUpdateManyWithoutEmpresaNestedInput
     seguimientosClima?: SeguimientoClimaUncheckedUpdateManyWithoutEmpresaNestedInput
     resena?: ResenaUncheckedUpdateOneWithoutEmpresaNestedInput
+    concesiones?: ConcesionFuncionUncheckedUpdateManyWithoutEmpresaNestedInput
   }
 
   export type ColaboradorUpsertWithoutCalificacionesClimaInput = {
@@ -65346,6 +66983,7 @@ export namespace Prisma {
     calificacionesClima?: CalificacionClimaCreateNestedManyWithoutEmpresaInput
     seguimientosClima?: SeguimientoClimaCreateNestedManyWithoutEmpresaInput
     resena?: ResenaCreateNestedOneWithoutEmpresaInput
+    concesiones?: ConcesionFuncionCreateNestedManyWithoutEmpresaInput
   }
 
   export type EmpresaUncheckedCreateWithoutNotasConfidencialesInput = {
@@ -65377,6 +67015,7 @@ export namespace Prisma {
     calificacionesClima?: CalificacionClimaUncheckedCreateNestedManyWithoutEmpresaInput
     seguimientosClima?: SeguimientoClimaUncheckedCreateNestedManyWithoutEmpresaInput
     resena?: ResenaUncheckedCreateNestedOneWithoutEmpresaInput
+    concesiones?: ConcesionFuncionUncheckedCreateNestedManyWithoutEmpresaInput
   }
 
   export type EmpresaCreateOrConnectWithoutNotasConfidencialesInput = {
@@ -65424,6 +67063,7 @@ export namespace Prisma {
     calificacionesClima?: CalificacionClimaUpdateManyWithoutEmpresaNestedInput
     seguimientosClima?: SeguimientoClimaUpdateManyWithoutEmpresaNestedInput
     resena?: ResenaUpdateOneWithoutEmpresaNestedInput
+    concesiones?: ConcesionFuncionUpdateManyWithoutEmpresaNestedInput
   }
 
   export type EmpresaUncheckedUpdateWithoutNotasConfidencialesInput = {
@@ -65455,6 +67095,7 @@ export namespace Prisma {
     calificacionesClima?: CalificacionClimaUncheckedUpdateManyWithoutEmpresaNestedInput
     seguimientosClima?: SeguimientoClimaUncheckedUpdateManyWithoutEmpresaNestedInput
     resena?: ResenaUncheckedUpdateOneWithoutEmpresaNestedInput
+    concesiones?: ConcesionFuncionUncheckedUpdateManyWithoutEmpresaNestedInput
   }
 
   export type EmpresaCreateWithoutSeguimientosClimaInput = {
@@ -65486,6 +67127,7 @@ export namespace Prisma {
     calificacionesClima?: CalificacionClimaCreateNestedManyWithoutEmpresaInput
     notasConfidenciales?: ObservacionConfidencialCreateNestedManyWithoutEmpresaInput
     resena?: ResenaCreateNestedOneWithoutEmpresaInput
+    concesiones?: ConcesionFuncionCreateNestedManyWithoutEmpresaInput
   }
 
   export type EmpresaUncheckedCreateWithoutSeguimientosClimaInput = {
@@ -65517,6 +67159,7 @@ export namespace Prisma {
     calificacionesClima?: CalificacionClimaUncheckedCreateNestedManyWithoutEmpresaInput
     notasConfidenciales?: ObservacionConfidencialUncheckedCreateNestedManyWithoutEmpresaInput
     resena?: ResenaUncheckedCreateNestedOneWithoutEmpresaInput
+    concesiones?: ConcesionFuncionUncheckedCreateNestedManyWithoutEmpresaInput
   }
 
   export type EmpresaCreateOrConnectWithoutSeguimientosClimaInput = {
@@ -65675,6 +67318,7 @@ export namespace Prisma {
     calificacionesClima?: CalificacionClimaUpdateManyWithoutEmpresaNestedInput
     notasConfidenciales?: ObservacionConfidencialUpdateManyWithoutEmpresaNestedInput
     resena?: ResenaUpdateOneWithoutEmpresaNestedInput
+    concesiones?: ConcesionFuncionUpdateManyWithoutEmpresaNestedInput
   }
 
   export type EmpresaUncheckedUpdateWithoutSeguimientosClimaInput = {
@@ -65706,6 +67350,7 @@ export namespace Prisma {
     calificacionesClima?: CalificacionClimaUncheckedUpdateManyWithoutEmpresaNestedInput
     notasConfidenciales?: ObservacionConfidencialUncheckedUpdateManyWithoutEmpresaNestedInput
     resena?: ResenaUncheckedUpdateOneWithoutEmpresaNestedInput
+    concesiones?: ConcesionFuncionUncheckedUpdateManyWithoutEmpresaNestedInput
   }
 
   export type ColaboradorUpsertWithoutSeguimientosClimaInput = {
@@ -65919,6 +67564,7 @@ export namespace Prisma {
     calificacionesClima?: CalificacionClimaCreateNestedManyWithoutEmpresaInput
     notasConfidenciales?: ObservacionConfidencialCreateNestedManyWithoutEmpresaInput
     seguimientosClima?: SeguimientoClimaCreateNestedManyWithoutEmpresaInput
+    concesiones?: ConcesionFuncionCreateNestedManyWithoutEmpresaInput
   }
 
   export type EmpresaUncheckedCreateWithoutResenaInput = {
@@ -65950,6 +67596,7 @@ export namespace Prisma {
     calificacionesClima?: CalificacionClimaUncheckedCreateNestedManyWithoutEmpresaInput
     notasConfidenciales?: ObservacionConfidencialUncheckedCreateNestedManyWithoutEmpresaInput
     seguimientosClima?: SeguimientoClimaUncheckedCreateNestedManyWithoutEmpresaInput
+    concesiones?: ConcesionFuncionUncheckedCreateNestedManyWithoutEmpresaInput
   }
 
   export type EmpresaCreateOrConnectWithoutResenaInput = {
@@ -65997,6 +67644,7 @@ export namespace Prisma {
     calificacionesClima?: CalificacionClimaUpdateManyWithoutEmpresaNestedInput
     notasConfidenciales?: ObservacionConfidencialUpdateManyWithoutEmpresaNestedInput
     seguimientosClima?: SeguimientoClimaUpdateManyWithoutEmpresaNestedInput
+    concesiones?: ConcesionFuncionUpdateManyWithoutEmpresaNestedInput
   }
 
   export type EmpresaUncheckedUpdateWithoutResenaInput = {
@@ -66028,6 +67676,7 @@ export namespace Prisma {
     calificacionesClima?: CalificacionClimaUncheckedUpdateManyWithoutEmpresaNestedInput
     notasConfidenciales?: ObservacionConfidencialUncheckedUpdateManyWithoutEmpresaNestedInput
     seguimientosClima?: SeguimientoClimaUncheckedUpdateManyWithoutEmpresaNestedInput
+    concesiones?: ConcesionFuncionUncheckedUpdateManyWithoutEmpresaNestedInput
   }
 
   export type UsuarioCreateManyEmpresaInput = {
@@ -66190,6 +67839,19 @@ export namespace Prisma {
     responsableId?: string | null
     abiertoEn?: Date | string
     cerradoEn?: Date | string | null
+    actualizadoEn?: Date | string
+  }
+
+  export type ConcesionFuncionCreateManyEmpresaInput = {
+    id?: string
+    funcion: string
+    desde?: Date | string
+    hasta: Date | string
+    origen: string
+    otorgadaPorId?: string | null
+    otorgadaPorNombre?: string | null
+    revocadaEn?: Date | string | null
+    creadoEn?: Date | string
     actualizadoEn?: Date | string
   }
 
@@ -66717,6 +68379,45 @@ export namespace Prisma {
     responsableId?: NullableStringFieldUpdateOperationsInput | string | null
     abiertoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     cerradoEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type ConcesionFuncionUpdateWithoutEmpresaInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    funcion?: StringFieldUpdateOperationsInput | string
+    desde?: DateTimeFieldUpdateOperationsInput | Date | string
+    hasta?: DateTimeFieldUpdateOperationsInput | Date | string
+    origen?: StringFieldUpdateOperationsInput | string
+    otorgadaPorId?: NullableStringFieldUpdateOperationsInput | string | null
+    otorgadaPorNombre?: NullableStringFieldUpdateOperationsInput | string | null
+    revocadaEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type ConcesionFuncionUncheckedUpdateWithoutEmpresaInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    funcion?: StringFieldUpdateOperationsInput | string
+    desde?: DateTimeFieldUpdateOperationsInput | Date | string
+    hasta?: DateTimeFieldUpdateOperationsInput | Date | string
+    origen?: StringFieldUpdateOperationsInput | string
+    otorgadaPorId?: NullableStringFieldUpdateOperationsInput | string | null
+    otorgadaPorNombre?: NullableStringFieldUpdateOperationsInput | string | null
+    revocadaEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+    actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type ConcesionFuncionUncheckedUpdateManyWithoutEmpresaInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    funcion?: StringFieldUpdateOperationsInput | string
+    desde?: DateTimeFieldUpdateOperationsInput | Date | string
+    hasta?: DateTimeFieldUpdateOperationsInput | Date | string
+    origen?: StringFieldUpdateOperationsInput | string
+    otorgadaPorId?: NullableStringFieldUpdateOperationsInput | string | null
+    otorgadaPorNombre?: NullableStringFieldUpdateOperationsInput | string | null
+    revocadaEn?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    creadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
     actualizadoEn?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -68255,6 +69956,7 @@ export namespace Prisma {
     notasConfidenciales?: ObservacionConfidencialUpdateManyWithoutEmpresaNestedInput
     seguimientosClima?: SeguimientoClimaUpdateManyWithoutEmpresaNestedInput
     resena?: ResenaUpdateOneWithoutEmpresaNestedInput
+    concesiones?: ConcesionFuncionUpdateManyWithoutEmpresaNestedInput
   }
 
   export type EmpresaUncheckedUpdateWithoutAfiliadoInput = {
@@ -68286,6 +69988,7 @@ export namespace Prisma {
     notasConfidenciales?: ObservacionConfidencialUncheckedUpdateManyWithoutEmpresaNestedInput
     seguimientosClima?: SeguimientoClimaUncheckedUpdateManyWithoutEmpresaNestedInput
     resena?: ResenaUncheckedUpdateOneWithoutEmpresaNestedInput
+    concesiones?: ConcesionFuncionUncheckedUpdateManyWithoutEmpresaNestedInput
   }
 
   export type EmpresaUncheckedUpdateManyWithoutAfiliadoInput = {
@@ -68543,6 +70246,10 @@ export namespace Prisma {
      * @deprecated Use SuscripcionDefaultArgs instead
      */
     export type SuscripcionArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = SuscripcionDefaultArgs<ExtArgs>
+    /**
+     * @deprecated Use ConcesionFuncionDefaultArgs instead
+     */
+    export type ConcesionFuncionArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = ConcesionFuncionDefaultArgs<ExtArgs>
     /**
      * @deprecated Use PagoDefaultArgs instead
      */

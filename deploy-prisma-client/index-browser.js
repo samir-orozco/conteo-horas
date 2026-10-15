@@ -160,6 +160,20 @@ exports.Prisma.SuscripcionScalarFieldEnum = {
   actualizadoEn: 'actualizadoEn'
 };
 
+exports.Prisma.ConcesionFuncionScalarFieldEnum = {
+  id: 'id',
+  empresaId: 'empresaId',
+  funcion: 'funcion',
+  desde: 'desde',
+  hasta: 'hasta',
+  origen: 'origen',
+  otorgadaPorId: 'otorgadaPorId',
+  otorgadaPorNombre: 'otorgadaPorNombre',
+  revocadaEn: 'revocadaEn',
+  creadoEn: 'creadoEn',
+  actualizadoEn: 'actualizadoEn'
+};
+
 exports.Prisma.PagoScalarFieldEnum = {
   id: 'id',
   suscripcionId: 'suscripcionId',
@@ -846,6 +860,7 @@ exports.ComoAparece = exports.$Enums.ComoAparece = {
 exports.Prisma.ModelName = {
   Empresa: 'Empresa',
   Suscripcion: 'Suscripcion',
+  ConcesionFuncion: 'ConcesionFuncion',
   Pago: 'Pago',
   ConfiguracionPlataforma: 'ConfiguracionPlataforma',
   JornadaVigencia: 'JornadaVigencia',
