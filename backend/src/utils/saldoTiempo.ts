@@ -1,6 +1,7 @@
 import { toZonedTime } from 'date-fns-tz';
 import { getISOWeek, getISOWeekYear } from 'date-fns';
 import { minutosDe, esDeParteDelDia, duracionFranjaMin, type NovedadParaDia } from './tardanzas';
+import { claveDiaBogota, medianocheBogota } from './fechas';
 
 
 // La duración de una franja vive en tardanzas.ts desde el 12 de septiembre de
@@ -242,6 +243,22 @@ export function cruzarExtrasConSaldo(
 // Un día sin fila no exige nada. Para que eso no se traduzca en deudas que
 // desaparecen mientras el backfill va a medias, quien llama completa el rango
 // con `combinarDiasEsperados`.
+//
+// LA SEMANA QUE CRUZA EL CORTE (15 de octubre de 2026). El motor de horas mide el
+// tope semanal desde el lunes aunque el período empiece a media semana, y paga solo
+// desde el corte (`pagarDesde` en liquidarRegistros). Lo exigido tiene que gastar el
+// tope igual: se le pasan los días desde el lunes (`desde`) y exige solo desde
+// `corte.exigirDesde`. Contado desde el corte, la diferencia salía como un faltante
+// que nadie debía: a quien cumplió 48 h de horario al minuto se le descontaban 6 h.
+//
+// Y el tope de la semana partida se gasta, al cruzar el corte, con lo MAYOR entre lo
+// exigido antes del corte y lo que el motor contó como ordinario antes del corte
+// (`corte.trabajadoAntes`). Con solo lo exigido, quien se quedó de más de lunes a
+// miércoles llegaba al jueves con menos tope ordinario del que se le exigía, y le
+// salía un faltante aunque cumpliera todo después (verificación adversarial). Lo
+// exigido antes del corte cuenta solo desde el día en que la persona existe
+// (`corte.existeDesde`): un alta del miércoles no gasta tope con lunes y martes, que
+// le perdonarían faltas reales.
 export function calcularHorasEsperadas(
   desde: Date,
   finExclusivo: Date,
@@ -250,7 +267,13 @@ export function calcularHorasEsperadas(
   permisos: PermisoRango[],
   politica: Set<string>,
   jornadaSemanalDe: (fecha: Date) => number,
+  corte?: { exigirDesde: Date; trabajadoAntes: number; existeDesde?: Date },
 ): { minutosEsperados: number; minutosPermisoRemunerado: number; minutosPermisoNoRemunerado: number } {
+  const exigirDesde = corte?.exigirDesde ?? desde;
+  // El primer día de la persona, a medianoche de Bogotá: antes de él no gasta tope.
+  const primerDia = corte?.existeDesde ? medianocheBogota(claveDiaBogota(corte.existeDesde)) : null;
+  const semanaDelCorte = semanaKeyDeZonificada(toZonedTime(exigirDesde, TZ));
+  let corteAplicado = false;
   const festSet = new Set(festivosDates.map(claveDia));
   // Se precalculan los rangos de permiso como claves de día para comparar por
   // calendario y no por instante (un permiso guardado a medianoche Bogotá no
@@ -295,12 +318,23 @@ export function calcularHorasEsperadas(
     // esa semana, igual que hace el motor de horas. Resolverla día a día
     // desincronizaría las dos mitades de una semana partida por un cambio de
     // vigencia (p. ej. la Ley 2101 el 15 de julio) y aparecería un saldo falso.
+    const antesDelCorte = dia.fecha < exigirDesde;
+    // Antes de existir, ni se exige ni gasta tope.
+    if (antesDelCorte && primerDia && dia.fecha < primerDia) continue;
+
     const sk = semanaKeyDeZonificada(z);
     if (!jornadaSemana.has(sk)) jornadaSemana.set(sk, jornadaSemanalDe(z));
     const topeSemana = jornadaSemana.get(sk)! * 60;
+    // Al cruzar el corte, lo gastado es lo mayor entre lo exigido y lo trabajado antes de él.
+    if (corte && !antesDelCorte && !corteAplicado && sk === semanaDelCorte) {
+      acumSemana.set(sk, Math.max(acumSemana.get(sk) ?? 0, corte.trabajadoAntes));
+      corteAplicado = true;
+    }
     const yaEnSemana = acumSemana.get(sk) ?? 0;
     minutosDia = Math.max(0, Math.min(minutosDia, topeSemana - yaEnSemana));
     acumSemana.set(sk, yaEnSemana + minutosDia);
+    // Antes del corte el día solo gasta tope: ni se exige ni lo cubre un permiso.
+    if (antesDelCorte) continue;
 
     const cubierto = minutosCubiertos(dia, minutosDia, rangos.filter(r => r.ini <= clave && clave <= r.fin));
     minutosPermisoRemunerado += cubierto.remunerado;

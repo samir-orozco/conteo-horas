@@ -21,7 +21,8 @@ import { COLABORADOR_SIN_FOTOS } from '../utils/columnasDeColaborador';
 // persona, y nunca dentro del motor: así no hay ninguna rama que pueda saltársela.
 import { fuenteDelDescansoDe } from '../utils/descansoDelHorario';
 // Los dos resúmenes de la empresa entera, compartidos con el correo semanal.
-import { agrupar, filasParaLugares, liquidarEmpresa, tardanzasDeEmpresa } from '../utils/reportesDeEmpresa';
+import { agrupar, filasParaLugares, idsDeLaEmpresa, liquidarEmpresa, tardanzasDeEmpresa } from '../utils/reportesDeEmpresa';
+import { desdeCuandoExiste } from '../utils/vinculacion';
 
 
 // Lo que devuelven los dos resúmenes que se filtran por sede. El filtro decide
@@ -56,7 +57,7 @@ export default async function reporteRoutes(app: FastifyInstance) {
     // solo los del período (15 de octubre de 2026).
     const desdeCuenta = desdeDeLaCuentaSemanal(desdeF);
 
-    const [colaborador, registros, festivos, tiposHoraTodos, jornadas, auxilios, cfgModo, cfgPermisos, permisosRango, diasMaterializados] = await Promise.all([
+    const [colaborador, registros, festivos, tiposHoraTodos, jornadas, auxilios, cfgModo, cfgPermisos, permisosRango, diasMaterializados, reingresos] = await Promise.all([
       // El colaborador viaja entero en la respuesta, pero sin sus fotos ni su descriptor facial,
       // que es un dato biométrico: se mandaban al navegador y ninguna pantalla los lee de aquí,
       // solo el nombre y el apellido (13 de septiembre de 2026).
@@ -108,6 +109,9 @@ export default async function reporteRoutes(app: FastifyInstance) {
         },
         orderBy: { fecha: 'asc' },
       }),
+      // Sus reingresos: desde cuándo existe para el saldo de la semana partida (`desdeCuandoExiste`). Por el índice
+      // (colaboradorId, fecha) de vinculacion_eventos.
+      prisma.vinculacionEvento.findMany({ where: { colaboradorId, tipo: 'REINGRESO' }, select: { fecha: true, creadoEn: true } }),
     ]);
 
     if (!colaborador) return reply.status(404).send({ error: 'Colaborador no encontrado' });
@@ -133,8 +137,6 @@ export default async function reporteRoutes(app: FastifyInstance) {
     // Se resuelven ANTES de liquidar porque de ahí sale también la hora de
     // salida programada que usa la tolerancia de jornada.
     const diasDeLaCuenta = combinarDiasEsperados(desdeCuenta, finExclusivo, diasMaterializados, horario);
-    // Los del período, para lo que se exigía (el saldo). Los de antes solo le sirven al motor.
-    const diasEsperados = diasDeLaCuenta.filter(d => d.fecha.getTime() >= desdeF.getTime());
     // El ExtraConfig sale de los días YA COMBINADOS, no del horario vigente: es
     // lo que impide que cambiar un horario reescriba la clasificación de extras
     // de un período ya liquidado.
@@ -148,9 +150,13 @@ export default async function reporteRoutes(app: FastifyInstance) {
     // sintética ahí contaminaría los totales de todos los reportes.
     const politica = parsearPoliticaPermisos(cfgPermisos?.valor);
     const sinHorario = !horario || !horario.activo;
+    // Desde el lunes, como el motor: los días de antes del corte gastan tope y no se exigen, con lo mayor entre lo
+    // exigido (desde que la persona existe) y lo que el motor contó como ordinario (ver `calcularHorasEsperadas`).
+    // Contado desde el corte, aparecía un faltante falso.
     const esperadas = calcularHorasEsperadas(
-      desdeF, finExclusivo, diasEsperados, festivosDates, permisosRango, politica,
+      desdeCuenta, finExclusivo, diasDeLaCuenta, festivosDates, permisosRango, politica,
       (fecha) => jornadaVigente(fecha, jornadas),
+      { exigirDesde: desdeF, trabajadoAntes: r.ordinariosAntesDelCorte, existeDesde: desdeCuandoExiste(colaborador.creadoEn, reingresos, finExclusivo) },
     );
     const saldo = armarSaldo(esperadas, r.minutosOrdinarios, calcularValorHora(colaborador.salarioMensual, horasMes), sinHorario,
       // Las extras de este período: con ellas se muestra el total trabajado y el efecto de cruzarlas
@@ -272,6 +278,9 @@ export default async function reporteRoutes(app: FastifyInstance) {
     const { desdeF, finExclusivo } = rangoReporte(desde, hasta);
     // Igual que /liquidacion: desde el lunes de la primera semana, para el tope semanal.
     const desdeCuenta = desdeDeLaCuentaSemanal(desdeF);
+    // Por la lista de personas y no por `colaborador: { empresaId }`, que MySQL resolvía recorriendo las tablas
+    // enteras (ver `idsDeLaEmpresa`).
+    const ids = idsDeLaEmpresa(empresaId);
 
     const [colaboradores, registrosTodos, festivos, tiposHoraTodos, jornadas, auxilios, cfgModo, cfgPermisos, permisosTodos, diasTodosEsp, sedes, defectoDe, filasDeLugar] = await Promise.all([
       // Solo lo que usa este reporte. La cédula y el cargo van para el archivo del ERP, que
@@ -289,14 +298,14 @@ export default async function reporteRoutes(app: FastifyInstance) {
       }),
       // Sin filtro de sede y también las abiertas, por lo mismo que en /extras-resumen: cada persona
       // se liquida con todos sus turnos y la sede solo decide quién aparece.
-      prisma.registro.findMany({
-        where: { colaborador: { empresaId }, fecha: { gte: desdeCuenta, lt: finExclusivo } },
+      ids.then(ids => prisma.registro.findMany({
+        where: { colaboradorId: { in: ids }, fecha: { gte: desdeCuenta, lt: finExclusivo } },
         select: {
           id: true, colaboradorId: true, fecha: true, entrada: true, salida: true, sedeId: true, sedeSalidaId: true,
           salidaAlmuerzo: true, salidaDescanso: true, descansoVentana: true,
         },
         orderBy: { fecha: 'asc' },
-      }),
+      })),
       prisma.diaFestivo.findMany({ where: { OR: [{ empresaId: null }, { empresaId }] } }),
       prisma.tipoHora.findMany(),
       prisma.jornadaVigencia.findMany(),
@@ -304,12 +313,12 @@ export default async function reporteRoutes(app: FastifyInstance) {
       prisma.configuracion.findUnique({ where: { empresaId_clave: { empresaId, clave: 'HORAS_EXTRA_MODO' } } }),
       prisma.configuracion.findUnique({ where: { empresaId_clave: { empresaId, clave: CLAVE_PERMISOS_REMUNERADOS } } }),
       // Solo las novedades que tocan el rango, con sus horas: una de parte del día no es un día.
-      prisma.permiso.findMany({
-        where: { colaborador: { empresaId }, aprobado: true, fechaInicio: { lt: finExclusivo }, fechaFin: { gte: desdeF } },
+      ids.then(ids => prisma.permiso.findMany({
+        where: { colaboradorId: { in: ids }, aprobado: true, fechaInicio: { lt: finExclusivo }, fechaFin: { gte: desdeF } },
         select: { colaboradorId: true, fechaInicio: true, fechaFin: true, horaInicio: true, horaFin: true, tipo: true },
-      }),
-      prisma.diaEsperado.findMany({
-        where: { colaborador: { empresaId }, fecha: { gte: desdeCuenta, lt: finExclusivo } },
+      })),
+      ids.then(ids => prisma.diaEsperado.findMany({
+        where: { colaboradorId: { in: ids }, fecha: { gte: desdeCuenta, lt: finExclusivo } },
         select: {
           colaboradorId: true, fecha: true, programado: true, horaEntrada: true,
           horaSalida: true, toleranciaMin: true, almuerzoMin: true, minutosEsperados: true,
@@ -321,7 +330,7 @@ export default async function reporteRoutes(app: FastifyInstance) {
           esDescanso: true,
         },
         orderBy: { fecha: 'asc' },
-      }),
+      })),
       prisma.sede.findMany({ where: { empresaId }, select: { id: true, nombre: true, activa: true } }),
       sedesPorDefecto(prisma, empresaId),
       filasParaLugares(empresaId, desdeF, finExclusivo),

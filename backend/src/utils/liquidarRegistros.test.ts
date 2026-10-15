@@ -1,7 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import { liquidarRegistros, cobroDePausas, desdeDeLaCuentaSemanal } from './liquidarRegistros';
 import { construirExtraConfig, type HorarioConFranjas } from './tardanzas';
-import type { DiaEsperadoCalculado } from './diasEsperados';
+import { calcularDiasEsperados, type DiaEsperadoCalculado } from './diasEsperados';
+import { armarSaldo, calcularHorasEsperadas } from './saldoTiempo';
 
 // LAS PAUSAS DE UN DÍA NO PUEDEN DEPENDER DE QUÉ FILA LLEGA PRIMERO (12 de septiembre de 2026).
 //
@@ -352,6 +353,119 @@ describe('liquidarRegistros: la semana que cruza el corte del período', () => {
     expect(r.diasCont).toBe(3);
     expect(r.registrosCont).toBe(3);
     expect(Object.keys(r.minutosPorDia).sort()).toEqual(['2026-09-10', '2026-09-11', '2026-09-12']);
+  });
+
+  // EL SALDO DE LA SEMANA PARTIDA (15 de octubre de 2026, revisión adversarial del arreglo). El motor gasta el tope
+  // desde el lunes, así que en un período que empieza a media semana hay MENOS horas ordinarias; si lo exigido se
+  // sigue contando desde el corte, la resta sale como un faltante que nadie debe y se descuenta del total a pagar.
+  // Reproducido: a quien cumplió 48 h de horario al minuto se le descontaban 6 h. Lo exigido tiene que gastar el
+  // tope igual que el motor: desde el lunes, y exigir solo desde el corte.
+  it('quien cumple su horario al minuto no queda debiendo nada, empiece el período el día que empiece', () => {
+    const horario = { activo: true, almuerzoMin: 0, franjas: [{ dias: ['LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO'], horaEntrada: '07:00', horaSalida: '16:00', tieneAlmuerzo: false }] } as unknown as HorarioConFranjas;
+    const LUNES_7 = dia(0, 0);
+    const finSemana = dia(7, 0);
+    const dias = calcularDiasEsperados(LUNES_7, finSemana, horario);
+    for (let n = 0; n <= 5; n++) {
+      const corte = dia(n, 0);
+      const r = liquidarDesde(semana, corte);
+      const esperadas = calcularHorasEsperadas(LUNES_7, finSemana, dias, [], [], new Set(), () => 42, { exigirDesde: corte, trabajadoAntes: r.ordinariosAntesDelCorte });
+      const saldo = armarSaldo(esperadas, r.minutosOrdinarios, 7142.86, false);
+      expect({ corte: n, saldo: saldo.minutosSaldo, descuento: saldo.montoSaldo }).toEqual({ corte: n, saldo: 0, descuento: 0 });
+    }
+  });
+});
+
+// EL SALDO DE LA SEMANA PARTIDA, SEGUNDA VUELTA (15 de octubre de 2026, verificación adversarial del arreglo). Gastar el
+// tope de los días de antes del corte con lo EXIGIDO solo cuadra si la persona trabajó justo lo exigido. El motor lo
+// gasta con lo TRABAJADO: quien se quedó de más de lunes a miércoles llegaba al jueves con menos tope ordinario, y la
+// diferencia salía como faltante aunque cumpliera todo después. Se gasta con lo mayor de los dos, y lo exigido antes
+// del corte solo cuenta desde el día en que la persona existe: un alta del miércoles no puede gastar tope con lunes y
+// martes, porque eso le perdonaría faltas reales.
+describe('el saldo de la semana partida: quien cumple después del corte no queda debiendo', () => {
+  const dia = (n: number, h: number) => new Date(Date.UTC(2026, 8, 7 + n, h + 5, 0, 0));
+  const LUNES_7 = dia(0, 0);
+  const FIN = dia(7, 0);
+  const JUEVES = dia(3, 0);
+  const reg = (n: number, desde: number, hasta: number) => ({ id: `r${n}`, fecha: dia(n, 0), entrada: dia(n, desde), salida: dia(n, hasta) });
+  const horarioDe = (dias: string[], entrada: string, salida: string) =>
+    ({ activo: true, almuerzoMin: 0, franjas: [{ dias, horaEntrada: entrada, horaSalida: salida, tieneAlmuerzo: false }] } as unknown as HorarioConFranjas);
+  const LUN_SAB = ['LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO'];
+  const SEMANAL = construirExtraConfig('SEMANAL', null, []);
+  // Lo que hace /liquidacion: motor y exigido desde el lunes, pagando y exigiendo desde el corte.
+  const saldoDel = (registros: ReturnType<typeof reg>[], horario: HorarioConFranjas, existeDesde: Date = LUNES_7) => {
+    const dias = calcularDiasEsperados(LUNES_7, FIN, horario);
+    const r = liquidarRegistros(registros, null, SEMANAL, [], TIPOS, JORNADAS, 1_500_000, 210, false, [], undefined, JUEVES);
+    const esperadas = calcularHorasEsperadas(LUNES_7, FIN, dias, [], [], new Set(), () => 42, { exigirDesde: JUEVES, trabajadoAntes: r.ordinariosAntesDelCorte, existeDesde });
+    return armarSaldo(esperadas, r.minutosOrdinarios, 7142.86, false);
+  };
+
+  it('A: horario de 48 h; se quedó 2 h de más de lunes a miércoles y cumplió de jueves a sábado', () => {
+    const regs = [0, 1, 2].map(n => reg(n, 7, 17)).concat([3, 4, 5].map(n => reg(n, 7, 15)));
+    expect(saldoDel(regs, horarioDe(LUN_SAB, '07:00', '15:00')).montoSaldo).toBe(0);
+  });
+
+  it('B: horario de martes a sábado de 9 h; cubrió además el lunes y cumplió de jueves a sábado', () => {
+    const regs = [reg(0, 7, 15), ...[1, 2, 3, 4, 5].map(n => reg(n, 7, 16))];
+    expect(saldoDel(regs, horarioDe(['MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO'], '07:00', '16:00')).montoSaldo).toBe(0);
+  });
+
+  it('C: horario de 40 h, por debajo del tope; trabajó de más de lunes a miércoles y cumplió después', () => {
+    const regs = [0, 1, 2].map(n => reg(n, 7, 17)).concat([3, 4].map(n => reg(n, 7, 15)));
+    expect(saldoDel(regs, horarioDe(['LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES'], '07:00', '15:00')).montoSaldo).toBe(0);
+  });
+
+  it('control: cumplió al minuto toda la semana', () => {
+    const regs = [0, 1, 2, 3, 4, 5].map(n => reg(n, 7, 15));
+    expect(saldoDel(regs, horarioDe(LUN_SAB, '07:00', '15:00')).montoSaldo).toBe(0);
+  });
+
+  it('una falta real después del corte sí se descuenta, entera', () => {
+    // Cumplió de lunes a viernes y no vino el sábado: debía 42 h en la semana y trabajó 40.
+    const regs = [0, 1, 2, 3, 4].map(n => reg(n, 7, 15));
+    expect(saldoDel(regs, horarioDe(LUN_SAB, '07:00', '15:00')).minutosSaldo).toBe(2 * 60);
+  });
+
+  it('quien faltó antes del corte y otra vez después paga en el período lo que la semana deja, sin cobrarle dos veces', () => {
+    // Faltó de lunes a miércoles (eso es de la quincena anterior) y el sábado. De lo exigido después del corte (18 h,
+    // porque lunes a miércoles ya gastaron 24 del tope de 42) trabajó 16: faltan 2 h.
+    const regs = [3, 4].map(n => reg(n, 7, 15));
+    expect(saldoDel(regs, horarioDe(LUN_SAB, '07:00', '15:00')).minutosSaldo).toBe(2 * 60);
+  });
+
+  it('un alta del miércoles: lunes y martes no gastan tope, y la falta del sábado se descuenta entera', () => {
+    const regs = [2, 3, 4].map(n => reg(n, 7, 15));
+    expect(saldoDel(regs, horarioDe(LUN_SAB, '07:00', '15:00'), dia(2, 9)).minutosSaldo).toBe(8 * 60);
+  });
+
+  it('el motor dice cuánto contó como ordinario antes del corte', () => {
+    const regs = [0, 1, 2].map(n => reg(n, 7, 17)).concat([3].map(n => reg(n, 7, 15)));
+    const r = liquidarRegistros(regs, null, SEMANAL, [], TIPOS, JORNADAS, 1_500_000, 210, false, [], undefined, JUEVES);
+    expect(r.ordinariosAntesDelCorte).toBe(30 * 60);
+  });
+});
+
+describe('calcularHorasEsperadas: la semana que cruza el corte', () => {
+  // De lunes a sábado, 8 h diarias (48 h) con jornada de 42 h. Desde el lunes 28 de septiembre de 2026 y exigiendo
+  // desde el jueves 1 de octubre: lunes a miércoles gastan 24 h del tope y quedan 18 h para jueves a sábado.
+  const horario = { activo: true, almuerzoMin: 0, franjas: [{ dias: ['LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO'], horaEntrada: '07:00', horaSalida: '15:00', tieneAlmuerzo: false }] } as unknown as HorarioConFranjas;
+  const f = (d: number) => new Date(Date.UTC(2026, 8, d, 5));
+  const LUNES = f(28);
+  const FIN = f(35); // domingo 4 de octubre, exclusivo
+  const dias = calcularDiasEsperados(LUNES, FIN, horario);
+
+  it('exige desde el corte lo que queda del tope después de los días de antes', () => {
+    expect(calcularHorasEsperadas(LUNES, FIN, dias, [], [], new Set(), () => 42, { exigirDesde: f(31), trabajadoAntes: 0 }).minutosEsperados).toBe(18 * 60);
+  });
+
+  it('sin corte, exige la semana entera hasta el tope, como siempre', () => {
+    expect(calcularHorasEsperadas(LUNES, FIN, dias, [], [], new Set(), () => 42).minutosEsperados).toBe(42 * 60);
+  });
+
+  it('un permiso remunerado de antes del corte no se descuenta del período', () => {
+    const permiso = { fechaInicio: f(28), fechaFin: f(28), horaInicio: null, horaFin: null, tipo: 'MEDICO' as const };
+    const conPermiso = calcularHorasEsperadas(LUNES, FIN, dias, [], [permiso], new Set(['MEDICO']), () => 42, { exigirDesde: f(31), trabajadoAntes: 0 });
+    expect(conPermiso.minutosEsperados).toBe(18 * 60);
+    expect(conPermiso.minutosPermisoRemunerado).toBe(0);
   });
 });
 

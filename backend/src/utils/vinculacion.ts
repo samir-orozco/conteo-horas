@@ -27,3 +27,15 @@ export function retiroEsCoherente(fecha: Date, eventos: EventoVinculacion[]): bo
   const minima = fechaMinimaDeRetiro(eventos);
   return minima === null || fecha.getTime() >= minima.getTime();
 }
+
+// Desde cuándo existe una persona para el saldo de un período que termina en `finExclusivo` (15 de octubre de 2026):
+// lo último entre su creación en el sistema y su último reingreso anterior al cierre. Un reingreso conserva el
+// `creadoEn` original y los días del hueco siguen programados; sin esto, gastaban el tope de la semana partida y
+// perdonaban faltas reales (verificación adversarial). El reingreso cuenta desde que se registró, nunca antes de su
+// fecha; uno posterior al período no cuenta, porque en ese período la persona estaba vinculada desde antes.
+export function desdeCuandoExiste(creadoEn: Date, reingresos: { fecha: Date; creadoEn: Date }[], finExclusivo: Date): Date {
+  const instantes = reingresos
+    .map(r => Math.max(r.fecha.getTime(), r.creadoEn.getTime()))
+    .filter(t => t < finExclusivo.getTime());
+  return new Date(Math.max(creadoEn.getTime(), ...instantes));
+}

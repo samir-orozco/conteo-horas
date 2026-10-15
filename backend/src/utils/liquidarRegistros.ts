@@ -210,6 +210,9 @@ export function liquidarRegistros(
   // Lo trabajado de cada día, con las pausas ya cobradas: la suma es minutosOrdinarios + minutosExtra.
   // Lo usa el correo semanal para sus barras (11 de octubre de 2026). No cambia ningún otro número.
   const minutosPorDia: Record<string, number> = {};
+  // Las ordinarias de los días de antes del corte, que gastaron tope semanal sin pagarse. El saldo las necesita para
+  // gastar el mismo tope del lado de lo exigido (`calcularHorasEsperadas`, 15 de octubre de 2026).
+  let ordinariosAntesDelCorte = 0;
 
   for (const [, regsDeUnaSemana] of porSemana) {
     const jornadaSemanal = jornadaVigente(regsDeUnaSemana[0].fecha, jornadas);
@@ -244,7 +247,7 @@ export function liquidarRegistros(
       const ordDelRegistro = Math.max(0, minutosOrdinariosTrabajados - almuerzoCobrado - descansoCobrado);
       minutosOrdSemana += ordDelRegistro;
       // Antes del período: ya sumó a la cuenta de la semana, que es para lo único que vino.
-      if (!sePaga(registro.fecha)) continue;
+      if (!sePaga(registro.fecha)) { ordinariosAntesDelCorte += ordDelRegistro; continue; }
 
       if (incluirDetalle) {
         // Solo lo que genera pago adicional (excluye HOD, que ya está en el salario)
@@ -305,5 +308,5 @@ export function liquidarRegistros(
   // con 0 cerradas y 2 días trabajados. Un día sin hora de entrada no es una marcación.
   const diasCont = new Set(delPeriodo.filter(r => r.entrada).map(r => claveDiaBogota(r.fecha))).size;
 
-  return { liquidacion, totalRecargos, totalExtra, totalAdicional, registrosCont, diasCont, detalleRegistros, minutosOrdinarios, minutosExtra, minutosConRecargo, minutosPorDia };
+  return { liquidacion, totalRecargos, totalExtra, totalAdicional, registrosCont, diasCont, detalleRegistros, minutosOrdinarios, minutosExtra, minutosConRecargo, minutosPorDia, ordinariosAntesDelCorte };
 }

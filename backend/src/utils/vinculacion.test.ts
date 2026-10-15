@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { fechaMinimaDeRetiro, retiroEsCoherente } from './vinculacion';
+import { fechaMinimaDeRetiro, retiroEsCoherente, desdeCuandoExiste } from './vinculacion';
 
 // Fechas de calendario en la convención de Bogotá (medianoche = 05:00 UTC).
 const f = (iso: string) => new Date(iso + 'T05:00:00.000Z');
@@ -65,5 +65,32 @@ describe('si un retiro es coherente con la historia', () => {
 
   it('sin historia, cualquier fecha vale', () => {
     expect(retiroEsCoherente(f('2020-01-01'), [])).toBe(true);
+  });
+});
+
+// DESDE CUÁNDO EXISTE PARA EL SALDO (15 de octubre de 2026, verificación adversarial). Los días de antes de que la
+// persona existiera no gastan el tope de la semana partida. Un reingreso conserva el `creadoEn` original, y los días
+// del hueco siguen programados: sin mirar el reingreso, gastaban tope y perdonaban faltas reales después del corte.
+// El reingreso cuenta desde que se registró, nunca antes de su fecha, y solo si ya había pasado al cierre del período.
+describe('desdeCuandoExiste', () => {
+  const t = (iso: string) => new Date(iso);
+  const creadoEn = t('2025-03-10T14:00:00.000Z');
+  const reingreso = (fecha: string, creado: string) => ({ fecha: f(fecha), creadoEn: t(creado) });
+
+  it('sin reingresos, desde que se creó', () => {
+    expect(desdeCuandoExiste(creadoEn, [], f('2026-10-16'))).toEqual(creadoEn);
+  });
+
+  it('con un reingreso, desde que se registró', () => {
+    expect(desdeCuandoExiste(creadoEn, [reingreso('2026-09-30', '2026-09-30T14:00:00.000Z')], f('2026-10-16'))).toEqual(t('2026-09-30T14:00:00.000Z'));
+  });
+
+  it('registrado antes de su fecha, desde su fecha; con varios, el último', () => {
+    expect(desdeCuandoExiste(creadoEn, [reingreso('2026-09-30', '2026-09-25T14:00:00.000Z'), reingreso('2026-05-01', '2026-05-01T14:00:00.000Z')], f('2026-10-16')))
+      .toEqual(f('2026-09-30'));
+  });
+
+  it('un reingreso posterior al período no cuenta: en ese período estaba vinculada desde antes', () => {
+    expect(desdeCuandoExiste(creadoEn, [reingreso('2026-10-20', '2026-10-20T14:00:00.000Z')], f('2026-10-16'))).toEqual(creadoEn);
   });
 });

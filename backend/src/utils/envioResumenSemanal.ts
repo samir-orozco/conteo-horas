@@ -3,7 +3,7 @@ import { enviarCorreo, destinatarios } from './correo';
 import { estadoDelContrato, type TipoContrato } from './contratos';
 import { rangoReporte } from './fechas';
 import { atencionDeLaEmpresa, esClimaSinPlan } from './atencionClima';
-import { liquidarEmpresa, tardanzasDeEmpresa } from './reportesDeEmpresa';
+import { idsDeLaEmpresa, liquidarEmpresa, tardanzasDeEmpresa } from './reportesDeEmpresa';
 import {
   semanaDelResumen, armarResumen, correoDelResumen, avisoDelResumen, CLAVE_RESUMEN_SEMANAL,
   type Semana, type Periodo, type EntradaDelResumen,
@@ -34,13 +34,13 @@ async function entradaDe(empresaId: string, semana: Semana & { anterior: Semana 
   const [actual, anterior, cerrados, novedadesPorAprobar, contratos, atencionClimaSinPlan] = await Promise.all([
     periodo(empresaId, semana),
     periodo(empresaId, semana.anterior),
-    // Las salidas que puso el auto-cierre. Por (colaboradorId, fecha), igual que los resúmenes:
-    // ver el EXPLAIN en el commit (§8.4).
-    prisma.registro.findMany({
-      where: { colaborador: { empresaId }, fecha: { gte: desdeF, lt: finExclusivo }, salidaEstimada: true },
+    // Las salidas que puso el auto-cierre, por la lista de personas: con `colaborador: { empresaId }` MySQL
+    // recorría `registros` entera (medido el 15 de octubre de 2026, ver `idsDeLaEmpresa`).
+    idsDeLaEmpresa(empresaId).then(ids => prisma.registro.findMany({
+      where: { colaboradorId: { in: ids }, fecha: { gte: desdeF, lt: finExclusivo }, salidaEstimada: true },
       select: { fecha: true, colaborador: { select: { nombre: true, apellido: true } } },
       orderBy: { fecha: 'asc' },
-    }),
+    })),
     prisma.permiso.count({ where: { aprobado: false, colaborador: { empresaId, activo: true } } }),
     prisma.contrato.findMany({
       where: { estado: 'VIGENTE', colaborador: { empresaId, activo: true } },

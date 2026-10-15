@@ -56,7 +56,7 @@ export async function filasParaLugares(empresaId: string, desdeF: Date, finExclu
 // lo que no era de esta (un Table scan, CLAUDE.md §8.4); con la lista entra por el índice (colaboradorId, fecha).
 // Medido el 15 de octubre de 2026 al llevar las extras de la quincena al Inicio, que se carga a cada rato.
 // prisma/diferencial-consultas-por-empresa.ts comprobó que los reportes responden byte a byte lo mismo.
-function idsDeLaEmpresa(empresaId: string): Promise<string[]> {
+export function idsDeLaEmpresa(empresaId: string): Promise<string[]> {
   return prisma.colaborador.findMany({ where: { empresaId }, select: { id: true } }).then(cs => cs.map(c => c.id));
 }
 
@@ -169,6 +169,7 @@ export async function liquidarEmpresa(empresaId: string, desde: string, hasta: s
 // Llegadas tarde de TODOS los colaboradores activos en un período.
 export async function tardanzasDeEmpresa(empresaId: string, desde: string, hasta: string) {
   const { desdeF, finExclusivo } = rangoReporte(desde, hasta);
+  const ids = idsDeLaEmpresa(empresaId);
 
   const [colaboradores, registrosTodos, festivos, permisosTodos, jornadas, diasTodos, sedes, defectoDe] = await Promise.all([
     // Solo lo que usa este resumen, igual que el de extras: sin `select` venían todas las
@@ -192,18 +193,18 @@ export async function tardanzasDeEmpresa(empresaId: string, desde: string, hasta
     filasParaLugares(empresaId, desdeF, finExclusivo),
     prisma.diaFestivo.findMany({ where: { OR: [{ empresaId: null }, { empresaId }] } }),
     // Con las horas, igual que en /tardanzas: una salida temprana no excusa la llegada.
-    prisma.permiso.findMany({
-      where: { colaborador: { empresaId }, aprobado: true },
+    ids.then(ids => prisma.permiso.findMany({
+      where: { colaboradorId: { in: ids }, aprobado: true },
       select: { fechaInicio: true, fechaFin: true, horaInicio: true, horaFin: true, tipo: true, aprobado: true, colaboradorId: true },
-    }),
+    })),
     prisma.jornadaVigencia.findMany(),
     // Los días de TODA la empresa en una sola consulta; se agrupan abajo. Uno
     // por colaborador serían N consultas para pintar una tabla.
     //
     // SIN `esDescanso`, por lo mismo que en /tardanzas: este resumen cuenta llegadas tarde, no
     // recargos, y seleccionar la columna aquí sugeriría que la respeta.
-    prisma.diaEsperado.findMany({
-      where: { colaborador: { empresaId }, fecha: { gte: desdeF, lt: finExclusivo } },
+    ids.then(ids => prisma.diaEsperado.findMany({
+      where: { colaboradorId: { in: ids }, fecha: { gte: desdeF, lt: finExclusivo } },
       select: {
         colaboradorId: true, fecha: true, programado: true, horaEntrada: true,
         horaSalida: true, toleranciaMin: true, almuerzoMin: true, minutosEsperados: true,
@@ -211,7 +212,7 @@ export async function tardanzasDeEmpresa(empresaId: string, desde: string, hasta
         descansos: true,
       },
       orderBy: { fecha: 'asc' },
-    }),
+    })),
     // Todas las sedes, también las desactivadas (ver el resumen de extras).
     prisma.sede.findMany({ where: { empresaId }, select: { id: true, nombre: true, activa: true } }),
     // La sede por defecto de cada persona, en lote (ver el resumen de extras).
