@@ -46,7 +46,19 @@ export type Dash = {
   // El clima de los últimos 7 días (15 de octubre de 2026). null: no es el administrador. Sin el campo: un
   // servidor anterior. Nunca trae nombres: son las cifras de la vista sin el plan (backend: utils/climaDelInicio.ts).
   clima?: ClimaDelInicio | null;
+  // «Próximos días» (15 de octubre de 2026): lo que viene en 30 días, por fecha. Reemplaza a `proximosFestivos` y
+  // `cumpleanos`, que siguen llegando para el Inicio anterior. Sin el campo: un servidor anterior.
+  agenda?: EventoDeAgenda[];
 };
+
+// `dia` es la medianoche de Bogotá (05:00Z) y `enDias` lo cuenta el servidor desde hoy en Bogotá. El tipo es un texto
+// abierto en la práctica: un servidor más nuevo podría mandar uno que esta pantalla no conoce.
+export type EventoDeAgenda = { dia: string; enDias: number } & (
+  | { tipo: 'FESTIVO'; nombre: string; propio: boolean }
+  | { tipo: 'CUMPLEANOS' | 'CONTRATO_PREAVISO' | 'CONTRATO_VENCE'; colaboradorId: string; nombre: string }
+  | { tipo: 'SUSCRIPCION_VENCE'; eraPrueba: boolean }
+  | { tipo: 'PRUEBA_CLIMA_TERMINA' }
+);
 
 export type VistazoDelClima = { total: number; personas: number; promedio: number | null; variacion: number | null; jornadas: number; atencion: number };
 export type PruebaDelClima = { disponible: boolean; vigente: { hasta: string } | null; terminada: { hasta: string } | null; dias: number };

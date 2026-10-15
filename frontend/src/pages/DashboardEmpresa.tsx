@@ -15,6 +15,7 @@ import PrimerosPasos from '../features/dashboard/components/PrimerosPasos';
 import AsistenciaSemana from '../features/dashboard/components/AsistenciaSemana';
 import LlegadasTarde7d from '../features/dashboard/components/LlegadasTarde7d';
 import ClimaSemana from '../features/dashboard/components/ClimaSemana';
+import ProximosDias from '../features/dashboard/components/ProximosDias';
 import type { Salida, TurnoOlvidado, Novedad } from '../features/dashboard/types';
 
 export default function DashboardEmpresa() {
@@ -81,17 +82,26 @@ export default function DashboardEmpresa() {
         {d.llegadasTarde7d ? <LlegadasTarde7d {...d.llegadasTarde7d} /> : <LlegadasTardeCard items={d.llegadasTardeHoy} />}
       </div>
 
-      {/* El clima de los últimos 7 días: solo le llega al administrador. */}
-      {d.clima && (
-        <div className="grid lg:grid-cols-2 gap-4">
-          <ClimaSemana clima={d.clima} />
+      {/* El clima de los últimos 7 días, que solo le llega al administrador, junto a «Próximos días». Con un
+          servidor anterior, que no manda la agenda, quedan los festivos y los cumpleaños. */}
+      {d.agenda ? (
+        <div className="grid lg:grid-cols-2 gap-4 items-start">
+          {d.clima && <ClimaSemana clima={d.clima} />}
+          <ProximosDias eventos={d.agenda} />
         </div>
+      ) : (
+        <>
+          {d.clima && (
+            <div className="grid lg:grid-cols-2 gap-4">
+              <ClimaSemana clima={d.clima} />
+            </div>
+          )}
+          <div className="grid lg:grid-cols-2 gap-4">
+            <FestivosCard items={d.proximosFestivos} />
+            <CumpleanosCard items={d.cumpleanos} />
+          </div>
+        </>
       )}
-
-      <div className="grid lg:grid-cols-2 gap-4">
-        <FestivosCard items={d.proximosFestivos} />
-        <CumpleanosCard items={d.cumpleanos} />
-      </div>
 
       {/* Modales */}
       {cerrarTurno && <ModalCerrarTurno turno={cerrarTurno} onClose={() => setCerrarTurno(null)} onDone={reload} />}

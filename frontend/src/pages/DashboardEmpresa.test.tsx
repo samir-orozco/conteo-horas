@@ -76,6 +76,14 @@ describe('DashboardEmpresa', () => {
     expect(screen.queryByRole('region', { name: 'Clima laboral' })).not.toBeInTheDocument();
   });
 
+  // «Próximos días» (15 de octubre de 2026) reemplaza a las tarjetas de festivos y cumpleaños.
+  it('con la agenda, «Próximos días» en lugar de los festivos y los cumpleaños', () => {
+    montar({ ...BASE, agenda: [{ tipo: 'FESTIVO', dia: '2026-11-02T05:00:00.000Z', enDias: 19, nombre: 'Todos los Santos', propio: false }] });
+    expect(screen.getByRole('heading', { name: 'Próximos días' })).toBeInTheDocument();
+    expect(screen.queryByText('Próximos festivos')).not.toBeInTheDocument();
+    expect(screen.queryByText('Cumpleaños del mes')).not.toBeInTheDocument();
+  });
+
   it('con un servidor anterior, sin los campos nuevos, el Inicio sigue en pie', () => {
     montar(BASE);
     expect(screen.getByRole('button', { name: /1 turno sin cerrar/ })).toBeInTheDocument();
@@ -83,5 +91,8 @@ describe('DashboardEmpresa', () => {
     expect(screen.getByText('En planta ahora', { selector: 'p' })).toBeInTheDocument();
     // Sin la semana, queda la lista de hoy.
     expect(screen.getByText('Llegadas tarde hoy', { selector: 'p' })).toBeInTheDocument();
+    // Sin la agenda, quedan los festivos y los cumpleaños.
+    expect(screen.getByText('Próximos festivos')).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Próximos días' })).not.toBeInTheDocument();
   });
 });

@@ -19,6 +19,7 @@ import { capacidadesEmpresa } from '../utils/capacidades';
 import { pruebasDe, resumenDelPanel } from '../utils/lecturasDelClima';
 import { DIAS_DE_PRUEBA, estadoDePrueba } from '../utils/pruebaClima';
 import { climaParaElInicio } from '../utils/climaDelInicio';
+import { armarAgenda } from '../utils/agendaDelInicio';
 
 const TZ = 'America/Bogota';
 const CODIGOS_EXTRA = new Set(['HED', 'HEN', 'HEDD', 'HEND']);
@@ -70,8 +71,12 @@ export default async function dashboardRoutes(app: FastifyInstance) {
       prisma.diaFestivo.findMany({ where: { OR: [{ empresaId: null }, { empresaId }], fecha: { gte: ventana.inicio < inicioSemanaMes ? ventana.inicio : inicioSemanaMes, lte: en45 } } }),
       prisma.jornadaVigencia.findMany(),
       prisma.tipoHora.findMany(),
-      // Por su llave primaria. Solo hace falta la fecha de creación, para saber si sigue arrancando.
-      prisma.empresa.findUnique({ where: { id: empresaId }, select: { creadoEn: true } }),
+      // Por su llave primaria: la fecha de creación, para saber si sigue arrancando, y la suscripción, para
+      // anunciar su vencimiento en «Próximos días».
+      prisma.empresa.findUnique({
+        where: { id: empresaId },
+        select: { creadoEn: true, exentaPago: true, suscripcion: { select: { estado: true, finPrueba: true, pagadoHasta: true } } },
+      }),
     ]);
 
     const colIds = colaboradores.map(c => c.id);
@@ -392,6 +397,7 @@ export default async function dashboardRoutes(app: FastifyInstance) {
     // abrir casos: un GET que se carga a cada rato no escribe.
     const esAdministrador = (request.user as { rol?: string } | undefined)?.rol === 'ADMIN';
     let clima: ReturnType<typeof climaParaElInicio> = null;
+    let pruebaDelClima: { hasta: Date } | null = null;
     if (esAdministrador) {
       const desdeClima = ventana.claves7[0];
       const hastaClima = ventana.claves7[6];
@@ -401,12 +407,25 @@ export default async function dashboardRoutes(app: FastifyInstance) {
         resumenDelPanel(empresaId, desdeClima, hastaClima, null, false),
         prisma.seguimientoClima.count({ where: { empresaId, estado: { in: ['SIN_REVISAR', 'EN_SEGUIMIENTO'] } } }),
       ]);
+      const prueba = estadoDePrueba(pruebas, ahora);
+      pruebaDelClima = prueba.vigente;
       clima = climaParaElInicio({
         esAdministrador, tieneClima: !!cap.features.clima, desde: desdeClima, hasta: hastaClima,
-        resumen: resumenClima, prueba: { ...estadoDePrueba(pruebas, ahora), dias: DIAS_DE_PRUEBA },
+        resumen: resumenClima, prueba: { ...prueba, dias: DIAS_DE_PRUEBA },
         casosAbiertosEnLaBase: casosEnLaBase,
       });
     }
+
+    // ===== Próximos días =====
+    // Festivos, cumpleaños, contratos y, solo al administrador, el vencimiento de la suscripción y el fin de la
+    // prueba del clima en su última semana (utils/agendaDelInicio.ts). `proximosFestivos` y `cumpleanos` siguen
+    // viajando para el Inicio anterior, mientras dure la ventana del despliegue.
+    const agenda = armarAgenda({
+      ahora, festivos,
+      personas: colaboradores.map(c => ({ id: c.id, nombre: `${c.nombre} ${c.apellido}`, fechaNacimiento: c.fechaNacimiento })),
+      contratos: pendientes.contratos,
+      esAdministrador, suscripcion: empresa?.suscripcion ?? null, exentaPago: empresa?.exentaPago ?? false, pruebaDelClima,
+    });
 
     // ===== Primeros pasos =====
     // null es «no aplica» (la empresa ya pasó su primer mes o completó los pasos). Un backend anterior no
@@ -442,6 +461,7 @@ export default async function dashboardRoutes(app: FastifyInstance) {
       pendientes: clima?.estado === 'ACTIVO' ? { ...pendientes, casosClima: clima.casosAbiertos } : pendientes,
       primerosPasos: pasos,
       clima,
+      agenda,
       asistenciaSemana: semana.asistenciaSemana,
       llegadasTarde7d: { dias: semana.llegadasTarde7d.dias, personas: personasDeLaSemana },
     };
