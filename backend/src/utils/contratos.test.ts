@@ -56,6 +56,44 @@ describe('estadoDelContrato — vencimiento y preaviso', () => {
   });
 });
 
+// EL DÍA DE HOY DURA HASTA LA MEDIANOCHE DE BOGOTÁ (14 de octubre de 2026). Las fechas se guardan a
+// medianoche de Bogotá, pero «hoy» llega como un instante cualquiera, y contar los días redondeando
+// milisegundos partía el día en dos: desde el mediodía, el último día del contrato ya salía vencido y el
+// último día para avisar ya salía pasado. Lo encontró la revisión de los pendientes del Inicio, que con
+// ese error le decía a la empresa «se prorroga solo» la tarde en que todavía podía avisar.
+describe('estadoDelContrato — el día de hoy dura hasta la medianoche de Bogotá', () => {
+  // Un instante dado en hora de Bogotá (UTC-5 todo el año).
+  const bog = (a: number, m: number, d: number, h: number, min = 0) => new Date(Date.UTC(a, m - 1, d, h + 5, min, 0));
+
+  it('el último día del contrato sigue vigente hasta las 11:59 p. m.', () => {
+    const c = fijo({ fechaInicio: f(2026, 1, 1), fechaFin: f(2026, 10, 14) });
+    for (const hoy of [bog(2026, 10, 14, 0, 1), bog(2026, 10, 14, 12, 1), bog(2026, 10, 14, 23, 59)]) {
+      const e = estadoDelContrato(c, [], hoy);
+      expect(e.diasParaVencer).toBe(0);
+      expect(e.alertas.map(a => a.tipo)).toEqual(['PREAVISO_VENCIDO']);
+    }
+    // Y al día siguiente sí está vencido: ya no lleva alertas de vigente.
+    expect(estadoDelContrato(c, [], bog(2026, 10, 15, 0, 1)).diasParaVencer).toBe(-1);
+  });
+
+  it('el último día para avisar sigue siendo a tiempo por la tarde', () => {
+    // Vence el 13 de noviembre: el preaviso se puede dar hasta el 14 de octubre.
+    const c = fijo({ fechaInicio: f(2026, 1, 1), fechaFin: f(2026, 11, 13) });
+    const e = estadoDelContrato(c, [], bog(2026, 10, 14, 15));
+    expect(e.diasParaPreaviso).toBe(0);
+    expect(e.preavisoVencido).toBe(false);
+    expect(e.alertas.map(a => a.tipo)).toEqual(['PREAVISO_PROXIMO']);
+  });
+
+  it('la cuenta de días es la misma por la mañana y por la noche', () => {
+    const c = fijo({ fechaInicio: f(2026, 1, 1), fechaFin: f(2026, 12, 31) });
+    const manana = estadoDelContrato(c, [], bog(2026, 10, 14, 8));
+    const noche = estadoDelContrato(c, [], bog(2026, 10, 14, 20));
+    expect(noche.diasParaVencer).toBe(manana.diasParaVencer);
+    expect(noche.diasParaPreaviso).toBe(manana.diasParaPreaviso);
+  });
+});
+
 describe('estadoDelContrato — la regla de la cuarta prórroga', () => {
   const trimestral = (n: number) => Array.from({ length: n }, (_, i) => ({
     desde: f(2026, 4 + i * 3, 1),

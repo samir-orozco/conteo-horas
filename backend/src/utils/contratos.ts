@@ -18,6 +18,8 @@
 // junio de 2025, el tope de cuatro años NO se cuenta desde que se firmaron, sino
 // desde esa fecha. Un contrato de 2019 se vuelve indefinido el 25 de junio de 2029.
 
+import { rangoDiaBogota } from './fechas';
+
 export type TipoContrato = 'INDEFINIDO' | 'FIJO' | 'OBRA_LABOR' | 'APRENDIZAJE';
 
 export type ContratoParaCalculo = {
@@ -85,6 +87,10 @@ export function estadoDelContrato(
   hoy: Date,
 ): EstadoContrato {
   const { tipo, fechaInicio } = contrato;
+  // Los días se cuentan desde la medianoche de Bogotá de hoy, como están guardadas las fechas. Contados
+  // desde el instante, el redondeo partía el día en dos: desde el mediodía, el último día del contrato ya
+  // salía vencido y el último día para avisar ya salía pasado (14 de octubre de 2026).
+  const dia = rangoDiaBogota(hoy).inicioDia;
   const alertas: Alerta[] = [];
 
   // El indefinido y el de obra o labor no vencen en una fecha, así que no hay
@@ -95,9 +101,9 @@ export function estadoDelContrato(
   const ultima = enOrden[enOrden.length - 1];
   const finVigente = tieneVencimiento ? (ultima?.hasta ?? contrato.fechaFin) : null;
 
-  const diasParaVencer = finVigente ? dias(hoy, finVigente) : null;
+  const diasParaVencer = finVigente ? dias(dia, finVigente) : null;
   const fechaLimitePreaviso = finVigente ? sumarDias(finVigente, -DIAS_PREAVISO) : null;
-  const diasParaPreaviso = fechaLimitePreaviso ? dias(hoy, fechaLimitePreaviso) : null;
+  const diasParaPreaviso = fechaLimitePreaviso ? dias(dia, fechaLimitePreaviso) : null;
   const vigente = diasParaVencer === null || diasParaVencer >= 0;
   const preavisoVencido = !!fechaLimitePreaviso && vigente && diasParaPreaviso! < 0;
 
@@ -132,7 +138,7 @@ export function estadoDelContrato(
   // Etapa del aprendiz
   let etapa: 'LECTIVA' | 'PRACTICA' | null = null;
   if (tipo === 'APRENDIZAJE' && contrato.fechaInicioPractica) {
-    etapa = hoy >= contrato.fechaInicioPractica ? 'PRACTICA' : 'LECTIVA';
+    etapa = dia >= contrato.fechaInicioPractica ? 'PRACTICA' : 'LECTIVA';
   }
 
   // ===== Alertas =====
@@ -143,11 +149,11 @@ export function estadoDelContrato(
   if (proximaProrrogaMinimaUnAno) alertas.push({ tipo: 'PRORROGA_MINIMO_UN_ANO', dias: null });
   if (yaSuperaElTope) alertas.push({ tipo: 'SUPERA_TOPE', dias: null });
   else if (vigente && seVuelveIndefinidoEl) {
-    const d = dias(hoy, seVuelveIndefinidoEl);
+    const d = dias(dia, seVuelveIndefinidoEl);
     if (d >= 0 && d <= DIAS_PREAVISO) alertas.push({ tipo: 'SE_VUELVE_INDEFINIDO', dias: d });
   }
   if (etapa === 'LECTIVA' && contrato.fechaInicioPractica) {
-    const d = dias(hoy, contrato.fechaInicioPractica);
+    const d = dias(dia, contrato.fechaInicioPractica);
     if (d >= 0 && d <= DIAS_PREAVISO) alertas.push({ tipo: 'CAMBIO_ETAPA_APRENDIZ', dias: d });
   }
 
