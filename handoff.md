@@ -28,42 +28,34 @@ Tres reglas que gobiernan esto y no se tocan sin pensarlo:
 
 ## Current State
 
-**Medido el 7 de octubre de 2026, con `git fetch` delante y las puertas corridas ese mismo
-día. No escrito de memoria.** La medición anterior de esta sección era del 1 de octubre. Desde
-entonces entraron **43 commits** y hubo tres despliegues más (4, 5 y 6 de octubre), y este
-archivo no se tocó en ninguno: la regla 1 del final se incumplió tres veces seguidas. Esto lo
-corrige.
+**Medido el 16 de octubre de 2026, con `git fetch` delante y las puertas corridas ese mismo día. No escrito de
+memoria.** La medición anterior era del 7 al 9 de octubre. Desde entonces hubo despliegues el 12, el 13, el 14 y dos el 15,
+de dos sesiones, y este archivo no se tocó en ninguno: la regla 1 del final se incumplió otra vez, también por la sesión del
+nº 39 y de la auditoría. Esto lo corrige.
 
 | rama | hash | de qué fuente |
 |---|---|---|
-| `master` | `e70468d` | **lo desplegado y verificado.** Alineado el 9 de octubre a pedido del dueño: avance limpio de 6 commits desde `31f9698`, sin `--force`, leído en `origin`. Los 13 archivos de código de ese rango son exactamente los ya desplegados (`b1a09ac` y `1d563f4`); el resto es documentación |
-| `develop` | `fa690de` + el commit de este handoff (solo docs); **`origin/develop` = `fa690de`**, subido el 9 de octubre antes de armar los artefactos | todo lo de arriba, **ya desplegado**: reseñas, Excel de Registros con dos columnas de sede y su hoja «Entradas por día» |
-| `frontend-build` | `a19b885` | de `fa690de`, desplegado el 9 de octubre (antes: `b1a09ac` el 8; `95f694a` solo se publicó y nunca se copió) |
-| `backend-build` | `c1bea8d` | de `fa690de`, desplegado el 9 de octubre: 6 archivos modificados y 2 nuevos (`routes/resenas.js`, `utils/resenas.js`) respecto de `1d563f4` (la escalada, del mismo día) |
-| `prisma-build` | `6ccd2be` | de `fa690de`, desplegado el 9 de octubre ANTES del backend: 7 archivos; el esquema solo suma (0 líneas quitadas, 69 añadidas: el modelo `Resena`); binarios idénticos |
-| bundle público | `index-BSG4ZGoU.js` | comprobado el 9 de octubre: el `index.html` del docroot lo pide, el sitio lo entrega por HTTPS (`curl` desde el servidor) y trae «Entradas por día» |
+| `master` | `10a9480` | **atrasado**: es lo desplegado el 13 de octubre. Producción va en `1f8187b`. Se alinea cuando el dueño lo pida (avance limpio, sin `--force`, leído en `origin`) |
+| `develop` | `1f8187b` = `origin/develop` | todo, y todo desplegado |
+| `prisma-build` | `159c9fc` | de `eb7f5fd`, con el modelo `ConcesionFuncion`; el SQL `sql/concesiones-funcion.sql` se corrió en producción el 15/10 a las 23:28 |
+| `backend-build` | `5d74398` | de `1f8187b` entero |
+| `frontend-build` | `c6774ab` | de `1f8187b` entero; su `index.html` pide `assets/index-B3c7QJFk.js` |
 
-Las tres ramas de build se movieron el 9 de octubre: `backend-build` primero con `2063dd4` (el arreglo de la escalada a
-`SUPER_ADMIN`, `1d563f4`) y esa misma noche con las reseñas; `prisma-build` con el modelo `Resena`, que es el primer cambio de esquema
-desde el 4 de octubre; y `frontend-build` con las reseñas y el Excel. **Código commiteado de `develop` sin desplegar, medido el 9 de octubre
-a las 22:30: ninguno.**
-
-Qué llevan, según los mensajes de los propios artefactos: el backend y el esquema, el clima
-laboral y el kiosco que se pausa si no se paga; el frontend, además, lo que se hizo del 4 al 6
-de octubre (ver *Next step* nº 4 y `docs/PENDIENTES.md`).
+Las tres ramas de build y la hora salen del registro de la sesión que desplegó el 15/10 por la noche (memoria
+`horapro-inicio-dashboard`), que lo comprobó por efecto: `grep` en el `dist` vivo, 401 en la ruta nueva (antes 404), un
+solo proceso de la app, el bundle servido. **El 16/10 no se volvió a mirar el servidor.** **Código commiteado en `develop`
+sin desplegar: ninguno**: los dos artefactos dicen «develop 1f8187b entero» y `develop` es `1f8187b`.
 
 | | backend | frontend |
 |---|---|---|
-| pruebas | **102 archivos / 1750** (+1 fallo esperado), a `31f9698`; **sin re-medir tras `2063dd4`** | **189 / 2272**, medido el 8 de octubre en un árbol limpio en `f2a4678` |
+| pruebas | **132 archivos / 2275** (+1 fallo esperado) | **221 / 2770** |
 | tipos | `tsc --noEmit`, código 0 | `tsc -b`, código 0 |
-| lint | **173 avisos, 0 errores** — su tope | 65 errores / 6 avisos, la línea base |
+| lint | **168 avisos, 0 errores**: su tope | 65 errores / 6 avisos, la línea base de siempre |
 
-**El backend se midió en un `git worktree` limpio sobre `31f9698`, no en la carpeta de trabajo**: ese
-día la carpeta tenía trabajo de OTRA sesión sin commitear (un arreglo en `routes/auth.ts` con
-`utils/rolDeEmpresa*` y el tope del lint bajado a 168), y medido ahí daba 104 / 1764 y 168 avisos:
-números que no son de lo que está en `develop`. Es la regla de *Dos sesiones armando artefactos*
-aplicada a las puertas: un verde solo vale si el árbol estaba limpio. El frontend no tenía
-nada ajeno (`git diff --stat -- frontend` salía vacío).
+Medido el 16 de octubre sobre `1f8187b`, en la carpeta de trabajo: ese día `backend` y `frontend` no tenían nada sin
+commitear (`git diff --stat HEAD -- backend frontend` vacío; solo `.claude/launch.json` y tres videos sueltos). El
+frontend corrió con `--maxWorkers=3`: con la máquina cargada (carga de 165 el 14/10), corridas completas dieron fallos de
+tiempo y de foco en pruebas que solos pasan.
 
 ### El recargo dominical se rompió y se arregló (1 de octubre de 2026)
 
@@ -153,36 +145,35 @@ de hace diez minutos puede ya no ser la cabeza.
 
 ### Lo pendiente de desplegar
 
-**Nada.** Todo lo commiteado en `develop` está desplegado desde el 9 de octubre (entre las 21:30 y las 22:30 de Bogotá; ver
-*El despliegue completo del 9 de octubre*). Lo que sigue, tal como estaba descrito antes de desplegar, es **lo que llevó**:
-el Excel de Registros (`5dfc0af`), las reseñas de la otra sesión (`01aa7e9`) y la hoja «Entradas por día» (`fb46212`).
+**Nada de código.** Quedan dos cosas del despliegue del 15/10, según la sesión que lo hizo: (1) comprobar el kiosco con
+el cliente de Prisma nuevo en las primeras marcaciones del 16/10 (`SELECT COUNT(*) FROM registros WHERE creadoEn >=
+UTC_TIMESTAMP() - INTERVAL 40 MINUTE`, y los errores del mismo lapso); (2) alinear `master` a `1f8187b` cuando el dueño
+lo pida.
 
-**1. El Excel de Registros, `5dfc0af`** (9 de octubre, petición del dueño). La columna
-«Sede» pasa a ser la sede a la que PERTENECE la persona (la asignada; si no tiene, la atribuida) y se añade
-«Marcó en», a su derecha, con dónde marcó esa jornada: una sede, «A → B» si cruzó, «Cerró en B» si solo se
-conoce el cierre, vacía si no quedó registrada. Antes una sola columna mezclaba las dos («No marcó · cuenta en
-X»). Solo cambia `features/registros/exportarRegistros.ts` y la llamada en `pages/Registros.tsx`; la TABLA de la
-pantalla no cambia. Respaldo: 14 pruebas rojas antes y 8 mutaciones muertas.
+### Lo que se desplegó del 12 al 15 de octubre
 
-**2. La hoja «Entradas por día», `fb46212`** (9 de octubre, petición del dueño: la tabla dinámica de personas por días
-con la hora de entrada, que armaba a mano con el Excel de Registros). Es una SEGUNDA HOJA del mismo archivo y sigue lo
-que se está viendo: una fila por persona, una columna por día del rango (también los días en que nadie marcó) y, en la
-celda, la primera entrada del día en hora de Bogotá. Sin filtros de jornada suma a las personas activas sin ninguna
-marcación, con la fila en blanco (con una persona elegida, solo a ella); con un filtro puesto NO las suma, porque ahí un
-blanco querría decir «la filtré» y no «faltó». Una marcación fuera del rango agrega su día y no se pierde. **La celda
-vacía no distingue descanso, novedad y falta**: eso necesita los días esperados del servidor y sería otro reporte, que
-el dueño no ha pedido. Respaldo: 19 pruebas rojas antes; 11 mutaciones, y **una sobrevivió a la primera ronda** (la
-pantalla mandaba las jornadas sin filtrar, y la prueba del filtro no lo distinguía porque las dos jornadas eran de la
-misma persona): se reescribió con tres personas y ahora muere. Con las reseñas incluidas, en un árbol limpio sobre
-`fb46212`: `tsc -b` en 0, **197 archivos / 2527 pruebas** y lint limpio en lo nuevo (`Registros.tsx` conserva sus 2
-errores heredados, no uno más).
+Leído de los mensajes de los artefactos (`git log origin/<rama>-build`).
 
-**3. Las reseñas, `01aa7e9`** (de la otra sesión, 43 archivos, commiteadas el 9 de octubre a las 16:17). **Traen cambio de
-esquema y tabla nueva**, así que el despliegue de «todo completo» lleva LAS CUATRO ramas, en este orden (CLAUDE.md §11):
-(1) `sql/resenas.sql` en phpMyAdmin; (2) `prisma-build`; (3) `backend-build`; (4) `frontend-build`. `schema.prisma` suma
-74 líneas, solo aditivas: el modelo `Resena` y su relación con `Empresa`. Las pruebas del frontend de las reseñas pasan
-dentro de las 2527. El backend se midió con ellas en un árbol limpio sobre `fa690de`: `tsc --noEmit` en 0, **107 archivos / 1916
-pruebas** (+1 fallo esperado) y lint en **168**, su tope.
+| día | qué | artefactos |
+|---|---|---|
+| 12/10 | resumen semanal por correo, «no ha llegado» y novedad por aprobar por Telegram, margen fuera de la geocerca (nº 11) | prisma `cd2217a`, backend `f683017`, frontend `5b7ea80` (develop `f5f0d8d`) |
+| 13/10 | «no ha vuelto de su pausa» y «turnos cerrados solos» por Telegram | backend `13d52c6` y `52a38c1`, frontend `33e3bfa` y `8692828` |
+| 13/10 | el período de pago en los reportes (1.ª quincena, 2.ª, mes) | frontend `3d58524` |
+| 14/10 | el salario del período aunque no haya terminado, y «del período» | frontend `1c80483` (`c4d11aa`) |
+| 14/10 | datos de prueba en la Demo de NIT 901123456: septiembre y el clima de octubre, por SQL | `sql/demo-septiembre-901123456.sql` y `sql/demo-clima-octubre-901123456.sql` (memoria `horapro-demo-septiembre-901123456`) |
+| 15/10, mañana | la auditoría deja de copiar los datos de las personas; 1.565 filas viejas limpiadas | backend `3655cd9` (`10a9480` + `3dd0378`) |
+| 15/10, mañana | pendientes del Inicio y primeros pasos | backend `16c98dc`, frontend `0333033` |
+| 15/10, noche | develop entero: Inicio (tandas 2 a 4), la semana partida de la liquidación, consultas por índice y **las fases 1 a 4 del clima del nº 39**, por decisión del dueño, sin esperar al abogado | prisma `159c9fc` + SQL, backend `5d74398`, frontend `c6774ab` |
+
+### El clima para todas las empresas está en producción, y la política no lo dice
+
+Desde el 15/10 a las 23:41 la pregunta «¿Cómo te fue hoy?» sale en el kiosco de TODAS las empresas (encendida por
+defecto; se apaga en Configuración › Marcación). Las empresas sin el plan Empresarial ven cifras sin nombres y el buzón
+borroso, pueden pedir una prueba gratis de 30 días, y la campana y el correo de los lunes les dicen cuántas personas
+necesitan atención. Todo en `docs/PENDIENTES.md` nº 39.
+
+**La política publicada es la 1.2, que no menciona el clima** (tampoco lo hacía el 4/10, cuando salió el clima para el
+plan Empresarial). La 1.3 está en borrador, sin publicar: ver *Next step* nº 0.
 
 ### El despliegue completo del 9 de octubre: reseñas y Excel
 
@@ -515,8 +506,27 @@ reportarle al hosting.
 
 ## Next step
 
-**No hay nada pendiente de desplegar.** Lo que sigue, por orden de lo que más duele
-si se olvida:
+**Nada pendiente de desplegar** (ver *Current State*). Lo que sigue, por orden de lo que más duele si se olvida:
+
+### 0. La política 1.3 y el abogado: el clima ya salió sin ella
+
+`POLITICA-PRIVACIDAD-1.3-para-abogado.md`, en la raíz: lo que el producto hace, los textos propuestos para la política,
+el kiosco y Configuración › Marcación, 11 preguntas para el abogado y lo que decide el dueño. **Se escribió el 14/10,
+cuando las fases 1 a 4 del clima todavía no estaban en producción**: su punto 2 («lo que sale en el próximo despliegue»)
+ya salió el 15/10. Las preguntas 1 (¿es dato sensible?), 2 (¿encendida por defecto vuelve a HoraPro responsable?) y 7
+(¿era un cambio sustancial, con aviso de 15 días?) ya no deciden cuándo desplegar: deciden qué hacer con lo que salió.
+
+Además de lo del clima, la 1.2 afirma hoy cosas falsas: el correo de los lunes lleva nombres de trabajadores, Telegram
+manda cinco clases de aviso, la geocerca guarda si se marcó fuera del área, el registro del sistema vive en nuestra base
+sin borrado, y las reseñas con nombre son una finalidad que no tiene. La auditoría, la más grave, ya se arregló en el
+producto (15/10). **Decisiones abiertas del dueño:** el rastro de los ERRORES, que guarda completos los datos de una
+consulta que falló (taparlos o declararlo); la cédula de los intentos rechazados del kiosco; el plazo del registro del
+sistema; y el texto del kiosco («Es voluntario. Tu empresa verá tu respuesta con tu nombre.»).
+
+Al publicar la 1.3: `version` en `frontend/blog/legal/privacidad.mjs` y `VERSION_POLITICA` en
+`backend/src/utils/resenas.ts` se suben juntas (hay una prueba que se pone roja si se separan), y la fecha de vigencia es
+la del día del despliegue.
+
 
 ### 1. Avisarle a las empresas afectadas por el recargo dominical (no es técnico)
 
@@ -606,6 +616,17 @@ Arreglarlas ANTES de llegar ahí.
   es inválida y se dice. Esa vez el commit se verificó por nombre, con `git show --name-only`, que
   mostró exactamente los 4 archivos propios: es la misma regla de CLAUDE.md §12.1 (el efecto, no la
   salida) aplicada a la propia puerta (§12.10).
+- **Un arreglo que tiene que salir solo se arma sobre la fuente de producción, no sobre `develop`.** Así salió la
+  auditoría el 15/10: worktree en el scratchpad sobre `10a9480` (lo desplegado), `cherry-pick` del arreglo, suite
+  completa ahí, y `diff -rq` del `dist` compilado contra el `deploy-backend/dist` del artefacto vivo: solo pueden
+  diferir los archivos del arreglo (fueron 3; todo lo demás, idéntico byte a byte).
+- **En la terminal de cPanel `node` no existe.** Los comandos de `dist/scripts` van con el Node del entorno de la app:
+  `DESPLIEGUE.md` §6.4.
+- **Dos procesos de la app vivos a la vez duplican lo que hacen las pasadas diarias.** El 15/10 había dos (`449495` y
+  `3619859`); en local, dos backends contra la misma base mandaron dos veces el mismo aviso, porque la marca de «ya se
+  mandó» se lee y después se escribe. Tras cada reinicio, `ps` y apagar el viejo con puerta. El arreglo de fondo (que
+  las pasadas sean seguras con dos procesos; el resumen de los lunes manda CORREO) se propuso como tarea aparte el
+  14/10 y no consta que se haya hecho.
 
 ### 4. El backlog del dueño vive en `docs/PENDIENTES.md`
 
@@ -614,12 +635,12 @@ Las 33 peticiones del 4 de octubre de 2026 quedaron ordenadas por dificultad en
 lo que falta de cada una. **Ese archivo es el único sitio donde vive la lista: aquí no se
 copia.**
 
-Medido el 9 de octubre: **38 entradas, 10 tachadas** (nº 9, 10, 18, 19, 20, 21, 23, 24, 25 y 27). La nº 38 es de ese día y **espera una decisión del dueño** (la columna «Sede» de Registros).
+Medido el 16 de octubre: **39 entradas, 10 tachadas** (nº 9, 10, 18, 19, 20, 21, 23, 24, 25 y 27). La nº 38 **espera una decisión del dueño** (la columna «Sede» de Registros). La nº 39 (calificación del día para todos, prueba gratis del clima, funciones con fecha) tiene las fases 1 a 4 en producción desde el 15/10 y la 5, lo legal, abierta.
 De la 29 a la 37 no son de esa lista: las agregó otra sesión tras revisar los planes y la landing.
 
 - **En pausa por decisión del dueño, con el análisis ya escrito: el nº 11**, marcar fuera del
   área y dejar la ubicación en un mapa. La política de privacidad 1.2 promete que la coordenada
-  **no se guarda**; guardarla pide abogado y política 1.3 antes de escribir código.
+  **no se guarda**; guardarla pide abogado y la 1.3 (en borrador, ver nº 0, sin la ubicación) antes de escribir código.
 - **Dicho «todavía no» o «de momento no» por el dueño:** nº 22 y nº 26.
 - **Frenados por una decisión o por un tercero**, en el orden en que bloquean: nº 3 (los números
   de la incapacidad de EPS, con el contador), nº 6 parte 3 (la llave del super admin sobre las
@@ -637,7 +658,8 @@ que no vienen del cliente web, que redirige al primer 401: puede ser el kiosco.
 
 ## La política de privacidad está publicada
 
-**9 de septiembre de 2026, versión 1.0.** Vive en
+**Vigente: la versión 1.2, desde el 4 de octubre de 2026** (1.0 el 9 de septiembre, 1.1 el 14). La 1.3 está en
+borrador: ver *Next step* nº 0. Vive en
 `frontend/blog/legal/privacidad.mjs` y se publica en
 <https://horapro.co/legal/privacidad/>. Verificado en producción: 15 secciones,
 `index, follow`, sin el aviso de borrador, en el sitemap, y enlazada desde el pie

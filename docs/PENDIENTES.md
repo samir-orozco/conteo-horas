@@ -395,7 +395,7 @@ habla aparte.
 
 ## 15. «No fui yo» en el kiosco · peticiones 15 y 17
 
-**La confirmación de identidad ya está implementada y sin desplegar**
+**La confirmación de identidad ya está implementada y desplegada** (79ce047, dentro de lo desplegado el 4 de octubre)
 (`79ce047`, con el tope de 0,6 medido en `2ed8a7f`): botón que se sostiene con el
 nombre dentro, foto de la ficha al lado de la de ahora, «No soy X», «Salir sin
 marcar», cierre de sesión a los 30 s. Eso es lo que resuelve la confusión entre
@@ -785,7 +785,7 @@ cruces (7 en una, 1 en otra).
 Recomendación: 1 y 2 juntas. **Decidido por el dueño (11 de octubre): opción 3**, más que la celda diga el motivo
 en vez de la sede atribuida. Hecho en el paso 4 del nº 11. La opción 2 (sede por kiosco) queda sin hacer.
 
-**El Excel de Registros ya separa las dos cosas** (`5dfc0af`, 9 de octubre, sin desplegar): «Sede» es la de la
+**El Excel de Registros ya separa las dos cosas** (`5dfc0af`, 9 de octubre, desplegado esa noche): «Sede» es la de la
 persona y «Marcó en» la de la jornada. La TABLA de la pantalla sigue como estaba; esa es la que decide esta
 entrada.
 
@@ -821,14 +821,18 @@ tenga pueda probar el clima gratis. Lo decidido:
 5. **Lo legal:** la política tiene que decir que la calificación la activa la empresa y para qué; texto del kiosco;
    el abogado, que ya estaba pendiente para el clima. Antes de lanzar la prueba a todas.
 
-**Estado:** fase 1 hecha (14 de octubre de 2026), sin desplegar: clave `CLIMA_CALIFICACION_DIA` (sin guardar =
+**Estado (16 de octubre de 2026): las fases 1 a 4 están EN PRODUCCIÓN desde el 15 de octubre a las 23:41 de Bogotá**, en el
+despliegue de develop entero que hizo la otra sesión (prisma-build `159c9fc` con el SQL `sql/concesiones-funcion.sql`,
+backend-build `5d74398`, frontend-build `c6774ab`). Decisión del dueño del 15/10: subirlas aunque falte el abogado. La
+fase 5 (lo legal) sigue abierta. Lo que sigue es el detalle de cada fase, escrito cuando se hizo.
+
+Fase 1 hecha (14 de octubre de 2026): clave `CLIMA_CALIFICACION_DIA` (sin guardar =
 encendida), interruptor en Marcación solo para el administrador, y el kiosco pregunta según el interruptor y no
 según el plan. La costura se comprueba con `backend/prisma/probar-calificacion-del-dia.ts` contra el servidor local
-(empresa temporal de plan Profesional; se vio fallar devolviendo la regla vieja). OJO al desplegarla: desde ese
-momento los trabajadores de TODAS las empresas ven las caritas al salir, y los administradores sin el plan todavía no
-ven nada hasta la fase 4. Conviene desplegarla junto con la 4, o avisarlo.
+(empresa temporal de plan Profesional; se vio fallar devolviendo la regla vieja). Desde el despliegue del 15/10 los
+trabajadores de TODAS las empresas ven las caritas al salir; salió junto con la fase 4, como se recomendó.
 
-Fase 2 hecha (14 de octubre de 2026), sin desplegar: tabla `concesiones_funcion` (SQL en `sql/concesiones-funcion.sql`,
+Fase 2 hecha (14 de octubre de 2026): tabla `concesiones_funcion` (SQL en `sql/concesiones-funcion.sql`,
 probado en MariaDB 12.3 y sin diferencias contra el esquema según Prisma), `utils/concesiones.ts` (vence sola al
 leer, solo enciende), las dos rutas que calculan funciones la incluyen (`capacidadesEmpresa` y la ficha del super
 admin), rutas POST/PUT/DELETE `/admin/empresas/:id/concesiones` y la tabla «Funciones por un tiempo» en la ficha. Se
@@ -837,7 +841,7 @@ Profesional la enciende en `capacidadesEmpresa`, y quitarla la apaga. La cascada
 (`verificar-eliminar-empresa.ts`). Despliegue de CUATRO ramas: SQL, prisma-build, backend, frontend. Esto cubre
 también PENDIENTES nº 7 en lo que toca a funciones (no el precio ni el cupo).
 
-Fase 3 hecha (14 de octubre de 2026), sin desplegar, sin cambio de esquema (usa la tabla de la fase 2). La prueba es
+Fase 3 hecha (14 de octubre de 2026), sin cambio de esquema (usa la tabla de la fase 2). La prueba es
 una concesión de `clima` con origen PRUEBA, 30 días contando el día en que se pide (vence a la medianoche de Bogotá
 del día 31), y su historial es lo que dice si la empresa ya la usó: una sola vez, aunque el super admin se la quite.
 - **Las reglas**, en `utils/pruebaClima.ts` con sus pruebas: si se puede pedir, el estado que ve la pantalla, qué aviso
@@ -860,7 +864,7 @@ aviso de «terminó» dos veces. La marca se lee y después se escribe, sin atom
 correo) tiene el mismo patrón. En producción ya hubo dos procesos vivos tras un reinicio (el `kill` del 9 de octubre).
 Quedó como tarea aparte: un mecanismo común para que una pasada sea segura con dos procesos.
 
-Fase 4 hecha (14 de octubre de 2026), sin desplegar, sin cambio de esquema. Lo que ve y recibe una empresa SIN el plan:
+Fase 4 hecha (14 de octubre de 2026), sin cambio de esquema. Lo que ve y recibe una empresa SIN el plan:
 - **Resumen:** las mismas tarjetas del panel con el ánimo promedio (y su variación), «Respondieron», CUÁNTAS personas
   necesitan atención («Con el plan Empresarial ves quiénes y por qué») y las notas recientes del buzón. Sin sede ni
   gráficas. La ruta `GET /api/clima/vistazo` saca una LISTA BLANCA del mismo resumen del panel
@@ -881,7 +885,7 @@ Fase 4 hecha (14 de octubre de 2026), sin desplegar, sin cambio de esquema. Lo q
   fallar quitando la marca y el interruptor); y en el navegador local con datos temporales en la Ferretería, borrados
   después: tarjetas, buzón borroso sin el texto en la página, aviso en la campana que lleva al clima.
 
-Falta la fase 5 (textos legales, abogado) antes de lanzarlo. Las fases 1 a 4 se despliegan juntas: cuatro ramas.
+Falta la fase 5 (textos legales, abogado). Las fases 1 a 4 se desplegaron juntas el 15/10, sin ella.
 
 Fase 5 en curso (14 de octubre de 2026): `POLITICA-PRIVACIDAD-1.3-para-abogado.md`, en la raíz, con lo que el producto hace,
 los textos propuestos para la política y para el producto, 11 preguntas para el abogado y lo que decide el dueño. La
@@ -901,8 +905,10 @@ apareció que la 1.2 publicada ya no es cierta en seis puntos, por funciones que
 - El correo de los lunes lleva nombres de trabajadores (el punto 8 dice que nunca); Telegram manda cinco clases de aviso (la
   política describe una); la geocerca guarda si se marcó fuera del área; el registro del sistema vive en nuestra base y no
   se borra; las reseñas con nombre son una finalidad que la 1.2 no tiene.
-Lo nuevo del clima para todas las empresas (fases 1 a 4) espera las preguntas 1, 2 y 7 del documento: si es dato sensible,
-si encendida por defecto vuelve a HoraPro responsable, y si es un cambio sustancial con aviso de 15 días.
+Lo nuevo del clima para todas las empresas (fases 1 a 4) ya está en producción, así que las preguntas 1, 2 y 7 del
+documento (si es dato sensible, si encendida por defecto vuelve a HoraPro responsable, y si era un cambio sustancial con
+aviso de 15 días) ya no deciden cuándo desplegar: deciden qué hacer con lo que salió. Ojo: el documento se escribió el
+14/10, cuando las fases 1 a 4 todavía no estaban en producción; su punto 2 («lo que sale en el próximo despliegue») ya salió.
 
 ---
 
