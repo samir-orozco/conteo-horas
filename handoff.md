@@ -165,6 +165,27 @@ Leído de los mensajes de los artefactos (`git log origin/<rama>-build`).
 | 15/10, mañana | pendientes del Inicio y primeros pasos | backend `16c98dc`, frontend `0333033` |
 | 15/10, noche | develop entero: Inicio (tandas 2 a 4), la semana partida de la liquidación, consultas por índice y **las fases 1 a 4 del clima del nº 39**, por decisión del dueño, sin esperar al abogado | prisma `159c9fc` + SQL, backend `5d74398`, frontend `c6774ab` |
 
+### Lo que se desplegó el 4 de octubre, antes del clima (anotado el 17 de octubre)
+
+Dos despliegues de la tarde que este archivo no recogió nunca. Las dos tandas están en producción: son ancestros de las
+fuentes de hoy, y se comprobó el 17/10 dentro de los artefactos vivos (`backend-build` `5d74398`, `frontend-build` `c6774ab`),
+no por memoria: `HORAS_PARA_PREGUNTAR_NOCTURNO` en `utils/jornadaYaRegistrada.js`, `tokenDeKiosco` ×2 en
+`utils/registrarEvento.js`, y «Java object is gone» y «son los de la última vez» en el bundle `index-B3c7QJFk.js`.
+
+| hora | qué | artefactos (fuente) |
+|---|---|---|
+| 15:01 | Kiosco: «Marcas de hoy» muestra las tres últimas y «y N más» abre la lista entera (`40bad2f`, `29df7ba`); en un turno nocturno trae la jornada de ayer y dice «ayer» (`dda2ec3`); «ya registraste tu jornada» también tras un turno nocturno, durante 4 h desde la salida (`aabbc3d`, decisión del dueño, `HORAS_PARA_PREGUNTAR_NOCTURNO`). Novedades de HoraPro: la confirmación del kiosco, un clic por fuera ya no cierra la ventana: se sacude y se cierra con la X o con «Listo», cuatro puntos con el cuarto en gris hasta la última, «Listo» del ancho de «Continuar» (`35a72ff`, `c07116b`, `190ca62`). La política 1.2 con fecha del día (`8ddfcde`) | backend `db96fa2`, frontend `9ab2571` |
+| 17:55 | **La cámara del kiosco ya no se congela** (`4808321`): las tareas de face-api.js 0.22 tienen un `then` sin camino de error, así que un `await` sobre una que fallaba no volvía nunca y el error salía suelto (7 veces del 1 al 3/10). Ahora se esperan con `.run()`, y `lib/tareasDeFaceapi.test.ts` recorre `src` y lo exige en cada llamada. **La pantalla negra solo para errores nuestros** (`18485de`, `lib/errorAjeno.ts`): el «Java object is gone» del navegador de Android se sigue reportando pero no tapa la página. **El registro del sistema** (`b3f75be`): al repetirse un error la fila se queda con la ruta, la IP, el navegador y el usuario de la ÚLTIMA vez, y los del kiosco traen la empresa sacada del token de la dirección | backend `7b6ce19`, frontend `1cfd4b3` |
+
+El clima de esa noche (20:12, prisma `9507d82`, backend `2f36b2f`, frontend `4af9a54`) se armó encima de estos dos.
+
+**Lo que quedó abierto de esta tanda:**
+- Las filas del registro anteriores al arreglo conservan el lugar de su PRIMERA vez hasta que se repitan.
+- Los fallos sueltos de la cámara ya no se ven en el registro: se manejan y se reintenta el cuadro. Si se quieren contar,
+  falta reportarlos (no se pidió). Tras 20 seguidos el kiosco dice «La cámara tuvo un problema. Toca Reintentar.»
+- Una tabla con cada repetición (y no solo la última) necesita cambio de esquema: ofrecido, sin decidir.
+- La pausa sin regreso: ver *Pendiente de fondo*, sin tocar hasta que decida el dueño.
+
 ### El clima para todas las empresas está en producción, y la política no lo dice
 
 Desde el 15/10 a las 23:41 la pregunta «¿Cómo te fue hoy?» sale en el kiosco de TODAS las empresas (encendida por
