@@ -35,7 +35,7 @@ nº 39 y de la auditoría. Esto lo corrige.
 
 | rama | hash | de qué fuente |
 |---|---|---|
-| `master` | `10a9480` | **atrasado**: es lo desplegado el 13 de octubre. Producción va en `1f8187b`. Se alinea cuando el dueño lo pida (avance limpio, sin `--force`, leído en `origin`) |
+| `master` | = `develop` | **lo desplegado y verificado.** Alineado el 17 de octubre a pedido del dueño: avance limpio desde `10a9480`, sin `--force`, leído en `origin`. Producción corre `1f8187b`; lo que hay encima es solo documentación (`handoff.md` y `docs/PENDIENTES.md`) |
 | `develop` | `1f8187b` = `origin/develop` | todo, y todo desplegado |
 | `prisma-build` | `159c9fc` | de `eb7f5fd`, con el modelo `ConcesionFuncion`; el SQL `sql/concesiones-funcion.sql` se corrió en producción el 15/10 a las 23:28 |
 | `backend-build` | `5d74398` | de `1f8187b` entero |
@@ -145,10 +145,9 @@ de hace diez minutos puede ya no ser la cabeza.
 
 ### Lo pendiente de desplegar
 
-**Nada de código.** Quedan dos cosas del despliegue del 15/10, según la sesión que lo hizo: (1) comprobar el kiosco con
+**Nada de código.** Queda una cosa del despliegue del 15/10, según la sesión que lo hizo: comprobar el kiosco con
 el cliente de Prisma nuevo en las primeras marcaciones del 16/10 (`SELECT COUNT(*) FROM registros WHERE creadoEn >=
-UTC_TIMESTAMP() - INTERVAL 40 MINUTE`, y los errores del mismo lapso); (2) alinear `master` a `1f8187b` cuando el dueño
-lo pida.
+UTC_TIMESTAMP() - INTERVAL 40 MINUTE`, y los errores del mismo lapso). `master` ya se alineó el 17/10.
 
 ### Lo que se desplegó del 12 al 15 de octubre
 
